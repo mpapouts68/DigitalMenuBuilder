@@ -10,12 +10,12 @@ interface CategoryPillsProps {
 
 export function CategoryPills({ categories, activeCategory, onCategoryChange }: CategoryPillsProps) {
   return (
-    <ScrollArea className="w-full">
-      <div className="flex space-x-2 mt-3 pb-2">
+    <ScrollArea className="w-full whitespace-nowrap">
+      <div className="flex space-x-2 mt-3 pb-2 px-1">
         <Button
           variant={activeCategory === "all" ? "default" : "outline"}
           size="sm"
-          className="rounded-full whitespace-nowrap"
+          className="rounded-full whitespace-nowrap flex-shrink-0"
           onClick={() => onCategoryChange("all")}
         >
           All Items
@@ -25,7 +25,7 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             key={category.id}
             variant={activeCategory === category.id ? "default" : "outline"}
             size="sm"
-            className="rounded-full whitespace-nowrap"
+            className="rounded-full whitespace-nowrap flex-shrink-0"
             onClick={() => onCategoryChange(category.id)}
           >
             {category.name}

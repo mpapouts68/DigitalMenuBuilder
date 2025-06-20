@@ -94,18 +94,20 @@ export function MenuSection({
           />
         ))}
         
-        {isAdminMode && products.length === 0 && (
+        {products.length === 0 && (
           <div className="text-center py-8 text-slate-500">
             <div className="text-2xl mb-2">🍽️</div>
             <p>No items in this category</p>
-            <Button
-              variant="ghost"
-              onClick={onAddItem}
-              className="mt-2 text-blue-600 hover:text-blue-800"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add first item
-            </Button>
+            {isAdminMode && (
+              <Button
+                variant="ghost"
+                onClick={onAddItem}
+                className="mt-2 text-blue-600 hover:text-blue-800"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add first item
+              </Button>
+            )}
           </div>
         )}
       </div>

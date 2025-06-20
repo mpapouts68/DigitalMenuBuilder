@@ -149,24 +149,31 @@ export default function Menu() {
           </div>
         ) : (
           <div className="space-y-8">
-            {categories.map(category => {
-              const categoryProducts = groupedProducts[category.id] || [];
-              
-              // Show category if it has products or if in admin mode
-              if (categoryProducts.length === 0 && !isAdminMode) return null;
+            {categories
+              .filter(category => {
+                // When "All Items" is selected, show all categories that have products
+                if (activeCategory === "all") {
+                  const categoryProducts = groupedProducts[category.id] || [];
+                  return categoryProducts.length > 0 || isAdminMode;
+                }
+                // When a specific category is selected, only show that category
+                return category.id === activeCategory;
+              })
+              .map(category => {
+                const categoryProducts = groupedProducts[category.id] || [];
 
-              return (
-                <MenuSection
-                  key={category.id}
-                  category={category}
-                  products={categoryProducts}
-                  isAdminMode={isAdminMode}
-                  onEditItem={handleEditItem}
-                  onViewProduct={handleViewProduct}
-                  onAddItem={() => handleAddItemToCategory(category.id)}
-                />
-              );
-            })}
+                return (
+                  <MenuSection
+                    key={category.id}
+                    category={category}
+                    products={categoryProducts}
+                    isAdminMode={isAdminMode}
+                    onEditItem={handleEditItem}
+                    onViewProduct={handleViewProduct}
+                    onAddItem={() => handleAddItemToCategory(category.id)}
+                  />
+                );
+              })}
           </div>
         )}
 
