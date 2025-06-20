@@ -100,7 +100,7 @@ export function AddItemModal({
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) { // 2MB limit
@@ -113,18 +113,29 @@ export function AddItemModal({
       }
 
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
-        form.setValue("imageUrl", base64String);
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setImagePreview(result);
+        setImageUrl(result);
+        form.setValue("imageUrl", result);
       };
       reader.readAsDataURL(file);
     }
   };
 
+  const handleUrlChange = (url: string) => {
+    setImageUrl(url);
+    setImagePreview(url);
+    form.setValue("imageUrl", url);
+  };
+
   const removeImage = () => {
     setImagePreview(null);
+    setImageUrl("");
     form.setValue("imageUrl", "");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   // Reset form when modal opens/closes or editing item changes
@@ -140,6 +151,7 @@ export function AddItemModal({
       };
       form.reset(values);
       setImagePreview(editingItem?.imageUrl || null);
+      setImageUrl(editingItem?.imageUrl || "");
     }
   }, [open, editingItem, selectedCategoryId, categories, form]);
 
