@@ -198,8 +198,6 @@ export default function Menu() {
         </div>
       </div>
 
-      <AdvertisementBanner className="max-w-md mx-auto my-6 h-16" type="promotional" isAdminMode={isAdminMode} />
-
       {/* Floating Add Button (Admin Mode) */}
       {isAdminMode && (
         <Button
