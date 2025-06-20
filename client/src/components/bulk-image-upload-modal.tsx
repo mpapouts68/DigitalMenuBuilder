@@ -59,11 +59,20 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
   };
 
   const searchImagesForProducts = async () => {
+    if (selectedProducts.size === 0) {
+      toast({
+        title: "No products selected",
+        description: "Please select at least one product to generate searches",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSearching(true);
     const results: {[productId: number]: string[]} = {};
     
     selectedProducts.forEach(productId => {
-      const product = filteredProducts.find(p => p.id === productId);
+      const product = products.find(p => p.id === productId);
       if (product) {
         const searchUrl = generateGoogleImageSearchUrl(product.name, product.description);
         results[productId] = [searchUrl];
@@ -74,8 +83,8 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
     setIsSearching(false);
     
     toast({
-      title: "Search completed",
-      description: `Generated search URLs for ${selectedProducts.size} products`,
+      title: "Search URLs generated",
+      description: `Created ${Object.keys(results).length} Google Image searches. Click "Open Search" to view results.`,
     });
   };
 
@@ -451,30 +460,34 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   </div>
                 </div>
 
-                <ScrollArea className="h-80">
+                <ScrollArea className="h-80 pr-4">
                   <div className="space-y-2">
                     {filteredProducts.map(product => (
                       <div 
                         key={product.id}
-                        className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                        className={`border rounded-lg p-3 transition-colors ${
                           selectedProducts.has(product.id) 
                             ? 'bg-blue-50 border-blue-200' 
                             : 'hover:bg-gray-50'
                         }`}
-                        onClick={() => toggleProductSelection(product.id)}
                       >
                         <div className="flex items-center gap-3">
                           <input
                             type="checkbox"
                             checked={selectedProducts.has(product.id)}
-                            onChange={() => toggleProductSelection(product.id)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.preventDefault();
+                              toggleProductSelection(product.id);
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                           />
-                          <div className="flex-1">
+                          <div 
+                            className="flex-1 cursor-pointer"
+                            onClick={() => toggleProductSelection(product.id)}
+                          >
                             <p className="font-medium text-sm">{product.name}</p>
                             {product.description && (
-                              <p className="text-xs text-gray-600 truncate">
+                              <p className="text-xs text-gray-600 mt-1">
                                 {product.description}
                               </p>
                             )}
@@ -487,6 +500,12 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                         </div>
                       </div>
                     ))}
+                    {filteredProducts.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No products found</p>
+                        <p className="text-sm">Try selecting a different category</p>
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -501,47 +520,44 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-96">
+                <ScrollArea className="h-96 pr-4">
                   <div className="space-y-4">
                     {Object.entries(searchResults).length > 0 ? (
                       Object.entries(searchResults).map(([productId, urls]) => {
-                        const product = filteredProducts.find(p => p.id === parseInt(productId));
+                        const product = products.find(p => p.id === parseInt(productId));
                         if (!product) return null;
 
                         return (
-                          <div key={productId} className="border rounded-lg p-4 space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h4 className="font-medium text-sm">{product.name}</h4>
-                                <p className="text-xs text-gray-600 mt-1">
-                                  Search query: "{product.name}{product.description ? ` ${product.description}` : ''} food dish restaurant"
+                          <div key={productId} className="border rounded-lg p-4 space-y-3 bg-white shadow-sm">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm text-gray-900">{product.name}</h4>
+                                <p className="text-xs text-gray-600 mt-1 break-words">
+                                  Search: "{product.name}{product.description ? ` ${product.description}` : ''} food dish restaurant"
                                 </p>
                               </div>
                               <Button
                                 size="sm"
-                                variant="outline"
                                 onClick={() => openGoogleImageSearch(urls[0], product.name)}
-                                className="ml-2"
+                                className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
                               >
                                 <ExternalLink className="h-4 w-4 mr-2" />
                                 Open Search
                               </Button>
                             </div>
-                            <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                              💡 Tip: Right-click images → "Save image as..." → Then use Upload tab to assign them
+                            <div className="text-xs text-blue-700 bg-blue-50 p-3 rounded border-l-4 border-blue-200">
+                              <strong>Tip:</strong> Right-click images → "Save image as..." → Then use Upload tab to assign them to products
                             </div>
                           </div>
                         );
                       })
                     ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No search results yet</p>
-                        <p className="text-sm">Select products and click "Generate Searches"</p>
+                      <div className="text-center py-12 text-gray-500">
+                        <Search className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                        <p className="font-medium">No search results yet</p>
+                        <p className="text-sm mt-1">Select products and click "Generate Searches" to create Google Image searches</p>
                       </div>
                     )}
-
-
                   </div>
                 </ScrollArea>
               </CardContent>
