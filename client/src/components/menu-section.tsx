@@ -90,6 +90,7 @@ export function MenuSection({
             product={product}
             isAdminMode={isAdminMode}
             onEdit={() => onEditItem(product)}
+            onViewDetails={() => onViewProduct(product)}
           />
         ))}
         
