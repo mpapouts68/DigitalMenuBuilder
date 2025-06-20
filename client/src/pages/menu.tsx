@@ -9,6 +9,7 @@ import { AddItemModal } from "@/components/add-item-modal";
 import { AddCategoryModal } from "@/components/add-category-modal";
 import { ImportModal } from "@/components/import-modal";
 import { ProductDetailsModal } from "@/components/product-details-modal";
+import { AdminPasscodeModal } from "@/components/admin-passcode-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus } from "lucide-react";
@@ -16,6 +17,7 @@ import type { Category, Product } from "@shared/schema";
 
 export default function Menu() {
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [showAdminPasscode, setShowAdminPasscode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState<number | "all">("all");
   const [showAddItemModal, setShowAddItemModal] = useState(false);
