@@ -129,6 +129,30 @@ export class DatabaseStorage implements IStorage {
       await db.insert(products).values(productsData);
     }
   }
+
+  async getBanners(): Promise<Banner[]> {
+    return await db.select().from(banners);
+  }
+
+  async getBannerByType(type: string): Promise<Banner | undefined> {
+    const result = await db.select().from(banners).where(eq(banners.type, type)).limit(1);
+    return result[0];
+  }
+
+  async createBanner(banner: InsertBanner): Promise<Banner> {
+    const [newBanner] = await db.insert(banners).values(banner).returning();
+    return newBanner;
+  }
+
+  async updateBanner(id: number, banner: Partial<InsertBanner>): Promise<Banner | undefined> {
+    const [updated] = await db.update(banners).set(banner).where(eq(banners.id, id)).returning();
+    return updated;
+  }
+
+  async deleteBanner(id: number): Promise<boolean> {
+    const result = await db.delete(banners).where(eq(banners.id, id)).returning();
+    return result.length > 0;
+  }
 }
 
 export const storage = new DatabaseStorage();

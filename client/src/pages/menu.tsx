@@ -103,7 +103,7 @@ export default function Menu() {
         onAdminModeChange={setIsAdminMode}
       />
 
-      <AdvertisementBanner className="max-w-md mx-auto my-4 h-20" />
+      <AdvertisementBanner className="max-w-md mx-auto my-4 h-20" isAdminMode={isAdminMode} />
 
       {/* Search and Filter */}
       <div className="max-w-md mx-auto px-4 mb-4">
@@ -187,7 +187,7 @@ export default function Menu() {
         )}
       </main>
 
-      <AdvertisementBanner className="max-w-md mx-auto my-6 h-16" type="promotional" />
+      <AdvertisementBanner className="max-w-md mx-auto my-6 h-16" type="promotional" isAdminMode={isAdminMode} />
 
       {/* Floating Add Button (Admin Mode) */}
       {isAdminMode && (

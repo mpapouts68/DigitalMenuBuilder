@@ -7,6 +7,14 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+async function handleBannerResponse(res: Response) {
+  if (res.status === 404) {
+    return null;
+  }
+  await throwIfResNotOk(res);
+  return res;
+}
+
 export async function apiRequest(
   method: string,
   url: string,

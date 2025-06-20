@@ -158,6 +158,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Banner routes
+  app.get("/api/banners", async (req, res) => {
+    try {
+      const banners = await storage.getBanners();
+      res.json(banners);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch banners" });
+    }
+  });
+
+  app.get("/api/banners/type/:type", async (req, res) => {
+    try {
+      const type = req.params.type;
+      const banner = await storage.getBannerByType(type);
+      if (!banner) {
+        res.status(404).json({ message: "Banner not found" });
+      } else {
+        res.json(banner);
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch banner" });
+    }
+  });
+
+  app.post("/api/banners", async (req, res) => {
+    try {
+      const bannerData = insertBannerSchema.parse(req.body);
+      const banner = await storage.createBanner(bannerData);
+      res.status(201).json(banner);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid banner data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create banner" });
+      }
+    }
+  });
+
+  app.put("/api/banners/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const bannerData = insertBannerSchema.partial().parse(req.body);
+      const banner = await storage.updateBanner(id, bannerData);
+      if (!banner) {
+        res.status(404).json({ message: "Banner not found" });
+      } else {
+        res.json(banner);
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid banner data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update banner" });
+      }
+    }
+  });
+
+  app.delete("/api/banners/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteBanner(id);
+      if (!deleted) {
+        res.status(404).json({ message: "Banner not found" });
+      } else {
+        res.status(204).send();
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete banner" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
