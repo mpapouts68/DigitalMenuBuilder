@@ -236,14 +236,13 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
           <DialogTitle>Bulk Image Management</DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="upload" className="flex flex-col h-[80vh]">
+        <Tabs defaultValue="upload" className="flex flex-col h-[85vh]">
           <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
             <TabsTrigger value="upload">Upload Images</TabsTrigger>
             <TabsTrigger value="search">Google Image Search</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="upload" className="flex-1 mt-4 overflow-hidden">
-
+          <TabsContent value="upload" className="flex-1 mt-4 overflow-y-scroll max-h-[70vh]">
             <div className="space-y-6">
               {/* Upload Section */}
               <Card>
@@ -397,8 +396,8 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
         </div>
       </TabsContent>
 
-        <TabsContent value="search" className="flex-1 mt-4 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+        <TabsContent value="search" className="flex-1 mt-4 overflow-y-scroll max-h-[70vh]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Product Selection */}
             <Card className="flex flex-col h-full">
               <CardHeader className="flex-shrink-0">
@@ -460,7 +459,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-scroll border-2 border-blue-200 rounded-md p-3 bg-white" style={{height: '450px'}}>
+                <div className="max-h-[400px] overflow-y-scroll border-2 border-blue-200 rounded-md p-3 bg-white">
                   <div className="space-y-2">
                     {filteredProducts.map(product => (
                       <div 
@@ -519,8 +518,8 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   Google Image Search Results
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 min-h-0">
-                <div className="h-full max-h-[600px] overflow-y-auto border border-gray-200 rounded-lg p-4">
+              <CardContent>
+                <div className="max-h-[500px] overflow-y-scroll border border-gray-200 rounded-lg p-4">
                   {Object.entries(searchResults).length > 0 ? (
                     <div className="space-y-4">
                       {Object.entries(searchResults).map(([productId, urls]) => {
