@@ -236,12 +236,12 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Bulk Image Management</DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="upload" className="flex flex-col h-[75vh]">
+        <Tabs defaultValue="upload" className="flex flex-col h-[80vh]">
           <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
             <TabsTrigger value="upload">Upload Images</TabsTrigger>
             <TabsTrigger value="search">Google Image Search</TabsTrigger>
@@ -403,7 +403,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
       </TabsContent>
 
         <TabsContent value="search" className="flex-1 mt-4 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
             {/* Product Selection */}
             <Card className="flex flex-col h-full">
               <CardHeader className="flex-shrink-0">
@@ -465,7 +465,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-scroll border-2 border-blue-200 rounded-md p-3 bg-white" style={{maxHeight: '400px'}}>
+                <div className="flex-1 overflow-y-scroll border-2 border-blue-200 rounded-md p-3 bg-white" style={{height: '450px'}}>
                   <div className="space-y-2">
                     {filteredProducts.map(product => (
                       <div 
@@ -525,7 +525,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 min-h-0">
-                <div className="overflow-y-scroll border-4 border-yellow-500 rounded-md p-4 bg-yellow-100" style={{height: '500px'}}>
+                <div className="overflow-y-scroll border-4 border-yellow-500 rounded-md p-4 bg-yellow-100" style={{height: '600px'}}>
                   <div className="space-y-4">
                     <div className="bg-purple-500 text-white p-3 rounded font-bold text-center">
                       SEARCH RESULTS AREA - Found {Object.entries(searchResults).length} results
