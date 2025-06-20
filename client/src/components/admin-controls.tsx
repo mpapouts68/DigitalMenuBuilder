@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Upload, Download } from "lucide-react";
+import { Plus, Upload, Download, Images } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { BulkImageUploadModal } from "./bulk-image-upload-modal";
 
 interface AdminControlsProps {
   onAddCategory: () => void;
