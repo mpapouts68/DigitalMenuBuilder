@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -33,6 +33,8 @@ export function AddItemModal({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm({
     resolver: zodResolver(insertProductSchema),
@@ -222,44 +224,83 @@ export function AddItemModal({
             />
 
             {/* Image Upload */}
-            <div>
-              <Label className="text-sm font-medium">Product Image</Label>
-              <div className="mt-2">
-                {imagePreview ? (
-                  <div className="relative">
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview"
-                      className="w-full h-32 object-cover rounded-lg"
+            <div className="space-y-4">
+              <Label>Product Image</Label>
+              
+              {/* Image Upload Methods */}
+              <div className="grid grid-cols-1 gap-4">
+                {/* File Upload */}
+                <div>
+                  <Label htmlFor="file-upload" className="text-sm text-slate-600">Upload from device</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="file-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      ref={fileInputRef}
+                      className="file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
                     />
                     <Button
                       type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 h-6 w-6"
-                      onClick={removeImage}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
                     >
-                      <X className="h-3 w-3" />
+                      <Upload className="h-4 w-4 mr-1" />
+                      Browse
                     </Button>
                   </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 mb-2 text-slate-400" />
-                      <p className="mb-2 text-sm text-slate-500">
-                        <span className="font-semibold">Click to upload</span> an image
-                      </p>
-                      <p className="text-xs text-slate-400">PNG, JPG, SVG up to 2MB</p>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*,.svg"
-                      onChange={handleImageUpload}
+                </div>
+
+                {/* URL Input */}
+                <div>
+                  <Label htmlFor="image-url" className="text-sm text-slate-600">Or paste image URL</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="image-url"
+                      type="url"
+                      value={imageUrl}
+                      onChange={(e) => handleUrlChange(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="flex-1"
                     />
-                  </label>
-                )}
+                    {imagePreview && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={removeImage}
+                        className="shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
+
+              {/* Image Preview */}
+              {imagePreview && (
+                <div className="space-y-2">
+                  <Label className="text-sm text-slate-600">Preview</Label>
+                  <div className="relative w-full h-32 bg-slate-100 rounded-lg overflow-hidden border">
+                    <img
+                      src={imagePreview}
+                      alt="Product preview"
+                      className="w-full h-full object-cover"
+                      onError={() => {
+                        setImagePreview(null);
+                        toast({
+                          title: "Invalid image",
+                          description: "The image URL is not valid or accessible.",
+                          variant: "destructive",
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <FormField

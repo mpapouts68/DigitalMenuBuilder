@@ -12,6 +12,7 @@ interface AdminControlsProps {
 
 export function AdminControls({ onAddCategory, onImportData }: AdminControlsProps) {
   const { toast } = useToast();
+  const [showBulkImageUpload, setShowBulkImageUpload] = useState(false);
 
   const exportDataMutation = useMutation({
     mutationFn: async () => {
@@ -67,6 +68,14 @@ export function AdminControls({ onAddCategory, onImportData }: AdminControlsProp
             Add Category
           </Button>
           <Button
+            onClick={() => setShowBulkImageUpload(true)}
+            variant="outline"
+            className="w-full"
+          >
+            <Images className="h-4 w-4 mr-2" />
+            Bulk Image Upload
+          </Button>
+          <Button
             onClick={onImportData}
             variant="outline"
             className="w-full"
@@ -85,6 +94,11 @@ export function AdminControls({ onAddCategory, onImportData }: AdminControlsProp
           </Button>
         </CardContent>
       </Card>
+
+      <BulkImageUploadModal
+        open={showBulkImageUpload}
+        onOpenChange={setShowBulkImageUpload}
+      />
     </div>
   );
 }
