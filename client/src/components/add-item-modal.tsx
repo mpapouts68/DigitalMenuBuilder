@@ -249,12 +249,12 @@ export function AddItemModal({
                       <p className="mb-2 text-sm text-slate-500">
                         <span className="font-semibold">Click to upload</span> an image
                       </p>
-                      <p className="text-xs text-slate-400">PNG, JPG up to 2MB</p>
+                      <p className="text-xs text-slate-400">PNG, JPG, SVG up to 2MB</p>
                     </div>
                     <input
                       type="file"
                       className="hidden"
-                      accept="image/*"
+                      accept="image/*,.svg"
                       onChange={handleImageUpload}
                     />
                   </label>
