@@ -183,14 +183,14 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
               <div>
                 <Label>Select Category (Optional)</Label>
                 <Select
-                  value={selectedCategory?.toString() || ""}
-                  onValueChange={(value) => setSelectedCategory(value ? parseInt(value) : null)}
+                  value={selectedCategory?.toString() || "all"}
+                  onValueChange={(value) => setSelectedCategory(value === "all" ? null : parseInt(value))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All categories</SelectItem>
+                    <SelectItem value="all">All categories</SelectItem>
                     {categories.map(category => (
                       <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name}
@@ -274,14 +274,15 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                       <div className="space-y-2">
                         <Label className="text-xs">Assign to Product</Label>
                         <Select
-                          value={image.productId?.toString() || ""}
-                          onValueChange={(value) => assignImageToProduct(image.id, parseInt(value))}
+                          value={image.productId?.toString() || "none"}
+                          onValueChange={(value) => value !== "none" && assignImageToProduct(image.id, parseInt(value))}
                           disabled={image.status === "uploaded"}
                         >
                           <SelectTrigger className="h-8">
                             <SelectValue placeholder="Select product" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none" disabled>Select product</SelectItem>
                             {filteredProducts.map(product => (
                               <SelectItem key={product.id} value={product.id.toString()}>
                                 <div className="flex items-center gap-2">
