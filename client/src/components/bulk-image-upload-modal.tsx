@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Upload, X, Check, AlertCircle } from "lucide-react";
+import { Upload, X, Check, AlertCircle, Search, ExternalLink, Image as ImageIcon } from "lucide-react";
 import type { Category, Product } from "@shared/schema";
 
 interface BulkImageUploadModalProps {
@@ -321,9 +324,155 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   <li>Click "Upload All Assigned Images" to apply changes</li>
                 </ol>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="search" className="h-full mt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+            {/* Product Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  Select Products for Image Search
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Filter by Category</Label>
+                  <Select
+                    value={selectedCategory?.toString() || "all"}
+                    onValueChange={(value) => setSelectedCategory(value === "all" ? null : parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All categories</SelectItem>
+                      {categories?.map(category => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {selectedProducts.size} products selected
+                  </span>
+                  <Button
+                    onClick={searchImagesForProducts}
+                    disabled={selectedProducts.size === 0 || isSearching}
+                    size="sm"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    {isSearching ? "Searching..." : "Generate Searches"}
+                  </Button>
+                </div>
+
+                <ScrollArea className="h-80">
+                  <div className="space-y-2">
+                    {filteredProducts.map(product => (
+                      <div 
+                        key={product.id}
+                        className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                          selectedProducts.has(product.id) 
+                            ? 'bg-blue-50 border-blue-200' 
+                            : 'hover:bg-gray-50'
+                        }`}
+                        onClick={() => toggleProductSelection(product.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                            selectedProducts.has(product.id)
+                              ? 'bg-blue-500 border-blue-500'
+                              : 'border-gray-300'
+                          }`}>
+                            {selectedProducts.has(product.id) && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{product.name}</p>
+                            {product.description && (
+                              <p className="text-xs text-gray-600 truncate">
+                                {product.description}
+                              </p>
+                            )}
+                          </div>
+                          {product.imageUrl && (
+                            <Badge variant="secondary" className="text-xs">
+                              Has image
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Search Results */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ExternalLink className="h-5 w-5" />
+                  Google Image Search Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-96">
+                  <div className="space-y-4">
+                    {Object.entries(searchResults).map(([productId, urls]) => {
+                      const product = filteredProducts.find(p => p.id === parseInt(productId));
+                      if (!product) return null;
+
+                      return (
+                        <div key={productId} className="border rounded-lg p-3 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-sm">{product.name}</h4>
+                              {product.description && (
+                                <p className="text-xs text-gray-600 mt-1">
+                                  Search: "{product.name} {product.description} food dish restaurant"
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openGoogleImageSearch(urls[0], product.name)}
+                            >
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Open Search
+                            </Button>
+                          </div>
+                          <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                            Tip: Right-click images → "Save image as..." → Then use Upload tab
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {Object.keys(searchResults).length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No search results yet</p>
+                        <p className="text-sm">Select products and click "Generate Searches"</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
       </DialogContent>
     </Dialog>
   );
