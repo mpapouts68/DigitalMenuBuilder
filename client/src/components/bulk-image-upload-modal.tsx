@@ -412,7 +412,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   Select Products for Image Search
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 flex-1 flex flex-col min-h-0">
+              <CardContent className="space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div>
                   <Label>Filter by Category</Label>
                   <Select
@@ -465,7 +465,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto border-2 border-blue-200 rounded-md p-3 bg-white min-h-0">
+                <div className="flex-1 overflow-y-scroll border-2 border-blue-200 rounded-md p-3 bg-white" style={{maxHeight: '400px'}}>
                   <div className="space-y-2">
                     {filteredProducts.map(product => (
                       <div 
@@ -525,7 +525,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 min-h-0">
-                <div className="h-full overflow-y-auto border-4 border-yellow-500 rounded-md p-4 bg-yellow-100">
+                <div className="overflow-y-scroll border-4 border-yellow-500 rounded-md p-4 bg-yellow-100" style={{height: '500px'}}>
                   <div className="space-y-4">
                     <div className="bg-purple-500 text-white p-3 rounded font-bold text-center">
                       SEARCH RESULTS AREA - Found {Object.entries(searchResults).length} results
