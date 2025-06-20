@@ -1,4 +1,4 @@
-import { categories, products, type Category, type Product, type InsertCategory, type InsertProduct } from "@shared/schema";
+import { categories, products, banners, type Category, type Product, type Banner, type InsertCategory, type InsertProduct, type InsertBanner } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -20,6 +20,13 @@ export interface IStorage {
 
   // Bulk operations
   importData(categories: InsertCategory[], products: InsertProduct[]): Promise<void>;
+
+  // Banners
+  getBanners(): Promise<Banner[]>;
+  getBannerByType(type: string): Promise<Banner | undefined>;
+  createBanner(banner: InsertBanner): Promise<Banner>;
+  updateBanner(id: number, banner: Partial<InsertBanner>): Promise<Banner | undefined>;
+  deleteBanner(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
