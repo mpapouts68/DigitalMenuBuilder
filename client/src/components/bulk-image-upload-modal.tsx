@@ -527,33 +527,42 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
               <CardContent>
                 <div className="h-96 overflow-y-auto border-2 border-gray-300 rounded-md p-4 bg-gray-50">
                   <div className="space-y-4">
+                    <div className="text-xs text-gray-500 mb-2">
+                      Debug: Found {Object.entries(searchResults).length} search results
+                    </div>
                     {Object.entries(searchResults).length > 0 ? (
                       Object.entries(searchResults).map(([productId, urls]) => {
                         const product = products.find(p => p.id === parseInt(productId));
-                        if (!product) return null;
+                        console.log('Rendering product:', productId, product);
+                        if (!product) {
+                          console.log('Product not found for ID:', productId);
+                          return null;
+                        }
 
                         return (
-                          <div key={productId} className="border-2 rounded-lg p-4 space-y-4 bg-white shadow-md mb-4">
-                            <div className="flex flex-col sm:flex-row gap-4">
+                          <div key={productId} className="border-2 border-blue-300 rounded-lg p-6 space-y-4 bg-white shadow-lg mb-4">
+                            <div className="bg-green-100 p-2 rounded text-xs">
+                              Debug: Rendering product {productId} - {product.name}
+                            </div>
+                            <div className="flex flex-col gap-4">
                               <div className="flex-1">
-                                <h4 className="font-semibold text-base text-gray-900 mb-2">{product.name}</h4>
-                                <p className="text-sm text-gray-600 break-words">
-                                  Search query: "{product.name}{product.description ? ` ${product.description}` : ''} food dish restaurant"
+                                <h4 className="font-bold text-lg text-gray-900 mb-3">{product.name}</h4>
+                                <p className="text-sm text-gray-600 break-words mb-4">
+                                  Search: "{product.name}{product.description ? ` ${product.description}` : ''} food dish restaurant"
                                 </p>
                               </div>
-                              <div className="flex-shrink-0">
-                                <Button
-                                  size="lg"
+                              <div className="w-full">
+                                <button
                                   onClick={() => openGoogleImageSearch(urls[0], product.name)}
-                                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 text-base"
+                                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-lg text-lg border-2 border-red-800"
+                                  style={{minHeight: '60px'}}
                                 >
-                                  <ExternalLink className="h-5 w-5 mr-2" />
-                                  Open Google Search
-                                </Button>
+                                  🔍 OPEN GOOGLE SEARCH FOR {product.name.toUpperCase()}
+                                </button>
                               </div>
                             </div>
-                            <div className="text-sm text-blue-800 bg-blue-100 p-3 rounded-lg border border-blue-200">
-                              <strong>Instructions:</strong> The button above opens Google Images. Right-click any image → "Save image as..." → Then use the Upload tab to assign images to your menu items.
+                            <div className="text-sm text-blue-800 bg-blue-100 p-4 rounded-lg border-2 border-blue-300">
+                              <strong>INSTRUCTIONS:</strong> Click the red button above to open Google Images. Right-click any image → "Save image as..." → Then use the Upload tab to assign images.
                             </div>
                           </div>
                         );
@@ -563,6 +572,9 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                         <Search className="h-16 w-16 mx-auto mb-4 opacity-30" />
                         <p className="font-medium">No search results yet</p>
                         <p className="text-sm mt-1">Select products and click "Generate Searches" to create Google Image searches</p>
+                        <div className="mt-4 text-xs text-gray-400">
+                          Debug: {Object.keys(searchResults).length} results in state
+                        </div>
                       </div>
                     )}
                   </div>
