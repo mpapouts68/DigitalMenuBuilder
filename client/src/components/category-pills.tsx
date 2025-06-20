@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Category } from "@shared/schema";
 
 interface CategoryPillsProps {
@@ -10,8 +9,8 @@ interface CategoryPillsProps {
 
 export function CategoryPills({ categories, activeCategory, onCategoryChange }: CategoryPillsProps) {
   return (
-    <ScrollArea className="w-full whitespace-nowrap">
-      <div className="flex space-x-2 mt-3 pb-2 px-1">
+    <div className="w-full overflow-x-auto">
+      <div className="flex space-x-2 mt-3 pb-2 px-1 min-w-max">
         <Button
           variant={activeCategory === "all" ? "default" : "outline"}
           size="sm"
@@ -32,6 +31,6 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
           </Button>
         ))}
       </div>
-    </ScrollArea>
+    </div>
   );
 }

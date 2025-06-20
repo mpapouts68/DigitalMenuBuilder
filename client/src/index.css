@@ -105,6 +105,19 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Ensure horizontal scrolling works on mobile */
+  .overflow-x-auto {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @keyframes fadeIn {
