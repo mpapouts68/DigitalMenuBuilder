@@ -460,7 +460,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   </div>
                 </div>
 
-                <ScrollArea className="h-80 pr-4">
+                <div className="h-80 overflow-y-auto border rounded-md p-2">
                   <div className="space-y-2">
                     {filteredProducts.map(product => (
                       <div 
@@ -507,7 +507,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                       </div>
                     )}
                   </div>
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
 
@@ -520,7 +520,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-96 pr-4">
+                <div className="h-96 overflow-y-auto border rounded-md p-2">
                   <div className="space-y-4">
                     {Object.entries(searchResults).length > 0 ? (
                       Object.entries(searchResults).map(([productId, urls]) => {
@@ -539,7 +539,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                               <Button
                                 size="sm"
                                 onClick={() => openGoogleImageSearch(urls[0], product.name)}
-                                className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
+                                className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2"
                               >
                                 <ExternalLink className="h-4 w-4 mr-2" />
                                 Open Search
@@ -559,7 +559,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                       </div>
                     )}
                   </div>
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
           </div>
