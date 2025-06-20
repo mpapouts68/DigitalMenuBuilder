@@ -423,14 +423,32 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   <span className="text-sm font-medium">
                     {selectedProducts.size} products selected
                   </span>
-                  <Button
-                    onClick={searchImagesForProducts}
-                    disabled={selectedProducts.size === 0 || isSearching}
-                    size="sm"
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    {isSearching ? "Searching..." : "Generate Searches"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      onClick={() => setSelectedProducts(new Set())}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Clear All
+                    </Button>
+                    <Button
+                      onClick={searchImagesForProducts}
+                      disabled={selectedProducts.size === 0 || isSearching}
+                      size="sm"
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      {isSearching ? "Searching..." : "Generate Searches"}
+                    </Button>
+                  </div>
                 </div>
 
                 <ScrollArea className="h-80">
@@ -446,15 +464,13 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                         onClick={() => toggleProductSelection(product.id)}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                            selectedProducts.has(product.id)
-                              ? 'bg-blue-500 border-blue-500'
-                              : 'border-gray-300'
-                          }`}>
-                            {selectedProducts.has(product.id) && (
-                              <Check className="w-3 h-3 text-white" />
-                            )}
-                          </div>
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.has(product.id)}
+                            onChange={() => toggleProductSelection(product.id)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
                           <div className="flex-1">
                             <p className="font-medium text-sm">{product.name}</p>
                             {product.description && (
@@ -487,44 +503,45 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
               <CardContent>
                 <ScrollArea className="h-96">
                   <div className="space-y-4">
-                    {Object.entries(searchResults).map(([productId, urls]) => {
-                      const product = filteredProducts.find(p => p.id === parseInt(productId));
-                      if (!product) return null;
+                    {Object.entries(searchResults).length > 0 ? (
+                      Object.entries(searchResults).map(([productId, urls]) => {
+                        const product = filteredProducts.find(p => p.id === parseInt(productId));
+                        if (!product) return null;
 
-                      return (
-                        <div key={productId} className="border rounded-lg p-3 space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-sm">{product.name}</h4>
-                              {product.description && (
+                        return (
+                          <div key={productId} className="border rounded-lg p-4 space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-sm">{product.name}</h4>
                                 <p className="text-xs text-gray-600 mt-1">
-                                  Search: "{product.name} {product.description} food dish restaurant"
+                                  Search query: "{product.name}{product.description ? ` ${product.description}` : ''} food dish restaurant"
                                 </p>
-                              )}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openGoogleImageSearch(urls[0], product.name)}
+                                className="ml-2"
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Open Search
+                              </Button>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openGoogleImageSearch(urls[0], product.name)}
-                            >
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              Open Search
-                            </Button>
+                            <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                              💡 Tip: Right-click images → "Save image as..." → Then use Upload tab to assign them
+                            </div>
                           </div>
-                          <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                            Tip: Right-click images → "Save image as..." → Then use Upload tab
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {Object.keys(searchResults).length === 0 && (
+                        );
+                      })
+                    ) : (
                       <div className="text-center py-8 text-gray-500">
                         <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>No search results yet</p>
                         <p className="text-sm">Select products and click "Generate Searches"</p>
                       </div>
                     )}
+
+
                   </div>
                 </ScrollArea>
               </CardContent>
