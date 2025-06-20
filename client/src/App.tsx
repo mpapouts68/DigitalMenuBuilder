@@ -8,18 +8,10 @@ import Menu from "@/pages/menu";
 import Landing from "@/pages/landing";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
-
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
-        <>
-          <Route path="/" component={Menu} />
-          <Route path="/menu" component={Menu} />
-        </>
-      )}
+      <Route path="/" component={Menu} />
+      <Route path="/menu" component={Menu} />
       <Route>
         <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
           <div className="text-center">
