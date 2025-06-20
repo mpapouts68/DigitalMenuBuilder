@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ImageIcon, Edit } from "lucide-react";
@@ -43,6 +43,9 @@ export function ProductDetailsModal({
               </Button>
             )}
           </div>
+          <DialogDescription>
+            View detailed information about {product.name}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

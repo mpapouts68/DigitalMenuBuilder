@@ -101,10 +101,10 @@ export function AddItemModal({
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
         toast({
           title: "File too large",
-          description: "Please select an image smaller than 5MB.",
+          description: "Please select an image smaller than 2MB.",
           variant: "destructive",
         });
         return;
@@ -249,7 +249,7 @@ export function AddItemModal({
                       <p className="mb-2 text-sm text-slate-500">
                         <span className="font-semibold">Click to upload</span> an image
                       </p>
-                      <p className="text-xs text-slate-400">PNG, JPG up to 5MB</p>
+                      <p className="text-xs text-slate-400">PNG, JPG up to 2MB</p>
                     </div>
                     <input
                       type="file"
