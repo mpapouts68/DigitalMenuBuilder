@@ -20,43 +20,37 @@ export function MenuHeader({ isAdminMode, onAdminModeChange }: MenuHeaderProps) 
     <header className="bg-white shadow-lg sticky top-0 z-50 border-b border-slate-100">
       <div className="max-w-sm mx-auto px-4 py-4 sm:max-w-md sm:px-6">
         {/* Logo Section - Prominent and mobile-optimized */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="text-center">
-            <img 
-              src={logoImage} 
-              alt="Leidseplein Restaurant Logo" 
-              className="h-16 w-auto mx-auto mb-2 sm:h-20"
-            />
-            <h1 className="text-lg font-bold text-slate-900 leading-tight sm:text-xl">
-              Café Restaurant Leiden
-            </h1>
-            <p className="text-sm text-slate-600">Digital Menu</p>
-          </div>
+        <div className="flex items-center justify-center mb-4">
+          <img 
+            src={logoImage} 
+            alt="Leidseplein Restaurant Logo" 
+            className="h-16 w-auto sm:h-20"
+          />
         </div>
 
 
 
-        {/* Controls Section - Optimized for touch */}
-        <div className="flex items-center justify-between">
+        {/* Controls Section - Compact for mobile */}
+        <div className="flex items-center justify-between gap-4">
           <Button
             onClick={() => setShowQRCode(true)}
             variant="outline"
             size="sm"
-            className="flex items-center gap-2 px-4 py-2 rounded-full border-red-200 text-red-700 hover:bg-red-50 active:bg-red-100 transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full border-red-200 text-red-700 hover:bg-red-50"
           >
-            <QrCode className="h-4 w-4" />
-            <span className="text-sm font-medium">Share</span>
+            <QrCode className="h-3 w-3" />
+            <span className="text-xs font-medium">Share</span>
           </Button>
           
-          <div className="flex items-center gap-3">
-            <Label htmlFor="admin-mode" className="text-sm text-slate-600 font-medium">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="admin-mode" className="text-xs text-slate-600 font-medium">
               Admin
             </Label>
             <Switch
               id="admin-mode"
               checked={isAdminMode}
               onCheckedChange={onAdminModeChange}
-              className="data-[state=checked]:bg-red-600"
+              className="data-[state=checked]:bg-red-600 scale-75"
             />
           </div>
         </div>
