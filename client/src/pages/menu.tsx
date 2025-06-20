@@ -64,7 +64,7 @@ export default function Menu() {
 
   // Set page title
   useEffect(() => {
-    document.title = "Bella Vista Café - Digital Menu";
+    document.title = "Café Restaurant Leiden - Digital Menu";
   }, []);
 
   if (categoriesLoading || productsLoading) {
