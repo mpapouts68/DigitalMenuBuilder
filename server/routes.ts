@@ -31,7 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/categories", isAuthenticated, async (req, res) => {
+  app.post("/api/categories", async (req, res) => {
     try {
       const categoryData = insertCategorySchema.parse(req.body);
       const category = await storage.createCategory(categoryData);
@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/categories/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/categories/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const categoryData = insertCategorySchema.partial().parse(req.body);
@@ -64,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/categories/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/categories/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteCategory(id);
@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/products", isAuthenticated, async (req, res) => {
+  app.post("/api/products", async (req, res) => {
     try {
       const productData = insertProductSchema.parse(req.body);
       const product = await storage.createProduct(productData);
@@ -112,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/products/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/products/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const productData = insertProductSchema.partial().parse(req.body);
@@ -131,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/products/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/products/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteProduct(id);
@@ -146,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Import/Export
-  app.post("/api/import", isAuthenticated, async (req, res) => {
+  app.post("/api/import", async (req, res) => {
     try {
       const { categories, products } = req.body;
       
@@ -198,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/banners", isAuthenticated, async (req, res) => {
+  app.post("/api/banners", async (req, res) => {
     try {
       const bannerData = insertBannerSchema.parse(req.body);
       const banner = await storage.createBanner(bannerData);
@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/banners/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/banners/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const bannerData = insertBannerSchema.partial().parse(req.body);
@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/banners/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/banners/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteBanner(id);
