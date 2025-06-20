@@ -10,6 +10,7 @@ import { AddCategoryModal } from "@/components/add-category-modal";
 import { ImportModal } from "@/components/import-modal";
 import { ProductDetailsModal } from "@/components/product-details-modal";
 import { AdminPasscodeModal } from "@/components/admin-passcode-modal";
+import { BulkImageUploadModal } from "@/components/bulk-image-upload-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus } from "lucide-react";
@@ -18,6 +19,8 @@ import type { Category, Product } from "@shared/schema";
 export default function Menu() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showAdminPasscode, setShowAdminPasscode] = useState(false);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [showBulkImageModal, setShowBulkImageModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState<number | "all">("all");
   const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -55,11 +58,16 @@ export default function Menu() {
       setShowAdminPasscode(true);
     } else {
       setIsAdminMode(false);
+      setIsDeleteMode(false);
     }
   };
 
   const handleAdminPasscodeSuccess = () => {
     setIsAdminMode(true);
+  };
+
+  const handleDeleteMode = () => {
+    setIsDeleteMode(!isDeleteMode);
   };
 
   const handleEditItem = (item: Product) => {
@@ -251,6 +259,11 @@ export default function Menu() {
         open={showAdminPasscode}
         onOpenChange={setShowAdminPasscode}
         onSuccess={handleAdminPasscodeSuccess}
+      />
+
+      <BulkImageUploadModal
+        open={showBulkImageModal}
+        onOpenChange={setShowBulkImageModal}
       />
     </div>
   );
