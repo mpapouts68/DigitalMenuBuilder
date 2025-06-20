@@ -32,6 +32,9 @@ interface ImageAssignment {
 export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModalProps) {
   const [images, setImages] = useState<ImageAssignment[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
+  const [searchResults, setSearchResults] = useState<{[productId: number]: string[]}>({});
+  const [isSearching, setIsSearching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -47,6 +50,54 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
   const filteredProducts = selectedCategory
     ? products.filter(p => p.categoryId === selectedCategory)
     : products;
+
+  const generateGoogleImageSearchUrl = (productName: string, productDescription?: string) => {
+    const searchQuery = productDescription 
+      ? `${productName} ${productDescription} food dish restaurant`
+      : `${productName} food dish restaurant`;
+    return `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(searchQuery)}`;
+  };
+
+  const searchImagesForProducts = async () => {
+    setIsSearching(true);
+    const results: {[productId: number]: string[]} = {};
+    
+    selectedProducts.forEach(productId => {
+      const product = filteredProducts.find(p => p.id === productId);
+      if (product) {
+        const searchUrl = generateGoogleImageSearchUrl(product.name, product.description);
+        results[productId] = [searchUrl];
+      }
+    });
+    
+    setSearchResults(results);
+    setIsSearching(false);
+    
+    toast({
+      title: "Search completed",
+      description: `Generated search URLs for ${selectedProducts.size} products`,
+    });
+  };
+
+  const toggleProductSelection = (productId: number) => {
+    setSelectedProducts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
+  const openGoogleImageSearch = (url: string, productName: string) => {
+    window.open(url, '_blank');
+    toast({
+      title: "Search opened",
+      description: `Google Image search for "${productName}" opened in new tab`,
+    });
+  };
 
   const updateProductMutation = useMutation({
     mutationFn: async ({ productId, imageUrl }: { productId: number; imageUrl: string }) => {
@@ -171,14 +222,22 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Bulk Image Upload</DialogTitle>
+          <DialogTitle>Bulk Image Management</DialogTitle>
         </DialogHeader>
+        
+        <Tabs defaultValue="upload" className="h-[75vh]">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upload">Upload Images</TabsTrigger>
+            <TabsTrigger value="search">Google Image Search</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="upload" className="h-full mt-4">
 
-        <div className="space-y-6">
-          {/* Upload Section */}
-          <Card>
+            <div className="space-y-6">
+              {/* Upload Section */}
+              <Card>
             <CardHeader>
               <CardTitle className="text-lg">Upload Images</CardTitle>
             </CardHeader>
@@ -324,10 +383,10 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   <li>Click "Upload All Assigned Images" to apply changes</li>
                 </ol>
               </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
 
         <TabsContent value="search" className="h-full mt-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
