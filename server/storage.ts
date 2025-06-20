@@ -1,4 +1,17 @@
-import { categories, products, banners, type Category, type Product, type Banner, type InsertCategory, type InsertProduct, type InsertBanner } from "@shared/schema";
+import {
+  categories,
+  products,
+  banners,
+  users,
+  type Category,
+  type Product,
+  type Banner,
+  type User,
+  type InsertCategory,
+  type InsertProduct,
+  type InsertBanner,
+  type UpsertUser,
+} from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
