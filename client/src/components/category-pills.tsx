@@ -56,7 +56,11 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
           <Button
             variant={activeCategory === "all" ? "default" : "outline"}
             size="sm"
-            className="rounded-full whitespace-nowrap flex-shrink-0"
+            className={`rounded-full whitespace-nowrap flex-shrink-0 ${
+              activeCategory === "all" 
+                ? "bg-red-600 hover:bg-red-700 text-white" 
+                : "border-red-600 text-red-600 hover:bg-red-50"
+            }`}
             onClick={() => onCategoryChange("all")}
           >
             All Items
@@ -66,7 +70,11 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
               key={category.id}
               variant={activeCategory === category.id ? "default" : "outline"}
               size="sm"
-              className="rounded-full whitespace-nowrap flex-shrink-0"
+              className={`rounded-full whitespace-nowrap flex-shrink-0 ${
+                activeCategory === category.id 
+                  ? "bg-red-600 hover:bg-red-700 text-white" 
+                  : "border-red-600 text-red-600 hover:bg-red-50"
+              }`}
               onClick={() => onCategoryChange(category.id)}
             >
               {category.name}

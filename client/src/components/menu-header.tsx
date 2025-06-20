@@ -26,7 +26,7 @@ export function MenuHeader({ isAdminMode, onAdminModeChange }: MenuHeaderProps) 
               variant="ghost"
               size="icon"
               onClick={generateQRCode}
-              className="text-blue-600 hover:text-blue-800"
+              className="text-red-600 hover:text-red-800"
               title="Generate QR Code"
             >
               <QrCode className="h-4 w-4" />
@@ -35,7 +35,7 @@ export function MenuHeader({ isAdminMode, onAdminModeChange }: MenuHeaderProps) 
               <Switch
                 checked={isAdminMode}
                 onCheckedChange={onAdminModeChange}
-                className="data-[state=checked]:bg-amber-600"
+                className="data-[state=checked]:bg-red-600"
               />
               <span className="text-xs text-slate-600">Admin</span>
             </div>
