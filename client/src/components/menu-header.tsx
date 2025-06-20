@@ -2,6 +2,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "lucide-react";
 import { generateQRCode } from "@/lib/qr-code";
+import logoImage from "@assets/Screenshot 2025-06-20 101253_1750403621548.png";
 
 interface MenuHeaderProps {
   isAdminMode: boolean;
@@ -13,9 +14,12 @@ export function MenuHeader({ isAdminMode, onAdminModeChange }: MenuHeaderProps) 
     <header className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-md mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">Café Restaurant Leiden</h1>
-            <p className="text-sm text-slate-500">Nederlandse & Internationale Keuken</p>
+          <div className="flex-1">
+            <img 
+              src={logoImage} 
+              alt="Leidseplein Restaurant Logo" 
+              className="h-12 w-auto object-contain"
+            />
           </div>
           <div className="flex items-center space-x-2">
             <Button
