@@ -50,6 +50,18 @@ export default function Menu() {
     return acc;
   }, {} as Record<number, Product[]>);
 
+  const handleAdminModeChange = (checked: boolean) => {
+    if (checked) {
+      setShowAdminPasscode(true);
+    } else {
+      setIsAdminMode(false);
+    }
+  };
+
+  const handleAdminPasscodeSuccess = () => {
+    setIsAdminMode(true);
+  };
+
   const handleEditItem = (item: Product) => {
     setEditingItem(item);
     setShowAddItemModal(true);
@@ -102,7 +114,7 @@ export default function Menu() {
     <div className="min-h-screen bg-slate-50 font-inter">
       <MenuHeader 
         isAdminMode={isAdminMode} 
-        onAdminModeChange={setIsAdminMode}
+        onAdminModeChange={handleAdminModeChange}
       />
 
       <AdvertisementBanner className="max-w-md mx-auto my-4 h-20" isAdminMode={isAdminMode} />
@@ -233,6 +245,12 @@ export default function Menu() {
         category={categories.find(c => c.id === viewingProduct?.categoryId)}
         isAdminMode={isAdminMode}
         onEdit={() => handleEditItem(viewingProduct!)}
+      />
+
+      <AdminPasscodeModal
+        open={showAdminPasscode}
+        onOpenChange={setShowAdminPasscode}
+        onSuccess={handleAdminPasscodeSuccess}
       />
     </div>
   );
