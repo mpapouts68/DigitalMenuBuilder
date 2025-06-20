@@ -3,13 +3,23 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
 import Menu from "@/pages/menu";
+import Landing from "@/pages/landing";
 
 function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   return (
     <Switch>
-      <Route path="/" component={Menu} />
-      <Route path="/menu" component={Menu} />
+      {isLoading || !isAuthenticated ? (
+        <Route path="/" component={Landing} />
+      ) : (
+        <>
+          <Route path="/" component={Menu} />
+          <Route path="/menu" component={Menu} />
+        </>
+      )}
       <Route>
         <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
           <div className="text-center">
