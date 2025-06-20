@@ -8,6 +8,7 @@ import { AdvertisementBanner } from "@/components/advertisement-banner";
 import { AddItemModal } from "@/components/add-item-modal";
 import { AddCategoryModal } from "@/components/add-category-modal";
 import { ImportModal } from "@/components/import-modal";
+import { ProductDetailsModal } from "@/components/product-details-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus } from "lucide-react";
@@ -20,7 +21,9 @@ export default function Menu() {
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showProductDetails, setShowProductDetails] = useState(false);
   const [editingItem, setEditingItem] = useState<Product | null>(null);
+  const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [selectedCategoryForNewItem, setSelectedCategoryForNewItem] = useState<number | null>(null);
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
@@ -48,6 +51,11 @@ export default function Menu() {
   const handleEditItem = (item: Product) => {
     setEditingItem(item);
     setShowAddItemModal(true);
+  };
+
+  const handleViewProduct = (item: Product) => {
+    setViewingProduct(item);
+    setShowProductDetails(true);
   };
 
   const handleAddItemToCategory = (categoryId: number) => {
@@ -154,6 +162,7 @@ export default function Menu() {
                   products={categoryProducts}
                   isAdminMode={isAdminMode}
                   onEditItem={handleEditItem}
+                  onViewProduct={handleViewProduct}
                   onAddItem={() => handleAddItemToCategory(category.id)}
                 />
               );
@@ -206,6 +215,15 @@ export default function Menu() {
       <ImportModal
         open={showImportModal}
         onOpenChange={setShowImportModal}
+      />
+
+      <ProductDetailsModal
+        open={showProductDetails}
+        onOpenChange={setShowProductDetails}
+        product={viewingProduct}
+        category={categories.find(c => c.id === viewingProduct?.categoryId)}
+        isAdminMode={isAdminMode}
+        onEdit={() => handleEditItem(viewingProduct!)}
       />
     </div>
   );

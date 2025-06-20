@@ -13,6 +13,8 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   description: text("description").notNull(),
+  details: text("details"),
+  imageUrl: text("image_url"),
   categoryId: integer("category_id").notNull(),
 });
 
@@ -22,6 +24,9 @@ export const insertCategorySchema = createInsertSchema(categories).omit({
 
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
+}).extend({
+  details: z.string().optional(),
+  imageUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export type InsertCategory = z.infer<typeof insertCategorySchema>;

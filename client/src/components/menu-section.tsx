@@ -11,6 +11,7 @@ interface MenuSectionProps {
   products: Product[];
   isAdminMode: boolean;
   onEditItem: (item: Product) => void;
+  onViewProduct: (item: Product) => void;
   onAddItem: () => void;
 }
 
@@ -18,7 +19,8 @@ export function MenuSection({
   category, 
   products, 
   isAdminMode, 
-  onEditItem, 
+  onEditItem,
+  onViewProduct, 
   onAddItem 
 }: MenuSectionProps) {
   const queryClient = useQueryClient();

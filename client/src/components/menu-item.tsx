@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, ImageIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -9,9 +9,10 @@ interface MenuItemProps {
   product: Product;
   isAdminMode: boolean;
   onEdit: () => void;
+  onViewDetails: () => void;
 }
 
-export function MenuItem({ product, isAdminMode, onEdit }: MenuItemProps) {
+export function MenuItem({ product, isAdminMode, onEdit, onViewDetails }: MenuItemProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -42,14 +43,20 @@ export function MenuItem({ product, isAdminMode, onEdit }: MenuItemProps) {
   };
 
   return (
-    <div className="menu-item bg-white rounded-lg p-4 shadow-sm border border-slate-200 relative hover:shadow-md transition-all duration-200">
+    <div 
+      className="menu-item bg-white rounded-lg p-4 shadow-sm border border-slate-200 relative hover:shadow-md transition-all duration-200 cursor-pointer"
+      onClick={onViewDetails}
+    >
       {isAdminMode && (
-        <div className="absolute top-2 right-2 flex space-x-1">
+        <div className="absolute top-2 right-2 flex space-x-1 z-10">
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-blue-600 hover:text-blue-800"
-            onClick={onEdit}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
           >
             <Edit className="h-3 w-3" />
           </Button>
@@ -57,21 +64,41 @@ export function MenuItem({ product, isAdminMode, onEdit }: MenuItemProps) {
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-red-600 hover:text-red-800"
-            onClick={handleDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete();
+            }}
             disabled={deleteProductMutation.isPending}
           >
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
       )}
-      <div className={`flex justify-between items-start ${isAdminMode ? 'pr-12' : ''}`}>
-        <div className="flex-1">
-          <h3 className="font-medium text-slate-800">{product.name}</h3>
-          <p className="text-sm text-slate-600 mt-1">{product.description}</p>
+      
+      <div className="flex gap-3">
+        {/* Thumbnail */}
+        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center">
+          {product.imageUrl ? (
+            <img 
+              src={product.imageUrl} 
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <ImageIcon className="h-6 w-6 text-slate-400" />
+          )}
         </div>
-        <span className="text-lg font-semibold text-blue-600 ml-4">
-          ${parseFloat(product.price).toFixed(2)}
-        </span>
+        
+        {/* Content */}
+        <div className={`flex-1 flex justify-between items-start ${isAdminMode ? 'pr-12' : ''}`}>
+          <div className="flex-1">
+            <h3 className="font-medium text-slate-800">{product.name}</h3>
+            <p className="text-sm text-slate-600 mt-1 line-clamp-2">{product.description}</p>
+          </div>
+          <span className="text-lg font-semibold text-blue-600 ml-4">
+            €{parseFloat(product.price).toFixed(2)}
+          </span>
+        </div>
       </div>
     </div>
   );
