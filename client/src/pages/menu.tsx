@@ -47,6 +47,17 @@ export default function Menu() {
     return matchesSearch && matchesCategory;
   });
 
+  // Filter categories based on active selection and search
+  const filteredCategories = categories.filter(category => {
+    if (activeCategory === "all") {
+      // Show all categories that have matching products or in admin mode
+      const categoryProducts = filteredProducts.filter(product => product.categoryId === category.id);
+      return categoryProducts.length > 0 || isAdminMode;
+    }
+    // Show only the selected category
+    return category.id === activeCategory;
+  });
+
   // Group filtered products by category
   const groupedProducts = categories.reduce((acc, category) => {
     acc[category.id] = filteredProducts.filter(product => product.categoryId === category.id);
