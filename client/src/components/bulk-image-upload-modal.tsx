@@ -241,13 +241,13 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
           <DialogTitle>Bulk Image Management</DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="upload" className="h-[75vh]">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="upload" className="flex flex-col h-[75vh]">
+          <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
             <TabsTrigger value="upload">Upload Images</TabsTrigger>
             <TabsTrigger value="search">Google Image Search</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="upload" className="h-full mt-4">
+          <TabsContent value="upload" className="flex-1 mt-4 overflow-hidden">
 
             <div className="space-y-6">
               {/* Upload Section */}
@@ -402,17 +402,17 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
         </div>
       </TabsContent>
 
-        <TabsContent value="search" className="h-full mt-4">
+        <TabsContent value="search" className="flex-1 mt-4 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
             {/* Product Selection */}
-            <Card>
-              <CardHeader>
+            <Card className="flex flex-col h-full">
+              <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <Search className="h-5 w-5" />
                   Select Products for Image Search
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 flex-1 flex flex-col min-h-0">
                 <div>
                   <Label>Filter by Category</Label>
                   <Select
@@ -465,7 +465,7 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                   </div>
                 </div>
 
-                <div className="h-80 overflow-y-auto border rounded-md p-2">
+                <div className="flex-1 overflow-y-auto border-2 border-blue-200 rounded-md p-3 bg-white min-h-0">
                   <div className="space-y-2">
                     {filteredProducts.map(product => (
                       <div 
@@ -517,18 +517,18 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
             </Card>
 
             {/* Search Results */}
-            <Card>
-              <CardHeader>
+            <Card className="flex flex-col h-full">
+              <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <ExternalLink className="h-5 w-5" />
                   Google Image Search Results
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-96 overflow-y-auto border-2 border-gray-300 rounded-md p-4 bg-gray-50">
+              <CardContent className="flex-1 min-h-0">
+                <div className="h-full overflow-y-auto border-4 border-yellow-500 rounded-md p-4 bg-yellow-100">
                   <div className="space-y-4">
-                    <div className="text-xs text-gray-500 mb-2">
-                      Debug: Found {Object.entries(searchResults).length} search results
+                    <div className="bg-purple-500 text-white p-3 rounded font-bold text-center">
+                      SEARCH RESULTS AREA - Found {Object.entries(searchResults).length} results
                     </div>
                     {Object.entries(searchResults).length > 0 ? (
                       Object.entries(searchResults).map(([productId, urls]) => {
@@ -540,9 +540,9 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                         }
 
                         return (
-                          <div key={productId} className="border-2 border-blue-300 rounded-lg p-6 space-y-4 bg-white shadow-lg mb-4">
-                            <div className="bg-green-100 p-2 rounded text-xs">
-                              Debug: Rendering product {productId} - {product.name}
+                          <div key={productId} className="border-4 border-orange-500 rounded-lg p-6 space-y-4 bg-orange-100 shadow-lg mb-4">
+                            <div className="bg-black text-white p-3 rounded text-lg font-bold text-center">
+                              PRODUCT: {product.name}
                             </div>
                             <div className="flex flex-col gap-4">
                               <div className="flex-1">
@@ -553,11 +553,14 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                               </div>
                               <div className="w-full">
                                 <button
-                                  onClick={() => openGoogleImageSearch(urls[0], product.name)}
-                                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-lg text-lg border-2 border-red-800"
-                                  style={{minHeight: '60px'}}
+                                  onClick={() => {
+                                    console.log('BUTTON CLICKED for', product.name);
+                                    openGoogleImageSearch(urls[0], product.name);
+                                  }}
+                                  className="w-full bg-red-600 hover:bg-red-700 text-yellow-300 font-black py-8 px-8 rounded-xl text-3xl border-8 border-black shadow-2xl animate-pulse"
+                                  style={{minHeight: '120px', fontSize: '24px'}}
                                 >
-                                  🔍 OPEN GOOGLE SEARCH FOR {product.name.toUpperCase()}
+                                  ⚡ MASSIVE GOOGLE SEARCH BUTTON ⚡
                                 </button>
                               </div>
                             </div>
