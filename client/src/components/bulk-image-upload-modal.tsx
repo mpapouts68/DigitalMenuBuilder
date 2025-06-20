@@ -71,25 +71,20 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
     setIsSearching(true);
     const results: {[productId: number]: string[]} = {};
     
-    console.log("Selected products:", selectedProducts);
-    console.log("Available products:", products);
-    
     selectedProducts.forEach(productId => {
       const product = products.find(p => p.id === productId);
       if (product) {
         const searchUrl = generateGoogleImageSearchUrl(product.name, product.description);
         results[productId] = [searchUrl];
-        console.log(`Generated search for ${product.name}:`, searchUrl);
       }
     });
     
-    console.log("Final search results:", results);
     setSearchResults(results);
     setIsSearching(false);
     
     toast({
-      title: "Search URLs generated",
-      description: `Created ${Object.keys(results).length} Google Image searches. Look for blue "Open Google Search" buttons below.`,
+      title: "Search ready",
+      description: `Generated ${Object.keys(results).length} Google Image searches. Click "Open Google Search" buttons to view results.`,
     });
   };
 
@@ -525,62 +520,42 @@ export function BulkImageUploadModal({ open, onOpenChange }: BulkImageUploadModa
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 min-h-0">
-                <div className="overflow-y-scroll border-4 border-yellow-500 rounded-md p-4 bg-yellow-100" style={{height: '600px'}}>
-                  <div className="space-y-4">
-                    <div className="bg-purple-500 text-white p-3 rounded font-bold text-center">
-                      SEARCH RESULTS AREA - Found {Object.entries(searchResults).length} results
-                    </div>
-                    {Object.entries(searchResults).length > 0 ? (
-                      Object.entries(searchResults).map(([productId, urls]) => {
+                <div className="h-full max-h-[600px] overflow-y-auto border border-gray-200 rounded-lg p-4">
+                  {Object.entries(searchResults).length > 0 ? (
+                    <div className="space-y-4">
+                      {Object.entries(searchResults).map(([productId, urls]) => {
                         const product = products.find(p => p.id === parseInt(productId));
-                        console.log('Rendering product:', productId, product);
-                        if (!product) {
-                          console.log('Product not found for ID:', productId);
-                          return null;
-                        }
+                        if (!product) return null;
 
                         return (
-                          <div key={productId} className="border-4 border-orange-500 rounded-lg p-6 space-y-4 bg-orange-100 shadow-lg mb-4">
-                            <div className="bg-black text-white p-3 rounded text-lg font-bold text-center">
-                              PRODUCT: {product.name}
+                          <div key={productId} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="font-semibold text-lg">{product.name}</h3>
+                              <button
+                                onClick={() => openGoogleImageSearch(urls[0], product.name)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2 inline" />
+                                Open Google Search
+                              </button>
                             </div>
-                            <div className="flex flex-col gap-4">
-                              <div className="flex-1">
-                                <h4 className="font-bold text-lg text-gray-900 mb-3">{product.name}</h4>
-                                <p className="text-sm text-gray-600 break-words mb-4">
-                                  Search: "{product.name}{product.description ? ` ${product.description}` : ''} food dish restaurant"
-                                </p>
-                              </div>
-                              <div className="w-full">
-                                <button
-                                  onClick={() => {
-                                    console.log('BUTTON CLICKED for', product.name);
-                                    openGoogleImageSearch(urls[0], product.name);
-                                  }}
-                                  className="w-full bg-red-600 hover:bg-red-700 text-yellow-300 font-black py-8 px-8 rounded-xl text-3xl border-8 border-black shadow-2xl animate-pulse"
-                                  style={{minHeight: '120px', fontSize: '24px'}}
-                                >
-                                  ⚡ MASSIVE GOOGLE SEARCH BUTTON ⚡
-                                </button>
-                              </div>
-                            </div>
-                            <div className="text-sm text-blue-800 bg-blue-100 p-4 rounded-lg border-2 border-blue-300">
-                              <strong>INSTRUCTIONS:</strong> Click the red button above to open Google Images. Right-click any image → "Save image as..." → Then use the Upload tab to assign images.
+                            <p className="text-sm text-gray-600 mb-3">
+                              Search: "{product.name}{product.description ? ` ${product.description}` : ''} food dish restaurant"
+                            </p>
+                            <div className="text-sm text-blue-700 bg-blue-50 p-3 rounded border-l-4 border-blue-200">
+                              <strong>Instructions:</strong> Click "Open Google Search" above → Right-click images → "Save image as..." → Use Upload tab to assign to products
                             </div>
                           </div>
                         );
-                      })
-                    ) : (
-                      <div className="text-center py-12 text-gray-500">
-                        <Search className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                        <p className="font-medium">No search results yet</p>
-                        <p className="text-sm mt-1">Select products and click "Generate Searches" to create Google Image searches</p>
-                        <div className="mt-4 text-xs text-gray-400">
-                          Debug: {Object.keys(searchResults).length} results in state
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                      <Search className="h-12 w-12 mb-4 opacity-50" />
+                      <p className="font-medium mb-2">No search results yet</p>
+                      <p className="text-sm">Select products and click "Generate Searches"</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
