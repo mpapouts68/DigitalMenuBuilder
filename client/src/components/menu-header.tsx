@@ -34,13 +34,7 @@ export function MenuHeader({ isAdminMode, onAdminModeChange }: MenuHeaderProps) 
           </div>
         </div>
 
-        {/* Banner Section */}
-        <div className="mb-4">
-          <AdvertisementBanner 
-            type="promotional"
-            isAdminMode={isAdminMode}
-          />
-        </div>
+
 
         {/* Controls Section - Optimized for touch */}
         <div className="flex items-center justify-between">
