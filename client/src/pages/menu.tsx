@@ -11,7 +11,6 @@ import { ImportModal } from "@/components/import-modal";
 import { ProductDetailsModal } from "@/components/product-details-modal";
 import { AdminPasscodeModal } from "@/components/admin-passcode-modal";
 import { BulkImageUploadModal } from "@/components/bulk-image-upload-modal";
-import { AdvertisementBanner } from "@/components/advertisement-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -231,7 +230,7 @@ export default function Menu() {
               <Switch
                 id="admin-mode"
                 checked={isAdminMode}
-                onCheckedChange={onAdminModeChange}
+                onCheckedChange={handleAdminModeChange}
                 className="data-[state=checked]:bg-red-600 scale-75"
               />
             </div>
