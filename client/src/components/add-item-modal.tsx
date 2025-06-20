@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -93,7 +94,7 @@ export function AddItemModal({
   };
 
   // Reset form when modal opens/closes or editing item changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       form.reset({
         name: editingItem?.name || "",
