@@ -20,17 +20,23 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
       setCanScrollLeft(scrollLeft > 0);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
     }
   };
 
   useEffect(() => {
-    checkScrollability();
+    const timeoutId = setTimeout(checkScrollability, 100);
     const scrollElement = scrollRef.current;
     if (scrollElement) {
       scrollElement.addEventListener('scroll', checkScrollability);
-      return () => scrollElement.removeEventListener('scroll', checkScrollability);
+      window.addEventListener('resize', checkScrollability);
+      return () => {
+        clearTimeout(timeoutId);
+        scrollElement.removeEventListener('scroll', checkScrollability);
+        window.removeEventListener('resize', checkScrollability);
+      };
     }
+    return () => clearTimeout(timeoutId);
   }, [categories]);
 
   const scrollLeft = () => {

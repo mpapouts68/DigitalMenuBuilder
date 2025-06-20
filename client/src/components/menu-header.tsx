@@ -1,20 +1,8 @@
-import { useState } from "react";
-import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { QrCode } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
-import { AdvertisementBanner } from "./advertisement-banner";
 import logoImage from "@assets/Screenshot 2025-06-20 101253_1750403621548.png";
 
-interface MenuHeaderProps {
-  isAdminMode: boolean;
-  onAdminModeChange: (checked: boolean) => void;
-}
+interface MenuHeaderProps {}
 
-export function MenuHeader({ isAdminMode, onAdminModeChange }: MenuHeaderProps) {
-  const [showQRCode, setShowQRCode] = useState(false);
+export function MenuHeader({}: MenuHeaderProps) {
 
   return (
     <header className="bg-white shadow-lg sticky top-0 z-50 border-b border-slate-100">
@@ -30,54 +18,10 @@ export function MenuHeader({ isAdminMode, onAdminModeChange }: MenuHeaderProps) 
 
 
 
-        {/* Controls Section - Compact for mobile */}
-        <div className="flex items-center justify-between gap-4">
-          <Button
-            onClick={() => setShowQRCode(true)}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full border-red-200 text-red-700 hover:bg-red-50"
-          >
-            <QrCode className="h-3 w-3" />
-            <span className="text-xs font-medium">Share</span>
-          </Button>
-          
-          <div className="flex items-center gap-2">
-            <Label htmlFor="admin-mode" className="text-xs text-slate-600 font-medium">
-              Admin
-            </Label>
-            <Switch
-              id="admin-mode"
-              checked={isAdminMode}
-              onCheckedChange={onAdminModeChange}
-              className="data-[state=checked]:bg-red-600 scale-75"
-            />
-          </div>
-        </div>
+
       </div>
 
-      {/* QR Code Modal */}
-      <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
-        <DialogContent className="sm:max-w-md mx-4">
-          <DialogHeader>
-            <DialogTitle className="text-center">Share Menu</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center p-6">
-            <QRCodeSVG
-              value={window.location.href}
-              size={200}
-              bgColor={"#ffffff"}
-              fgColor={"#000000"}
-              level={"L"}
-              includeMargin={false}
-              className="rounded-lg shadow-sm"
-            />
-            <p className="text-center text-sm text-slate-600 mt-4">
-              Scan to access this menu on your device
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+
     </header>
   );
 }

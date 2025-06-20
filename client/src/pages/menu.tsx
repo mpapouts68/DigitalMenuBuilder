@@ -11,9 +11,14 @@ import { ImportModal } from "@/components/import-modal";
 import { ProductDetailsModal } from "@/components/product-details-modal";
 import { AdminPasscodeModal } from "@/components/admin-passcode-modal";
 import { BulkImageUploadModal } from "@/components/bulk-image-upload-modal";
+import { AdvertisementBanner } from "@/components/advertisement-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, Plus, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import type { Category, Product } from "@shared/schema";
 
 export default function Menu() {
@@ -30,6 +35,7 @@ export default function Menu() {
   const [editingItem, setEditingItem] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [selectedCategoryForNewItem, setSelectedCategoryForNewItem] = useState<number | null>(null);
+  const [showQRCode, setShowQRCode] = useState(false);
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
@@ -131,10 +137,7 @@ export default function Menu() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <MenuHeader 
-        isAdminMode={isAdminMode} 
-        onAdminModeChange={handleAdminModeChange}
-      />
+      <MenuHeader />
 
       {isAdminMode && (
         <div className="max-w-sm mx-auto px-4 mb-6 sm:max-w-md sm:px-6">
@@ -197,6 +200,67 @@ export default function Menu() {
           )}
         </div>
       </div>
+
+      {/* Footer with Controls and Advertisement */}
+      <footer className="bg-white border-t border-slate-200 sticky bottom-0 z-40">
+        <div className="max-w-sm mx-auto px-4 py-3 sm:max-w-md sm:px-6">
+          {/* Advertisement Banner */}
+          <div className="mb-3">
+            <AdvertisementBanner 
+              type="promotional"
+              isAdminMode={isAdminMode}
+            />
+          </div>
+          
+          {/* Controls Section */}
+          <div className="flex items-center justify-between">
+            <Button
+              onClick={() => setShowQRCode(true)}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full border-red-200 text-red-700 hover:bg-red-50"
+            >
+              <QrCode className="h-3 w-3" />
+              <span className="text-xs font-medium">Share</span>
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <Label htmlFor="admin-mode" className="text-xs text-slate-600 font-medium">
+                Admin
+              </Label>
+              <Switch
+                id="admin-mode"
+                checked={isAdminMode}
+                onCheckedChange={onAdminModeChange}
+                className="data-[state=checked]:bg-red-600 scale-75"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* QR Code Modal */}
+        <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
+          <DialogContent className="sm:max-w-md mx-4">
+            <DialogHeader>
+              <DialogTitle className="text-center">Share Menu</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center p-6">
+              <QRCodeSVG
+                value={window.location.href}
+                size={200}
+                bgColor={"#ffffff"}
+                fgColor={"#000000"}
+                level={"L"}
+                includeMargin={false}
+                className="rounded-lg shadow-sm"
+              />
+              <p className="text-center text-sm text-slate-600 mt-4">
+                Scan to access this menu on your device
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </footer>
 
       {/* Floating Add Button (Admin Mode) */}
       {isAdminMode && (
