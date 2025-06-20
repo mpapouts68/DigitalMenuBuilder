@@ -56,44 +56,51 @@ export function AdminControls({ onAddCategory, onImportData }: AdminControlsProp
   });
 
   return (
-    <div className="max-w-md mx-auto px-4 mb-4">
-      <Card className="bg-amber-50 border-amber-200">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-amber-800 text-base">Admin Controls</CardTitle>
+    <div className="mb-6">
+      <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-amber-800 text-lg font-bold flex items-center">
+            <span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
+            Admin Controls
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <Button
-            onClick={onAddCategory}
-            className="w-full bg-amber-600 hover:bg-amber-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Category
-          </Button>
-          <Button
-            onClick={() => setShowBulkImageUpload(true)}
-            variant="outline"
-            className="w-full"
-          >
-            <Images className="h-4 w-4 mr-2" />
-            Bulk Image Upload
-          </Button>
-          <Button
-            onClick={onImportData}
-            variant="outline"
-            className="w-full"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Import CSV Data
-          </Button>
-          <Button
-            onClick={() => exportDataMutation.mutate()}
-            variant="outline"
-            className="w-full"
-            disabled={exportDataMutation.isPending}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export Data
-          </Button>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              onClick={onAddCategory}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Category
+            </Button>
+            <Button
+              onClick={() => setShowBulkImageUpload(true)}
+              variant="outline"
+              className="border-amber-300 text-amber-700 hover:bg-amber-50 font-semibold py-3 rounded-xl"
+            >
+              <Images className="h-4 w-4 mr-2" />
+              Bulk Images
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              onClick={onImportData}
+              variant="outline"
+              className="border-amber-300 text-amber-700 hover:bg-amber-50 font-semibold py-3 rounded-xl"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import CSV
+            </Button>
+            <Button
+              onClick={() => exportDataMutation.mutate()}
+              variant="outline"
+              className="border-amber-300 text-amber-700 hover:bg-amber-50 font-semibold py-3 rounded-xl"
+              disabled={exportDataMutation.isPending}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Data
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
