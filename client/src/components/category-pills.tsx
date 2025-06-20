@@ -10,78 +10,31 @@ interface CategoryPillsProps {
 }
 
 export function CategoryPills({ categories, activeCategory, onCategoryChange }: CategoryPillsProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scrollLeft = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-    }
-  };
-
   return (
-    <div className="relative w-full">
-      {/* Left scroll button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 bg-white/80 hover:bg-white shadow-sm"
-        onClick={scrollLeft}
+    <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+      <button
+        onClick={() => onCategoryChange("all")}
+        className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
+          activeCategory === "all"
+            ? "bg-red-600 text-white shadow-red-200 transform scale-105"
+            : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
+        }`}
       >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-
-      {/* Right scroll button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 p-0 bg-white/80 hover:bg-white shadow-sm"
-        onClick={scrollRight}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-
-      {/* Scrollable categories */}
-      <div 
-        ref={scrollRef}
-        className="w-full overflow-x-auto px-8 scrollbar-hide"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        <div className="flex space-x-2 mt-3 pb-2 px-1 min-w-max">
-          <Button
-            variant={activeCategory === "all" ? "default" : "outline"}
-            size="sm"
-            className={`rounded-full whitespace-nowrap flex-shrink-0 ${
-              activeCategory === "all" 
-                ? "bg-red-600 hover:bg-red-700 text-white" 
-                : "border-red-600 text-red-600 hover:bg-red-50"
-            }`}
-            onClick={() => onCategoryChange("all")}
-          >
-            All Items
-          </Button>
-          {categories.map(category => (
-            <Button
-              key={category.id}
-              variant={activeCategory === category.id ? "default" : "outline"}
-              size="sm"
-              className={`rounded-full whitespace-nowrap flex-shrink-0 ${
-                activeCategory === category.id 
-                  ? "bg-red-600 hover:bg-red-700 text-white" 
-                  : "border-red-600 text-red-600 hover:bg-red-50"
-              }`}
-              onClick={() => onCategoryChange(category.id)}
-            >
-              {category.name}
-            </Button>
-          ))}
-        </div>
-      </div>
+        All Items
+      </button>
+      {categories.map((category) => (
+        <button
+          key={category.id}
+          onClick={() => onCategoryChange(category.id)}
+          className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
+            activeCategory === category.id
+              ? "bg-red-600 text-white shadow-red-200 transform scale-105"
+              : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
+          }`}
+        >
+          {category.name}
+        </button>
+      ))}
     </div>
   );
 }

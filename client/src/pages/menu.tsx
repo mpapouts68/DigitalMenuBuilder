@@ -119,95 +119,73 @@ export default function Menu() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-inter">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <MenuHeader 
         isAdminMode={isAdminMode} 
         onAdminModeChange={handleAdminModeChange}
       />
 
-      <AdvertisementBanner className="max-w-md mx-auto my-4 h-20" isAdminMode={isAdminMode} />
-
-      {/* Search and Filter */}
-      <div className="max-w-md mx-auto px-4 mb-4">
-        <div className="relative">
-          <Input
-            type="text"
-            placeholder="Search menu items..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-12"
-          />
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-        </div>
-        
-        <CategoryPills
-          categories={categories}
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-        />
-      </div>
-
       {isAdminMode && (
-        <AdminControls
-          onAddCategory={() => setShowAddCategoryModal(true)}
-          onImportData={() => setShowImportModal(true)}
-        />
+        <div className="max-w-sm mx-auto px-4 mb-6 sm:max-w-md sm:px-6">
+          <AdminControls 
+            onAddCategory={() => setShowAddCategoryModal(true)}
+            onImportData={() => setShowImportModal(true)}
+            onBulkImageUpload={() => setShowBulkImageModal(true)}
+            onDeleteMode={handleDeleteMode}
+            isDeleteMode={isDeleteMode}
+          />
+        </div>
       )}
 
-      {/* Menu Content */}
-      <main className="max-w-md mx-auto px-4 pb-8">
-        {categories.length === 0 ? (
-          <div className="text-center py-12 text-slate-500">
-            <div className="text-3xl mb-4">🍽️</div>
-            <p className="text-lg">No menu categories found</p>
-            {isAdminMode && (
-              <Button 
-                onClick={() => setShowAddCategoryModal(true)}
-                className="mt-4"
-              >
-                Add First Category
-              </Button>
-            )}
+      <div className="max-w-sm mx-auto px-4 pb-8 sm:max-w-md sm:px-6">
+        {/* Search Section */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
+            <Input
+              type="text"
+              placeholder="Search menu items..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-12 pr-4 py-3 bg-white border-slate-200 focus:border-red-300 focus:ring-red-200 rounded-xl shadow-sm text-base"
+            />
           </div>
-        ) : (
-          <div className="space-y-8">
-            {categories
-              .filter(category => {
-                // When "All Items" is selected, show all categories that have products
-                if (activeCategory === "all") {
-                  const categoryProducts = groupedProducts[category.id] || [];
-                  return categoryProducts.length > 0 || isAdminMode;
-                }
-                // When a specific category is selected, only show that category
-                return category.id === activeCategory;
-              })
-              .map(category => {
-                const categoryProducts = groupedProducts[category.id] || [];
+        </div>
 
-                return (
-                  <MenuSection
-                    key={category.id}
-                    category={category}
-                    products={categoryProducts}
-                    isAdminMode={isAdminMode}
-                    onEditItem={handleEditItem}
-                    onViewProduct={handleViewProduct}
-                    onAddItem={() => handleAddItemToCategory(category.id)}
-                  />
-                );
-              })}
-          </div>
-        )}
+        {/* Category Pills */}
+        <div className="mb-6">
+          <CategoryPills
+            categories={categories}
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+          />
+        </div>
 
-        {/* No results message */}
-        {categories.length > 0 && filteredProducts.length === 0 && (
-          <div className="text-center py-12 text-slate-500">
-            <Search className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-            <p className="text-lg">No items found</p>
-            <p className="text-sm">Try adjusting your search or filter</p>
-          </div>
-        )}
-      </main>
+        {/* Menu Content */}
+        <div className="space-y-8">
+          {filteredCategories.map(category => (
+            <MenuSection
+              key={category.id}
+              category={category}
+              products={groupedProducts[category.id] || []}
+              isAdminMode={isAdminMode}
+              isDeleteMode={isDeleteMode}
+              onEditItem={handleEditItem}
+              onViewProduct={handleViewProduct}
+              onAddItem={() => handleAddItemToCategory(category.id)}
+            />
+          ))}
+          
+          {filteredCategories.length === 0 && (
+            <div className="text-center py-12">
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <p className="text-slate-500 text-lg">No menu items found</p>
+                <p className="text-slate-400 text-sm mt-1">Try adjusting your search or category filter</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       <AdvertisementBanner className="max-w-md mx-auto my-6 h-16" type="promotional" isAdminMode={isAdminMode} />
 
