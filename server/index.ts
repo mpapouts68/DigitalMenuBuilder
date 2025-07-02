@@ -46,6 +46,15 @@ async function startServer() {
     await initializeDatabase();
     log("Database initialized successfully");
     
+    // Health check endpoint for deployment validation (register early)
+    app.get('/health', (_req, res) => {
+      res.status(200).json({ 
+        status: 'healthy', 
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || "development"
+      });
+    });
+
     // Register routes and get server instance
     const server = await registerRoutes(app);
     log("Routes registered successfully");
@@ -84,16 +93,6 @@ async function startServer() {
       reusePort: true,
     }, () => {
       log(`Server running on ${host}:${port} in ${process.env.NODE_ENV || "development"} mode`);
-    });
-
-    // Health check endpoint for deployment validation
-    app.get('/health', (_req, res) => {
-      res.status(200).json({ 
-        status: 'healthy', 
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || "development",
-        port: port
-      });
     });
 
     // Graceful shutdown handling for production
