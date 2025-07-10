@@ -8,6 +8,7 @@ import { OrderPage } from "@/pages/order";
 import { StatsPage } from "@/pages/stats";
 import { NotFoundPage } from "@/pages/not-found";
 import { ProtectedRoute } from "@/components/protected-route";
+import { MegaTest } from "@/components/mega-test";
 import "./App.css";
 
 const queryClient = new QueryClient({
@@ -23,6 +24,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <MegaTest />
         <Router>
           <div className="min-h-screen bg-gray-50">
             <Switch>
