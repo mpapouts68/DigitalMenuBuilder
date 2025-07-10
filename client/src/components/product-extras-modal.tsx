@@ -45,6 +45,29 @@ const PREFIXES: PrefixOption[] = [
   { id: 'only', label: 'Only', selected: false },
 ];
 
+const getPrefixColors = (prefixId: string, selected: boolean) => {
+  const colors = {
+    extra: selected 
+      ? "bg-purple-900/30 border-purple-500 ring-2 ring-purple-400/50 text-purple-200" 
+      : "bg-purple-900/10 border-purple-600 text-purple-300 hover:bg-purple-900/20",
+    without: selected 
+      ? "bg-red-900/30 border-red-500 ring-2 ring-red-400/50 text-red-200" 
+      : "bg-red-900/10 border-red-600 text-red-300 hover:bg-red-900/20",
+    alot: selected 
+      ? "bg-green-900/30 border-green-500 ring-2 ring-green-400/50 text-green-200" 
+      : "bg-green-900/10 border-green-600 text-green-300 hover:bg-green-900/20",
+    alittle: selected 
+      ? "bg-yellow-900/30 border-yellow-500 ring-2 ring-yellow-400/50 text-yellow-200" 
+      : "bg-yellow-900/10 border-yellow-600 text-yellow-300 hover:bg-yellow-900/20",
+    only: selected 
+      ? "bg-orange-900/30 border-orange-500 ring-2 ring-orange-400/50 text-orange-200" 
+      : "bg-orange-900/10 border-orange-600 text-orange-300 hover:bg-orange-900/20",
+  };
+  return colors[prefixId as keyof typeof colors] || (selected 
+    ? "bg-blue-900/30 border-blue-500 ring-2 ring-blue-400/50 text-blue-200" 
+    : "bg-blue-900/10 border-blue-600 text-blue-300 hover:bg-blue-900/20");
+};
+
 export function ProductExtrasModal({ 
   open, 
   onOpenChange, 
@@ -237,9 +260,7 @@ export function ProductExtrasModal({
                     key={prefix.id}
                     className={cn(
                       "cursor-pointer transition-all border-2",
-                      prefix.selected 
-                        ? "bg-blue-900/20 border-blue-600 ring-2 ring-blue-500/50" 
-                        : "bg-gray-900 border-gray-700 hover:border-gray-600"
+                      getPrefixColors(prefix.id, prefix.selected)
                     )}
                     onClick={() => togglePrefix(prefix.id)}
                   >
@@ -248,11 +269,11 @@ export function ProductExtrasModal({
                         <div className={cn(
                           "w-4 h-4 rounded-full border-2 flex items-center justify-center",
                           prefix.selected 
-                            ? "border-blue-500 bg-blue-500" 
+                            ? "border-white bg-white" 
                             : "border-gray-400"
                         )}>
                           {prefix.selected && (
-                            <div className="w-2 h-2 rounded-full bg-white"></div>
+                            <div className="w-2 h-2 rounded-full bg-gray-800"></div>
                           )}
                         </div>
                         <span className="text-sm font-medium text-gray-100">
