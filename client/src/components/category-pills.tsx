@@ -59,10 +59,16 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
           className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
             activeCategory === "all"
               ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-              : "category-pill"
+              : ""
           }`}
+          style={activeCategory !== "all" ? {
+            backgroundColor: "#ffffff",
+            color: "#000000", 
+            border: "1px solid #888888",
+            fontWeight: "600"
+          } : {}}
         >
-          All Items
+          <span style={{ color: activeCategory === "all" ? "white" : "#000000" }}>All Items</span>
         </button>
         {categories.map((category) => (
           <button
@@ -71,10 +77,16 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === category.id
                 ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : "category-pill"
+                : ""
             }`}
+            style={activeCategory !== category.id ? {
+              backgroundColor: "#ffffff",
+              color: "#000000", 
+              border: "1px solid #888888",
+              fontWeight: "600"
+            } : {}}
           >
-            {category.name}
+            <span style={{ color: activeCategory === category.id ? "white" : "#000000" }}>{category.name}</span>
           </button>
         ))}
       </div>
@@ -119,10 +131,16 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === "all"
                 ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : "category-pill"
+                : ""
             }`}
+            style={activeCategory !== "all" ? {
+              backgroundColor: "#ffffff",
+              color: "#000000", 
+              border: "1px solid #888888",
+              fontWeight: "600"
+            } : {}}
           >
-            All Items
+            <span style={{ color: activeCategory === "all" ? "white" : "#000000" }}>All Items</span>
           </button>
           {categories.map((category) => (
             <button
@@ -131,10 +149,16 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
               className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
                 activeCategory === category.id
                   ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                  : "category-pill"
+                  : ""
               }`}
+              style={activeCategory !== category.id ? {
+                backgroundColor: "#ffffff",
+                color: "#000000", 
+                border: "1px solid #888888",
+                fontWeight: "600"
+              } : {}}
             >
-              {category.name}
+              <span style={{ color: activeCategory === category.id ? "white" : "#000000" }}>{category.name}</span>
             </button>
           ))}
         </div>
