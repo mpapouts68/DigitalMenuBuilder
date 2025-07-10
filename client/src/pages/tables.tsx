@@ -290,9 +290,13 @@ export function TablesPage() {
                     </div>
                     
                     <div className="space-y-1">
-                      <span className="text-sm font-bold text-gray-100 truncate block">
+                      <div className="text-lg font-bold text-gray-100">
+                        {table.postNumber || table.postId}
+                      </div>
+                      
+                      <div className="text-xs text-gray-300 truncate">
                         {table.description || `Table ${table.postNumber || table.postId}`}
-                      </span>
+                      </div>
                       
                       {selectedArea && (
                         <div className="text-xs text-blue-300">
