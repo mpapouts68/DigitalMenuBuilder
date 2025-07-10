@@ -98,16 +98,21 @@ body {
     padding-right: env(safe-area-inset-right);
   }
   
-  /* Force category button text to be dark and visible */
-  .category-button-inactive {
-    background-color: white !important;
-    color: #111827 !important;
-    border: 1px solid #9ca3af !important;
+  /* Force ALL button text to be completely black */
+  button {
+    color: #000000 !important;
   }
   
-  .category-button-inactive:hover {
-    background-color: #f9fafb !important;
-    color: #111827 !important;
+  /* Override any inherited text colors */
+  * {
+    color: inherit !important;
+  }
+  
+  /* Specific override for category buttons */
+  .category-pill {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
   }
   
   /* Line clamping utility */
