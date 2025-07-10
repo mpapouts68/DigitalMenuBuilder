@@ -252,7 +252,6 @@ export function ProductExtrasModal({
 
             {/* Extras */}
             <div>
-              <h4 className="text-lg font-semibold text-gray-100 mb-3">Available Extras (Select Multiple)</h4>
               {loading ? (
                 <div className="text-center py-8 text-gray-400">Loading extras...</div>
               ) : (
