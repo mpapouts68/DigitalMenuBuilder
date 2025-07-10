@@ -255,48 +255,48 @@ export function ProductExtrasModal({
                     </div>
                   </div>
                   
-                  {/* Right Side: Quantity and Clear */}
+                  {/* Right Side: Course and Clear */}
                   <div className="flex flex-col items-end space-y-2">
-                    {/* Price and Course on same row */}
-                    <div className="flex items-center space-x-3">
-                      <Badge variant="outline" className={`${finalCombinations.length > 0 ? 'text-yellow-300 border-yellow-600' : 'text-green-300 border-green-600'}`}>
-                        €{getCurrentItemPrice()}
-                      </Badge>
-                      <Select value={servingCourse} onValueChange={setServingCourse}>
-                        <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 text-xs h-8 w-32">
-                          <SelectValue placeholder="Course" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-600">
-                          <SelectItem value="main" className="text-gray-100 text-xs">Main</SelectItem>
-                          <SelectItem value="starter" className="text-gray-100 text-xs">Starter</SelectItem>
-                          <SelectItem value="dessert" className="text-gray-100 text-xs">Dessert</SelectItem>
-                          <SelectItem value="appetizer" className="text-gray-100 text-xs">Appetizer</SelectItem>
-                          <SelectItem value="side" className="text-gray-100 text-xs">Side</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {/* Course dropdown */}
+                    <Select value={servingCourse} onValueChange={setServingCourse}>
+                      <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 text-xs h-8 w-32">
+                        <SelectValue placeholder="Course" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        <SelectItem value="main" className="text-gray-100 text-xs">Main</SelectItem>
+                        <SelectItem value="starter" className="text-gray-100 text-xs">Starter</SelectItem>
+                        <SelectItem value="dessert" className="text-gray-100 text-xs">Dessert</SelectItem>
+                        <SelectItem value="appetizer" className="text-gray-100 text-xs">Appetizer</SelectItem>
+                        <SelectItem value="side" className="text-gray-100 text-xs">Side</SelectItem>
+                      </SelectContent>
+                    </Select>
                     
-                    {/* Compact Quantity Selector */}
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="border-gray-600 text-gray-300 hover:bg-gray-700 w-8 h-8 p-0"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                      <span className="text-lg font-bold text-gray-100 min-w-[2rem] text-center">
-                        {quantity}
+                    {/* Price and Quantity on same row */}
+                    <div className="flex items-center space-x-3">
+                      <span className={`text-2xl font-bold ${finalCombinations.length > 0 ? 'text-yellow-300' : 'text-green-300'}`}>
+                        €{getCurrentItemPrice()}
                       </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setQuantity(quantity + 1)}
-                        className="border-gray-600 text-gray-300 hover:bg-gray-700 w-8 h-8 p-0"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-700 w-8 h-8 p-0"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                        <span className="text-lg font-bold text-gray-100 min-w-[2rem] text-center">
+                          {quantity}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setQuantity(quantity + 1)}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-700 w-8 h-8 p-0"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Clear All Button */}
