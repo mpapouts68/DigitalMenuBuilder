@@ -272,6 +272,23 @@ export function ProductExtrasModal({
                       </Button>
                     </div>
 
+                    {/* Serving Course Dropdown */}
+                    <div className="flex flex-col items-center space-y-1">
+                      <span className="text-xs text-gray-400">Course</span>
+                      <Select value={servingCourse} onValueChange={setServingCourse}>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 text-xs h-8 w-32">
+                          <SelectValue placeholder="Course" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-600">
+                          <SelectItem value="main" className="text-gray-100 text-xs">Main</SelectItem>
+                          <SelectItem value="starter" className="text-gray-100 text-xs">Starter</SelectItem>
+                          <SelectItem value="dessert" className="text-gray-100 text-xs">Dessert</SelectItem>
+                          <SelectItem value="appetizer" className="text-gray-100 text-xs">Appetizer</SelectItem>
+                          <SelectItem value="side" className="text-gray-100 text-xs">Side</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     {/* Clear All Button */}
                     <Button
                       variant="outline"
@@ -324,24 +341,6 @@ export function ProductExtrasModal({
                     </CardContent>
                   </Card>
                 ))}
-              </div>
-              
-              {/* Serving Course Dropdown - Positioned under A Lot button */}
-              <div className="mt-3 flex justify-center">
-                <div className="w-48">
-                  <Select value={servingCourse} onValueChange={setServingCourse}>
-                    <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 text-xs h-8">
-                      <SelectValue placeholder="Serving course" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-600">
-                      <SelectItem value="main" className="text-gray-100 text-xs">Main Course (Default)</SelectItem>
-                      <SelectItem value="starter" className="text-gray-100 text-xs">Starter</SelectItem>
-                      <SelectItem value="dessert" className="text-gray-100 text-xs">Dessert</SelectItem>
-                      <SelectItem value="appetizer" className="text-gray-100 text-xs">Appetizer</SelectItem>
-                      <SelectItem value="side" className="text-gray-100 text-xs">Side Dish</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             </div>
 
