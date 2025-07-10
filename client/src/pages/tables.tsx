@@ -186,7 +186,7 @@ export function TablesPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setLocation('/stats')}
-                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                  className="bg-blue-600/20 border-blue-500 text-blue-300 hover:bg-blue-600/30 hover:text-blue-200 transition-all duration-200"
                 >
                   <BarChart3 className="w-4 h-4 mr-2" />
                   Statistics
@@ -196,7 +196,7 @@ export function TablesPage() {
                   size="sm"
                   onClick={handleRefresh}
                   disabled={refreshing}
-                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                  className="bg-green-600/20 border-green-500 text-green-300 hover:bg-green-600/30 hover:text-green-200 transition-all duration-200 disabled:opacity-50"
                 >
                   <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                   Refresh
@@ -205,7 +205,7 @@ export function TablesPage() {
                   variant="outline"
                   size="sm"
                   onClick={handleLogout}
-                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                  className="bg-red-600/20 border-red-500 text-red-300 hover:bg-red-600/30 hover:text-red-200 transition-all duration-200"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
