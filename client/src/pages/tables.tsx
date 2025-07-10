@@ -12,12 +12,7 @@ import {
   CheckCircle,
   XCircle,
   Users,
-  Calculator,
-  Settings,
-  BarChart3,
-  Coffee,
-  Timer,
-  User
+  Timer
 } from 'lucide-react';
 import { TableWithOrder } from '@shared/schema';
 import logoPath from '@assets/logoB_1752121880525.ico';
@@ -28,7 +23,6 @@ export function TablesPage() {
   const { toast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [showQuickStats, setShowQuickStats] = useState(true);
 
   // Update time every minute
   useEffect(() => {
@@ -161,15 +155,6 @@ export function TablesPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowQuickStats(!showQuickStats)}
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Stats
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={handleRefresh}
                 disabled={refreshing}
                 className="border-gray-600 text-gray-300 hover:bg-gray-700"
@@ -191,86 +176,7 @@ export function TablesPage() {
         </div>
       </div>
 
-      {/* Quick Stats Panel */}
-      {showQuickStats && (
-        <div className="bg-gray-800 border-b border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              <Card className="bg-gray-700 border-gray-600">
-                <CardContent className="p-3">
-                  <div className="flex items-center space-x-2">
-                    <Users className="w-5 h-5 text-blue-400" />
-                    <div>
-                      <div className="text-lg font-bold text-gray-100">{activeTableCount}</div>
-                      <div className="text-xs text-gray-400">Active Tables</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gray-700 border-gray-600">
-                <CardContent className="p-3">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                    <div>
-                      <div className="text-lg font-bold text-gray-100">{freeTableCount}</div>
-                      <div className="text-xs text-gray-400">Free Tables</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gray-700 border-gray-600">
-                <CardContent className="p-3">
-                  <div className="flex items-center space-x-2">
-                    <XCircle className="w-5 h-5 text-red-400" />
-                    <div>
-                      <div className="text-lg font-bold text-gray-100">{occupiedTableCount}</div>
-                      <div className="text-xs text-gray-400">Occupied</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gray-700 border-gray-600">
-                <CardContent className="p-3">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-5 h-5 text-yellow-400" />
-                    <div>
-                      <div className="text-lg font-bold text-gray-100">{reservedTableCount}</div>
-                      <div className="text-xs text-gray-400">Reserved</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gray-700 border-gray-600">
-                <CardContent className="p-3">
-                  <div className="flex items-center space-x-2">
-                    <Coffee className="w-5 h-5 text-purple-400" />
-                    <div>
-                      <div className="text-lg font-bold text-gray-100">{products.length}</div>
-                      <div className="text-xs text-gray-400">Products</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gray-700 border-gray-600">
-                <CardContent className="p-3">
-                  <div className="flex items-center space-x-2">
-                    <User className="w-5 h-5 text-indigo-400" />
-                    <div>
-                      <div className="text-lg font-bold text-gray-100">{staff?.name?.split(' ')[0] || 'Staff'}</div>
-                      <div className="text-xs text-gray-400">On Duty</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Enhanced Tables Grid - 5 columns equally distributed */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

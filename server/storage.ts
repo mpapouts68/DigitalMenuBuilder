@@ -160,27 +160,27 @@ export class DatabaseStorage implements IStorage {
   
   async getTables(): Promise<TableWithOrder[]> {
     try {
-      // Get tables from posts_main table with simplified structure
-      const tables = await db
-        .select()
-        .from(postsMain)
-        .where(eq(postsMain.active, true))
-        .orderBy(asc(postsMain.postId));
+      // Use raw query to match the actual table structure
+      const result = await db.execute(`
+        SELECT post_id, post_number, description, active, reserve, name_reserve
+        FROM posts_main
+        ORDER BY post_number ASC
+      `);
       
-      return tables.map((table) => ({
-        yperMainId: table.postId,
-        postId: table.postId,
-        description: table.description,
-        postNumber: table.postNumber,
-        active: table.active,
+      return (result.rows as any[]).map((row) => ({
+        yperMainId: row.post_id,
+        postId: row.post_id,
+        description: row.description || `Table ${row.post_number}`,
+        postNumber: row.post_number,
+        active: row.active !== false, // Default to true if null
         heeftPool: false,
-        reserve: table.reserve,
-        nameReserve: table.nameReserve,
+        reserve: row.reserve || false,
+        nameReserve: row.name_reserve,
         reserveId: null,
         time: null,
         checkInTime: null,
         split: false,
-        sortNumber: table.postId,
+        sortNumber: row.post_number || row.post_id,
         top: null,
         left: null,
         clerkId: null,
