@@ -159,23 +159,40 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getTables(): Promise<TableWithOrder[]> {
-    const tables = await db
-      .select({
-        table: postsMain,
-        order: orders
-      })
-      .from(postsMain)
-      .leftJoin(orders, and(
-        eq(postsMain.activeOrderId, orders.orderId),
-        eq(orders.closed, false)
-      ))
-      .where(eq(postsMain.active, true))
-      .orderBy(asc(postsMain.sortNumber));
-    
-    return tables.map(({ table, order }) => ({
-      ...table,
-      currentOrder: order || undefined
-    }));
+    try {
+      // Get tables from posts_main table with simplified structure
+      const tables = await db
+        .select()
+        .from(postsMain)
+        .where(eq(postsMain.active, true))
+        .orderBy(asc(postsMain.postId));
+      
+      return tables.map((table) => ({
+        yperMainId: table.postId,
+        postId: table.postId,
+        description: table.description,
+        postNumber: table.postNumber,
+        active: table.active,
+        heeftPool: false,
+        reserve: table.reserve,
+        nameReserve: table.nameReserve,
+        reserveId: null,
+        time: null,
+        checkInTime: null,
+        split: false,
+        sortNumber: table.postId,
+        top: null,
+        left: null,
+        clerkId: null,
+        activeOrderId: null,
+        iconId: null,
+        iconIdOccu: null,
+        currentOrder: undefined
+      }));
+    } catch (error) {
+      console.error("Error getting tables:", error);
+      return [];
+    }
   }
   
   async getTable(postId: number): Promise<PostsMain | undefined> {

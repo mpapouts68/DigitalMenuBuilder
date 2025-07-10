@@ -1,0 +1,9 @@
+{ "ObjectType": "Modules", "Database": "C:\POS\2025 - POS\pda_Cleaner3.0.accdb", "Items": [
+{ "Name": "FillControls", "Structure": {}, "Metadata": {}, "Controls": [], "Code": [], "Description": "", "IsUsed": false }
+,{ "Name": "modCreate", "Structure": {}, "Metadata": {}, "Controls": [], "Code": [], "Description": "", "IsUsed": false }
+,{ "Name": "modLanguage", "Structure": {}, "Metadata": {}, "Controls": [], "Code": [], "Description": "", "IsUsed": false }
+,{ "Name": "Utility", "Structure": {}, "Metadata": {}, "Controls": [], "Code": [], "Description": "", "IsUsed": false }
+,{ "Name": "TimeToOrderID", "Structure": {}, "Metadata": {}, "Controls": [], "Code": [], "Description": "", "IsUsed": false }
+,{ "Name": "Make_CashFile", "Structure": {}, "Metadata": {}, "Controls": [], "Code": [], "Description": "", "IsUsed": false }
+,{ "Name": "Make_CashTicket", "Structure": {}, "Metadata": {}, "Controls": [], "Code": [], "Description": "", "IsUsed": false }
+]}

@@ -144,7 +144,7 @@ export function TablesPage() {
                 className={`cursor-pointer transition-all duration-200 border-2 ${getTableColor(status)} bg-gray-800 dark:bg-gray-850 ${
                   status === 'inactive' ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
-                onClick={() => handleTableClick(table)}
+                onClick={() => status !== 'inactive' ? setLocation(`/order/${table.postId}`) : null}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
