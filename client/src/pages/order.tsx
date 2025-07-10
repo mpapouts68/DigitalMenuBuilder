@@ -360,8 +360,8 @@ export function OrderPage() {
 
                             {/* Right side - Quantity Controls */}
                             <div className="flex flex-col items-center">
-                              <div className="flex items-center space-x-1 mb-1">
-                                <span className="text-lg font-bold text-gray-100 min-w-[24px] text-center">
+                              <div className="flex flex-col items-center space-y-1 mb-1">
+                                <span className="text-lg font-bold text-gray-100 text-center">
                                   {orderItems.find(item => item.productId === product.productId)?.quantity || 0}
                                 </span>
                                 <button
