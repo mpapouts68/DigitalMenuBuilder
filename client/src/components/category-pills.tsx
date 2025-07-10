@@ -25,16 +25,38 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
         buttons.forEach((button) => {
           const isActive = button.classList.contains('bg-blue-600');
           if (!isActive) {
-            button.style.backgroundColor = '#ffffff';
-            button.style.color = '#000000';
-            button.style.border = '1px solid #666666';
+            // Force all possible style properties
+            button.style.setProperty('background-color', '#ffffff', 'important');
+            button.style.setProperty('color', '#000000', 'important');
+            button.style.setProperty('border', '2px solid #000000', 'important');
+            button.style.setProperty('opacity', '1', 'important');
+            button.style.setProperty('visibility', 'visible', 'important');
+            button.style.setProperty('display', 'inline-block', 'important');
+            button.style.setProperty('font-weight', 'bold', 'important');
+            button.style.setProperty('font-size', '14px', 'important');
+            
+            // Also force text content color
+            const textNodes = button.childNodes;
+            textNodes.forEach(node => {
+              if (node.nodeType === Node.TEXT_NODE && node.parentElement) {
+                node.parentElement.style.setProperty('color', '#000000', 'important');
+              }
+            });
           }
         });
       }
     };
     
-    const timer = setTimeout(forceTextColor, 50);
-    return () => clearTimeout(timer);
+    // Run multiple times to ensure it takes
+    const timer1 = setTimeout(forceTextColor, 10);
+    const timer2 = setTimeout(forceTextColor, 100);
+    const timer3 = setTimeout(forceTextColor, 500);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
   }, [activeCategory, categories]);
 
   const checkScrollability = () => {
