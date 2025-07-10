@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MenuHeader } from "@/components/menu-header";
 import { CategoryPills } from "@/components/category-pills";
+import { SimpleCategoryButtons } from "@/components/simple-category-buttons";
 import { TestButton } from "@/components/test-button";
 import { AdminControls } from "@/components/admin-controls";
 import { MenuSection } from "@/components/menu-section";
@@ -166,12 +167,9 @@ export default function Menu() {
           </div>
         </div>
 
-        {/* TEST BUTTON - DEBUG */}
-        <TestButton />
-        
-        {/* Category Pills */}
+        {/* Simple Category Buttons - No CSS classes */}
         <div className="mb-6">
-          <CategoryPills
+          <SimpleCategoryButtons
             categories={categories}
             activeCategory={activeCategory}
             onCategoryChange={setActiveCategory}
