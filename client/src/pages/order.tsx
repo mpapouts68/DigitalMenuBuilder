@@ -77,13 +77,7 @@ export function OrderPage() {
   // Current visible categories based on navigation state
   const visibleCategories = parentCategory ? subCategories : [...parentCategories, ...directCategories];
   
-  // Debug logging
-  console.log('Groups:', groups);
-  console.log('Parent categories:', parentCategories);
-  console.log('Direct categories:', directCategories);
-  console.log('Parent category selected:', parentCategory);
-  console.log('Sub categories:', subCategories);
-  console.log('Visible categories:', visibleCategories);
+
   
   const currentTable = tables.find(t => t.postId === parseInt(postId!));
   
@@ -303,29 +297,29 @@ export function OrderPage() {
                 </div>
 
                 {/* Products Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {filteredProducts.map((product) => (
                     <Card 
                       key={product.productId}
                       className="cursor-pointer transition-all duration-200 hover:scale-105 bg-gray-800 border-gray-700"
                       onClick={() => addToOrder(product)}
                     >
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <div className="text-center">
-                          <h3 className="font-semibold text-gray-100 mb-2 line-clamp-2">
+                          <h3 className="font-semibold text-gray-100 mb-1 text-sm line-clamp-2">
                             {product.description}
                           </h3>
                           {product.description2 && (
-                            <p className="text-xs text-gray-400 mb-2 line-clamp-1">
+                            <p className="text-xs text-gray-400 mb-1 line-clamp-1">
                               {product.description2}
                             </p>
                           )}
                           <div className="flex justify-between items-center">
-                            <Badge variant="outline" className="text-green-300 border-green-600">
+                            <Badge variant="outline" className="text-green-300 border-green-600 text-xs">
                               €{product.price}
                             </Badge>
                             {product.menuNumber && (
-                              <Badge variant="outline" className="text-gray-400 border-gray-600">
+                              <Badge variant="outline" className="text-gray-400 border-gray-600 text-xs">
                                 #{product.menuNumber}
                               </Badge>
                             )}
@@ -338,20 +332,20 @@ export function OrderPage() {
               </TabsContent>
 
               <TabsContent value="favorites" className="mt-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {favoriteProducts.map((product) => (
                     <Card 
                       key={product.productId}
                       className="cursor-pointer transition-all duration-200 hover:scale-105 bg-gray-800 border-gray-700"
                       onClick={() => addToOrder(product)}
                     >
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <div className="text-center">
-                          <Star className="w-4 h-4 text-yellow-400 mx-auto mb-2" />
-                          <h3 className="font-semibold text-gray-100 mb-2 line-clamp-2">
+                          <Star className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
+                          <h3 className="font-semibold text-gray-100 mb-1 text-sm line-clamp-2">
                             {product.description}
                           </h3>
-                          <Badge variant="outline" className="text-green-300 border-green-600">
+                          <Badge variant="outline" className="text-green-300 border-green-600 text-xs">
                             €{product.price}
                           </Badge>
                         </div>

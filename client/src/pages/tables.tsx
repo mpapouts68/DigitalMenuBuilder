@@ -196,7 +196,7 @@ export function TablesPage() {
                 }`}
                 onClick={() => status !== 'inactive' ? setLocation(`/order/${table.postId}`) : null}
               >
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-1 pt-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-bold text-gray-100 truncate">
                       {table.description || `Table ${table.postNumber || table.postId}`}
@@ -204,27 +204,23 @@ export function TablesPage() {
                     {getStatusIcon(status)}
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
+                <CardContent className="pt-0 pb-3">
+                  <div className="space-y-2">
                     <div className="flex justify-center">
                       {getStatusBadge(status)}
                     </div>
                     
                     {table.currentOrder && (
-                      <div className="bg-gray-700 rounded-lg p-3 text-center">
+                      <div className="bg-gray-700 rounded-lg p-2 text-center">
                         <div className="text-xs text-gray-300 space-y-1">
                           <p className="font-semibold">Order #{table.currentOrder.orderId}</p>
-                          <p className="text-green-300">Total: €{table.currentOrder.orderTotal}</p>
-                          <div className="flex items-center justify-center space-x-1 text-xs">
-                            <Timer className="w-3 h-3" />
-                            <span>Active</span>
-                          </div>
+                          <p className="text-green-300">€{table.currentOrder.orderTotal}</p>
                         </div>
                       </div>
                     )}
                     
                     {table.reserve && table.nameReserve && (
-                      <div className="bg-yellow-900/20 rounded-lg p-3 text-center">
+                      <div className="bg-yellow-900/20 rounded-lg p-2 text-center">
                         <div className="text-xs text-yellow-300">
                           <p className="font-semibold">Reserved</p>
                           <p className="truncate">{table.nameReserve}</p>
@@ -232,11 +228,7 @@ export function TablesPage() {
                       </div>
                     )}
                     
-                    {status === 'free' && (
-                      <div className="text-center">
-                        <p className="text-xs text-gray-400">Ready for new order</p>
-                      </div>
-                    )}
+
                     
                     <div className="text-center">
                       <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
