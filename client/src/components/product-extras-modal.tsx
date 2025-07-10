@@ -165,14 +165,22 @@ export function ProductExtrasModal({
                       <p className="text-sm text-gray-400">{product.description2}</p>
                     )}
                     
-                    {/* Selected Options Tree */}
-                    <div className="mt-3 space-y-1">
+                    {/* Selected Options Display */}
+                    <div className="mt-3 space-y-2">
+                      {/* Selected Prefix as Button */}
                       {prefixes.filter(p => p.selected).map(prefix => (
-                        <div key={prefix.id} className="ml-4 text-sm text-blue-300 flex items-center">
-                          <span className="text-gray-500 mr-2">├─</span>
-                          <span>Extra {prefix.label}</span>
+                        <div key={prefix.id} className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-blue-900/20 border-blue-600 text-blue-300 hover:bg-blue-900/30 px-2 py-1 h-6 text-xs"
+                          >
+                            {prefix.label}
+                          </Button>
                         </div>
                       ))}
+                      
+                      {/* Selected Extras Tree */}
                       {extras.filter(e => e.selected).map(extra => (
                         <div key={extra.productId} className="ml-4 text-sm text-green-300 flex items-center">
                           <span className="text-gray-500 mr-2">├─</span>
@@ -211,6 +219,21 @@ export function ProductExtrasModal({
                 className="border-gray-600 text-gray-300 hover:bg-gray-700"
               >
                 <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Clear Button */}
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
+                  setPrefixes(prev => prev.map(prefix => ({ ...prefix, selected: false })));
+                }}
+                className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-2 py-1 h-6 text-xs"
+              >
+                Clear All
               </Button>
             </div>
 
