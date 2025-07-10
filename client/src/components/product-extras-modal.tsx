@@ -243,11 +243,26 @@ export function ProductExtrasModal({
                     </div>
                   </div>
                   
-                  {/* Right Side: Price, Quantity, and Clear */}
+                  {/* Right Side: Quantity and Clear */}
                   <div className="flex flex-col items-end space-y-2">
-                    <Badge variant="outline" className="text-green-300 border-green-600">
-                      €{product.price}
-                    </Badge>
+                    {/* Price and Course on same row */}
+                    <div className="flex items-center space-x-3">
+                      <Badge variant="outline" className="text-green-300 border-green-600">
+                        €{product.price}
+                      </Badge>
+                      <Select value={servingCourse} onValueChange={setServingCourse}>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 text-xs h-8 w-32">
+                          <SelectValue placeholder="Course" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-600">
+                          <SelectItem value="main" className="text-gray-100 text-xs">Main</SelectItem>
+                          <SelectItem value="starter" className="text-gray-100 text-xs">Starter</SelectItem>
+                          <SelectItem value="dessert" className="text-gray-100 text-xs">Dessert</SelectItem>
+                          <SelectItem value="appetizer" className="text-gray-100 text-xs">Appetizer</SelectItem>
+                          <SelectItem value="side" className="text-gray-100 text-xs">Side</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     
                     {/* Compact Quantity Selector */}
                     <div className="flex items-center space-x-2">
@@ -270,23 +285,6 @@ export function ProductExtrasModal({
                       >
                         <Plus className="w-3 h-3" />
                       </Button>
-                    </div>
-
-                    {/* Serving Course Dropdown */}
-                    <div className="flex flex-col items-center space-y-1">
-                      <span className="text-xs text-gray-400">Course</span>
-                      <Select value={servingCourse} onValueChange={setServingCourse}>
-                        <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 text-xs h-8 w-32">
-                          <SelectValue placeholder="Course" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-600">
-                          <SelectItem value="main" className="text-gray-100 text-xs">Main</SelectItem>
-                          <SelectItem value="starter" className="text-gray-100 text-xs">Starter</SelectItem>
-                          <SelectItem value="dessert" className="text-gray-100 text-xs">Dessert</SelectItem>
-                          <SelectItem value="appetizer" className="text-gray-100 text-xs">Appetizer</SelectItem>
-                          <SelectItem value="side" className="text-gray-100 text-xs">Side</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
 
                     {/* Clear All Button */}
