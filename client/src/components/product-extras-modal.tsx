@@ -403,56 +403,7 @@ export function ProductExtrasModal({
                 <span className="text-xl font-bold text-green-300">€{calculateTotal()}</span>
               </div>
               
-              {/* Additional Control Buttons */}
-              <div className="flex justify-center space-x-3 pb-1 border-b border-gray-600">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-blue-900/20 border-blue-600 text-blue-300 hover:bg-blue-900/30 px-3 py-1 h-8 text-xs"
-                >
-                  Favorites
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-purple-900/20 border-purple-600 text-purple-300 hover:bg-purple-900/30 px-3 py-1 h-8 text-xs"
-                >
-                  Notes
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-orange-900/20 border-orange-600 text-orange-300 hover:bg-orange-900/30 px-3 py-1 h-8 text-xs"
-                >
-                  Portions
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-yellow-900/20 border-yellow-600 text-yellow-300 hover:bg-yellow-900/30 px-3 py-1 h-8 text-xs"
-                >
-                  Discount
-                </Button>
-              </div>
-              
-              {/* Main Action Buttons */}
-              <div className="flex space-x-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => onOpenChange(false)}
-                  className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleAddToOrder}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Add to Order
-                </Button>
-              </div>
+
             </div>
           </div>
         )}
