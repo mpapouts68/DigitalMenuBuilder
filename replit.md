@@ -1,148 +1,130 @@
-# Restaurant Menu Management System
+# Restaurant POS - Mobile Table Management System
 
 ## Overview
 
-This is a full-stack restaurant menu management application built with a React frontend and Express.js backend. The system allows restaurant owners to manage their digital menu with categories, products, and promotional banners. It features a modern, mobile-first design optimized for both customer viewing and administrative management.
+This is a mobile-first Point of Sale (POS) system for restaurant table management. The application provides a complete solution for managing tables, orders, and transactions through an intuitive mobile interface with PIN-based authentication.
 
 ## System Architecture
 
-The application follows a monorepo structure with three main layers:
+The application follows a client-server architecture with:
 
-- **Frontend (client/)**: React application with Vite bundler
-- **Backend (server/)**: Express.js REST API server
-- **Shared (shared/)**: Common TypeScript schemas and types
+- **Frontend**: React application optimized for mobile devices (tablets/phones)
+- **Backend**: Express.js REST API server  
+- **Database**: PostgreSQL (replacing MariaDB for cloud deployment)
+- **Cache**: In-memory caching for products and groups after login
 
-### Directory Structure
-```
-├── client/           # React frontend application
-├── server/           # Express.js backend API
-├── shared/           # Shared schemas and types
-├── migrations/       # Database migration files
-└── attached_assets/  # Static assets (logo, images)
-```
+### Key Features
 
-## Key Components
+1. **PIN-Based Authentication**: Simple numeric login system with user caching
+2. **Table Management**: Visual table representation with color coding
+3. **Order Management**: Complete order workflow with multiple tabs
+4. **Transaction Processing**: Multiple payment methods and history tracking
+5. **Statistics**: User-specific performance metrics
+6. **Help Forms**: Discount, free price, and weight management
 
-### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Styling**: Tailwind CSS with shadcn/ui component library
-- **State Management**: TanStack Query for server state
-- **Routing**: Wouter for client-side routing
-- **Build Tool**: Vite with hot module replacement
-- **UI Components**: Radix UI primitives with custom styling
+## Pages Structure
 
-### Backend Architecture
-- **Framework**: Express.js with TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Replit OAuth integration with Passport.js
-- **Session Management**: PostgreSQL-backed sessions
-- **API Design**: RESTful endpoints with JSON responses
+### 1. Login Page
+- PIN-based authentication (4-6 digit codes)
+- Cache products and groups in memory after successful login
+- Automatic redirect to Table page
 
-### Database Schema
-The application uses PostgreSQL with the following main entities:
-- **Users**: User authentication and profile data
-- **Categories**: Menu category organization with ordering
-- **Products**: Menu items with pricing and descriptions
-- **Banners**: Promotional and advertisement banners
-- **Sessions**: User session storage
+### 2. Table Page
+- Visual table grid with color coding:
+  - Green: Free tables
+  - Red: Occupied tables
+- Click interaction for table selection
+- Real-time table status updates
 
-### Authentication & Authorization
-- **Provider**: Replit OAuth (OpenID Connect)
-- **Session Storage**: PostgreSQL with connect-pg-simple
-- **Protected Routes**: Admin functions require authentication
-- **Passcode Protection**: Additional layer for sensitive operations
+### 3. Order Page
+- Table-specific order management
+- Four main tabs:
+  - **PreOrder**: Initial order setup
+  - **Extras/Choices**: Additional items and modifications
+  - **Numeric Order**: Chinese-style numeric ordering system
+  - **Actual Order**: Final order confirmation
+- Dynamic order building based on table status
 
-## Data Flow
+### 4. Statistics Page
+- User-specific metrics and performance data
+- Sales statistics and transaction history
+- Time-based reporting
 
-1. **User Access**: Customers can view the menu without authentication
-2. **Admin Access**: Restaurant owners authenticate via Replit OAuth
-3. **Menu Management**: Authenticated users can CRUD categories and products
-4. **Image Handling**: Support for both URL-based and uploaded images
-5. **Real-time Updates**: UI updates immediately via optimistic updates and cache invalidation
+### 5. Help Forms
+- Discount management
+- Free price product handling
+- Product weight calculations
 
-### API Endpoints
-- `GET/POST /api/categories` - Category management
-- `GET/POST/PUT/DELETE /api/products` - Product management  
-- `GET/POST/PUT/DELETE /api/banners` - Banner management
-- `POST /api/import` - Bulk data import
-- `GET /api/export` - Data export functionality
-- `GET /api/auth/user` - User authentication status
+### 6. Close Transaction Page
+- Multiple payment methods:
+  - Cash
+  - Card
+  - Combined payments
+  - Voucher system
+- Order archival to history
+- Table status reset
 
-## External Dependencies
+## Database Schema
 
-### Core Dependencies
-- **@neondatabase/serverless**: PostgreSQL database driver
-- **drizzle-orm**: Type-safe database ORM
-- **@tanstack/react-query**: Server state management
-- **@radix-ui/**: Accessible UI component primitives
-- **tailwindcss**: Utility-first CSS framework
-- **passport**: Authentication middleware
-- **express-session**: Session management
+### Core Tables
+- **users**: User authentication and profiles
+- **tables**: Table definitions and status
+- **orders**: Order management and history
+- **products**: Product catalog with pricing
+- **groups**: Product categorization
+- **transactions**: Payment processing and history
 
-### Development Tools
-- **Vite**: Frontend build tool and dev server
-- **TypeScript**: Static type checking
-- **ESBuild**: Server-side bundling for production
+### Cache Strategy
+- Products and groups loaded into memory after login
+- Real-time table status synchronization
+- Order state management
+
+## Technical Implementation
+
+### Frontend Technologies
+- React 18 with TypeScript
+- Tailwind CSS for mobile-responsive design
+- TanStack Query for state management
+- Touch-optimized UI components
+
+### Backend Technologies
+- Express.js with TypeScript
+- PostgreSQL with Drizzle ORM
+- Session management for authentication
+- Real-time updates via WebSocket (future enhancement)
+
+### Mobile Optimization
+- Touch-friendly interface design
+- Optimized for tablet and phone screens
+- Offline capability for order management
+- Fast loading and responsive interactions
+
+## User Workflow
+
+1. **Login**: Enter PIN → Cache data → Redirect to tables
+2. **Table Selection**: Visual table grid → Select table → Check status
+3. **Order Management**: Build order → Add items → Process modifications
+4. **Transaction**: Complete payment → Archive order → Free table
+5. **Statistics**: View performance metrics
 
 ## Deployment Strategy
 
-### Development
-- **Frontend**: Vite dev server with HMR
-- **Backend**: tsx with auto-restart
-- **Database**: Neon PostgreSQL (serverless)
-- **Environment**: Replit platform integration
-
-### Production Build
-1. Frontend builds to `dist/public/` via Vite
-2. Backend bundles to `dist/` via ESBuild
-3. Single Node.js process serves both static files and API
-4. PostgreSQL connection pooling for scalability
-
-### Environment Variables
-- `DATABASE_URL`: PostgreSQL connection string
-- `SESSION_SECRET`: Session encryption key
-- `REPL_ID`: Replit environment identifier
-- `ISSUER_URL`: OAuth provider URL (defaults to Replit)
-
-## Deployment Configuration
-
-### Production Readiness
-- ✅ Build scripts configured for frontend and backend
-- ✅ .replit file set up for Replit Deployments
-- ✅ PostgreSQL database integration ready
-- ✅ Environment variables auto-configured
-- ✅ Static file serving optimized
-- ✅ Production error handling implemented
-
-### Deployment Steps
-1. Click "Deploy" button in Replit
-2. Choose deployment target (Autoscale recommended)
-3. Application will build automatically using `npm run build`
-4. Production server starts with `npm run start`
-5. Database migrations run automatically
-
-### Production Features
+- Cloud deployment with PostgreSQL database
 - Mobile-first responsive design
-- Admin passcode protection (1234)
-- QR code sharing functionality
-- CSV import/export capabilities
-- Image management system
-- Session-based authentication
-- PostgreSQL data persistence
-
-## Changelog
-- July 02, 2025: Initial setup and development
-- July 02, 2025: Mobile-first layout optimization
-- July 02, 2025: Footer controls and advertisement integration
-- July 02, 2025: Deployment preparation completed
-- July 02, 2025: Applied deployment fixes for production readiness:
-  - Added HTML title and SEO meta tags for deployment validation
-  - Implemented robust database connection error handling with production optimizations
-  - Added comprehensive server startup error handling and graceful shutdown
-  - Configured explicit port binding for Cloud Run deployment compatibility
-  - Added health check endpoint (/health) for deployment monitoring
-  - Implemented uncaught exception and unhandled rejection handling
+- Production-ready error handling
+- Health monitoring and logging
 
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
+- Mobile-first design approach
+- Simple, intuitive interface
+- Fast performance for restaurant operations
+- Reliable transaction processing
+
+## Recent Changes
+
+- Project initialization with mobile POS architecture
+- Database schema design for restaurant operations
+- User authentication with PIN-based system
+- Table management with visual representation
+- Order processing workflow design
