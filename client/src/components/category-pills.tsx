@@ -58,8 +58,8 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
           onClick={() => onCategoryChange("all")}
           className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
             activeCategory === "all"
-              ? "bg-red-600 text-white shadow-red-200 transform scale-105"
-              : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
+              ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
+              : "bg-gray-700 text-gray-100 hover:bg-gray-600 hover:shadow-md border border-gray-600 active:scale-95"
           }`}
         >
           All Items
@@ -70,8 +70,8 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             onClick={() => onCategoryChange(category.id)}
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === category.id
-                ? "bg-red-600 text-white shadow-red-200 transform scale-105"
-                : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
+                ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
+                : "bg-gray-700 text-gray-100 hover:bg-gray-600 hover:shadow-md border border-gray-600 active:scale-95"
             }`}
           >
             {category.name}
@@ -118,8 +118,8 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             onClick={() => onCategoryChange("all")}
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === "all"
-                ? "bg-red-600 text-white shadow-red-200 transform scale-105"
-                : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
+                ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
+                : "bg-gray-700 text-gray-100 hover:bg-gray-600 hover:shadow-md border border-gray-600 active:scale-95"
             }`}
           >
             All Items
@@ -130,8 +130,8 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
               onClick={() => onCategoryChange(category.id)}
               className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
                 activeCategory === category.id
-                  ? "bg-red-600 text-white shadow-red-200 transform scale-105"
-                  : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
+                  ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
+                  : "bg-gray-700 text-gray-100 hover:bg-gray-600 hover:shadow-md border border-gray-600 active:scale-95"
               }`}
             >
               {category.name}

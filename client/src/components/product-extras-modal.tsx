@@ -414,7 +414,23 @@ export function ProductExtrasModal({
                 <span className="text-xl font-bold text-green-300">€{calculateTotal()}</span>
               </div>
               
-
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddToOrder}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={!product}
+                >
+                  Add to Order ({quantity})
+                </Button>
+              </div>
             </div>
           </div>
         )}
