@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Plus, Minus, Check, X } from 'lucide-react';
 
@@ -81,6 +82,7 @@ export function ProductExtrasModal({
   const [loading, setLoading] = useState(false);
   const [finalCombinations, setFinalCombinations] = useState<Array<{id: string, text: string, price: string}>>([]);
   const [comment, setComment] = useState('');
+  const [servingCourse, setServingCourse] = useState('main');
 
   useEffect(() => {
     if (product && open) {
@@ -187,6 +189,7 @@ export function ProductExtrasModal({
     setPrefixes(PREFIXES.map(p => ({ ...p, selected: false })));
     setFinalCombinations([]);
     setComment('');
+    setServingCourse('main');
     onOpenChange(false);
   };
 
@@ -231,6 +234,12 @@ export function ProductExtrasModal({
                           <span>Note: {comment}</span>
                         </div>
                       )}
+                      {servingCourse !== 'main' && (
+                        <div className="ml-4 text-sm text-blue-300 flex items-center">
+                          <span className="text-gray-500 mr-2">├─</span>
+                          <span>Serve with: {servingCourse.charAt(0).toUpperCase() + servingCourse.slice(1)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -272,6 +281,7 @@ export function ProductExtrasModal({
                         setPrefixes(prev => prev.map(prefix => ({ ...prefix, selected: false })));
                         setFinalCombinations([]);
                         setComment('');
+                        setServingCourse('main');
                       }}
                       className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-2 py-1 h-6 text-xs"
                     >
@@ -314,6 +324,24 @@ export function ProductExtrasModal({
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+              
+              {/* Serving Course Dropdown - Positioned under A Lot button */}
+              <div className="mt-3 flex justify-center">
+                <div className="w-48">
+                  <Select value={servingCourse} onValueChange={setServingCourse}>
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 text-xs h-8">
+                      <SelectValue placeholder="Serving course" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-600">
+                      <SelectItem value="main" className="text-gray-100 text-xs">Main Course (Default)</SelectItem>
+                      <SelectItem value="starter" className="text-gray-100 text-xs">Starter</SelectItem>
+                      <SelectItem value="dessert" className="text-gray-100 text-xs">Dessert</SelectItem>
+                      <SelectItem value="appetizer" className="text-gray-100 text-xs">Appetizer</SelectItem>
+                      <SelectItem value="side" className="text-gray-100 text-xs">Side Dish</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
