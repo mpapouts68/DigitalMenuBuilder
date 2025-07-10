@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { ProductExtrasModal } from '@/components/product-extras-modal';
 import { 
   ArrowLeft, 
   Plus, 
@@ -58,6 +59,8 @@ export function OrderPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [parentCategory, setParentCategory] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [extrasModalOpen, setExtrasModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
   const products = cacheData?.products || [];
   const groups = cacheData?.groups || [];
@@ -96,7 +99,12 @@ export function OrderPage() {
     setCurrentOrder(newOrder);
   }, [postId]);
 
-  const addToOrder = (product: Product) => {
+  const openExtrasModal = (product: Product) => {
+    setSelectedProduct(product);
+    setExtrasModalOpen(true);
+  };
+
+  const addToOrder = (product: Product, extras: any[] = [], prefixes: any[] = []) => {
     const existingItem = orderItems.find(item => item.productId === product.productId);
     
     if (existingItem) {
@@ -119,9 +127,17 @@ export function OrderPage() {
       setOrderItems(items => [...items, newItem]);
     }
 
+    let description = product.description;
+    if (extras.length > 0) {
+      description += ' with ' + extras.map(e => e.description).join(', ');
+    }
+    if (prefixes.length > 0) {
+      description += ' (' + prefixes.map(p => p.label).join(', ') + ')';
+    }
+
     toast({
       title: "Added to order",
-      description: `${product.description} added successfully`,
+      description: description,
     });
   };
 
@@ -302,7 +318,7 @@ export function OrderPage() {
                     <Card 
                       key={product.productId}
                       className="cursor-pointer transition-all duration-200 hover:scale-105 bg-gray-800 border-gray-700"
-                      onClick={() => addToOrder(product)}
+                      onClick={() => openExtrasModal(product)}
                     >
                       <CardContent className="p-3">
                         <div className="text-center">
@@ -337,7 +353,7 @@ export function OrderPage() {
                     <Card 
                       key={product.productId}
                       className="cursor-pointer transition-all duration-200 hover:scale-105 bg-gray-800 border-gray-700"
-                      onClick={() => addToOrder(product)}
+                      onClick={() => openExtrasModal(product)}
                     >
                       <CardContent className="p-3">
                         <div className="text-center">
@@ -470,6 +486,14 @@ export function OrderPage() {
           </div>
         </div>
       </div>
+
+      {/* Product Extras Modal */}
+      <ProductExtrasModal
+        open={extrasModalOpen}
+        onOpenChange={setExtrasModalOpen}
+        product={selectedProduct}
+        onAddToOrder={addToOrder}
+      />
     </div>
   );
 }

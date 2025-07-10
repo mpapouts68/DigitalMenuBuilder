@@ -27,10 +27,18 @@ export const staff = pgTable("staff", {
   maxDiscount: integer("max_discount"),
 });
 
+// Yper_Posts table - restaurant areas/sections
+export const yperPosts = pgTable("yper_posts", {
+  yperMainId: serial("yper_main_id").primaryKey(),
+  description: text("description").notNull(),
+  active: boolean("active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Posts_Main table - restaurant tables/posts
 export const postsMain = pgTable("posts_main", {
-  yperMainId: serial("yper_main_id").primaryKey(),
-  postId: integer("post_id").notNull().unique(),
+  postId: serial("post_id").primaryKey(),
   description: text("description"),
   postNumber: integer("post_number"),
   active: boolean("active").default(true),
@@ -48,6 +56,7 @@ export const postsMain = pgTable("posts_main", {
   activeOrderId: doublePrecision("active_order_id"),
   iconId: integer("icon_id"),
   iconIdOccu: integer("icon_id_occu"),
+  yperMainId: integer("yper_main_id").references(() => yperPosts.yperMainId),
 });
 
 // ProductGroups table
@@ -178,8 +187,13 @@ export const insertStaffSchema = createInsertSchema(staff).omit({
   staffId: true,
 });
 
-export const insertPostsMainSchema = createInsertSchema(postsMain).omit({
+export const insertYperPostsSchema = createInsertSchema(yperPosts).omit({
   yperMainId: true,
+  createdAt: true,
+});
+
+export const insertPostsMainSchema = createInsertSchema(postsMain).omit({
+  postId: true,
 });
 
 export const insertProductGroupSchema = createInsertSchema(productGroups).omit({
@@ -203,6 +217,9 @@ export const insertOrdersActualSchema = createInsertSchema(ordersActual).omit({
 // Type exports
 export type Staff = typeof staff.$inferSelect;
 export type InsertStaff = z.infer<typeof insertStaffSchema>;
+
+export type YperPosts = typeof yperPosts.$inferSelect;
+export type InsertYperPosts = z.infer<typeof insertYperPostsSchema>;
 
 export type PostsMain = typeof postsMain.$inferSelect;
 export type InsertPostsMain = z.infer<typeof insertPostsMainSchema>;

@@ -1,0 +1,105 @@
+Public Sub populateextras()
+Dim db As DAO.Database, es As DAO.Recordset, strSQL As String, intrecs As Integer
+Dim itmAdd As ListItem, criteria As String, criteria2 As Variant, pri As Currency
+Dim curGrandTotals As Currency
+Dim crit As Variant, grpID As Integer, hyp As Variant
+crit = Nz(Me.actPro, 3)
+grpID = Nz(DLookup("[ProductGroup_ID]", "Products", "[Product_ID]=" & crit & ""), 0)
+hyp = Nz(DLookup("[Drink_or_Food]", "Products", "[Product_ID]=" & crit & ""), 0)
+'MsgBox crit
+    Me!LVExtra.ListItems.Clear
+    With Me!LVExtra.ColumnHeaders
+        .Clear
+        .Add , , "Product", 99999
+        .Add , , "id", 0
+        .Add , , "Price", 0
+        .Add , , "Qua", 0
+        .Add , , "Printer", 0
+        .Add , , "Row_Print", 0
+        .Add , , "Auto_Extra", 0
+    End With
+    Set db = CurrentDb
+    
+    
+    strSQL = "SELECT * from HyperGrp_Relation_Extra Where HyperGroupID =" & hyp & ""
+    Set es = db.OpenRecordset(strSQL)
+    If es.RecordCount > 0 Then
+    es.MoveLast
+    intrecs = es.RecordCount
+    es.MoveFirst
+    While Not es.EOF
+        Set itmAdd = LVExtra.ListItems.Add()
+        If [Forms]![settings]![Printer_A] = "Secondary" Then
+        itmAdd.Text = Nz(Left(es!Description2, 14), es!Description)
+        Else
+        itmAdd.Text = Nz(Left(es!Description, 14), "EmptyDescription")
+        End If
+        itmAdd.SubItems(1) = es!Extra_ID_Key
+        pri = Nz(DLookup("[Price]", "Qry_Price_Catalog_Order", "[Product_ID]=" & es!Extra_ID_Key & ""), 0)
+        itmAdd.SubItems(2) = pri
+        If pri > 0 Then
+        itmAdd.SmallIcon = 11
+        Else
+        itmAdd.SmallIcon = 1
+        End If
+        es.MoveNext
+    Wend
+    End If
+    criteria = "Product_Type  = '" & "Extras" & "'"
+'    strSQL = "SELECT * FROM Products Where " & criteria & " and " & "Extra_ID_Key =" & crit & "  order by Description "
+    'strSQL = "SELECT * from Qry_Extra Where Product_ID =" & crit & ""
+    strSQL = "SELECT * from Qry_Extra_Group Where GroupID =" & grpID & ""
+    Set es = db.OpenRecordset(strSQL)
+     ' Add data
+    If es.RecordCount > 0 Then
+    es.MoveLast
+    intrecs = es.RecordCount
+    es.MoveFirst
+    While Not es.EOF
+        Set itmAdd = LVExtra.ListItems.Add()
+        If [Forms]![settings]![Printer_A] = "Secondary" Then
+        itmAdd.Text = Nz(Left(es!Description2, 14), es!Description)
+        Else
+        itmAdd.Text = Nz(Left(es!Description, 14), "EmptyDescription")
+        End If
+        itmAdd.SubItems(1) = Nz(es!Extra_ID_Key, 1)
+        
+        pri = Nz(DLookup("[Price]", "Qry_Price_Catalog_Order", "[Product_ID]=" & Nz(es!Extra_ID_Key, 1) & ""), 0)
+        itmAdd.SubItems(2) = pri
+        If pri > 0 Then
+        itmAdd.SmallIcon = 11
+        Else
+        itmAdd.SmallIcon = 1
+        End If
+        es.MoveNext
+    Wend
+    End If
+    strSQL = "SELECT * from Qry_Extra Where Product_ID =" & crit & ""
+    Set es = db.OpenRecordset(strSQL)
+    If es.RecordCount > 0 Then
+    es.MoveLast
+    intrecs = es.RecordCount
+    es.MoveFirst
+    While Not es.EOF
+        Set itmAdd = LVExtra.ListItems.Add()
+        If [Forms]![settings]![Printer_A] = "Secondary" Then
+        itmAdd.Text = Nz(Left(es!Description2, 14), es!Description)
+        Else
+        itmAdd.Text = Nz(Left(es!Description, 14), "EmptyDescription")
+        End If
+        itmAdd.SubItems(1) = es!Extra_ID_Key
+        pri = Nz(DLookup("[Price]", "Qry_Price_Catalog_Order", "[Product_ID]=" & es!Extra_ID_Key & ""), 0)
+        itmAdd.SubItems(2) = pri
+        If pri > 0 Then
+        itmAdd.SmallIcon = 11
+        Else
+        itmAdd.SmallIcon = 1
+        End If
+        es.MoveNext
+    Wend
+    End If
+    
+    
+    es.Close
+    db.Close
+End Sub

@@ -7,12 +7,14 @@ import {
   orders, 
   ordersActual,
   sessions,
+  yperPosts,
   type Staff,
   type PostsMain,
   type ProductGroup,
   type Product,
   type Order,
   type OrdersActual,
+  type YperPosts,
   type InsertStaff,
   type InsertPostsMain,
   type InsertProductGroup,
@@ -44,6 +46,9 @@ export interface IStorage {
   getTables(): Promise<TableWithOrder[]>;
   getTable(postId: number): Promise<PostsMain | undefined>;
   updateTableStatus(postId: number, activeOrderId?: number): Promise<boolean>;
+  
+  // Areas operations
+  getAreas(): Promise<YperPosts[]>;
   
   // Product operations
   getProducts(): Promise<ProductWithGroup[]>;
@@ -553,6 +558,28 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  async getAreas(): Promise<YperPosts[]> {
+    try {
+      const result = await db.execute(`
+        SELECT yper_main_id, description, active, sort_order, created_at
+        FROM yper_posts
+        WHERE active = true
+        ORDER BY sort_order ASC, yper_main_id ASC
+      `);
+      
+      return (result.rows as any[]).map((row) => ({
+        yperMainId: row.yper_main_id,
+        description: row.description || '',
+        active: row.active || true,
+        sortOrder: row.sort_order || 0,
+        createdAt: row.created_at ? new Date(row.created_at) : new Date()
+      }));
+    } catch (error) {
+      console.error("Error getting areas:", error);
+      return [];
+    }
+  }
+
   async getStaffStatistics(staffId: number, dateFrom?: Date, dateTo?: Date): Promise<any> {
     // Basic implementation - can be expanded based on requirements
     const fromDate = dateFrom || new Date(Date.now() - 24 * 60 * 60 * 1000);

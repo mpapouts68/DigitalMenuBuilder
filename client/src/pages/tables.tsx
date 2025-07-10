@@ -143,6 +143,18 @@ export function TablesPage() {
               </div>
             </div>
             
+            {/* Area Selector */}
+            <div className="hidden md:flex items-center space-x-4">
+              <select className="bg-gray-700 text-gray-100 border border-gray-600 rounded px-3 py-1 text-sm">
+                <option value="">All Areas</option>
+                <option value="1">Main Dining Room</option>
+                <option value="2">Terrace</option>
+                <option value="3">Bar Area</option>
+                <option value="4">Private Room</option>
+                <option value="5">Garden</option>
+              </select>
+            </div>
+            
             {/* Center - Time and Date */}
             <div className="hidden md:flex items-center space-x-6">
               <div className="text-center">
@@ -185,7 +197,7 @@ export function TablesPage() {
           <p className="text-gray-400">Click on any table to start taking orders</p>
         </div>
         
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-6 gap-3">
           {tables.map((table) => {
             const status = getTableStatus(table);
             return (
@@ -196,45 +208,24 @@ export function TablesPage() {
                 }`}
                 onClick={() => status !== 'inactive' ? setLocation(`/order/${table.postId}`) : null}
               >
-                <CardHeader className="pb-1 pt-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-bold text-gray-100 truncate">
-                      {table.description || `Table ${table.postNumber || table.postId}`}
-                    </CardTitle>
-                    {getStatusIcon(status)}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0 pb-3">
-                  <div className="space-y-2">
-                    <div className="flex justify-center">
-                      {getStatusBadge(status)}
+                <CardContent className="p-3">
+                  <div className="text-center space-y-1">
+                    <div className="flex items-center justify-center space-x-2">
+                      {getStatusIcon(status)}
+                      <span className="text-sm font-bold text-gray-100 truncate">
+                        {table.description || `Table ${table.postNumber || table.postId}`}
+                      </span>
                     </div>
+                    
+                    <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
+                      #{table.postNumber || table.postId}
+                    </Badge>
                     
                     {table.currentOrder && (
-                      <div className="bg-gray-700 rounded-lg p-2 text-center">
-                        <div className="text-xs text-gray-300 space-y-1">
-                          <p className="font-semibold">Order #{table.currentOrder.orderId}</p>
-                          <p className="text-green-300">€{table.currentOrder.orderTotal}</p>
-                        </div>
+                      <div className="text-xs text-green-300">
+                        €{table.currentOrder.orderTotal}
                       </div>
                     )}
-                    
-                    {table.reserve && table.nameReserve && (
-                      <div className="bg-yellow-900/20 rounded-lg p-2 text-center">
-                        <div className="text-xs text-yellow-300">
-                          <p className="font-semibold">Reserved</p>
-                          <p className="truncate">{table.nameReserve}</p>
-                        </div>
-                      </div>
-                    )}
-                    
-
-                    
-                    <div className="text-center">
-                      <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
-                        Table #{table.postNumber || table.postId}
-                      </Badge>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
