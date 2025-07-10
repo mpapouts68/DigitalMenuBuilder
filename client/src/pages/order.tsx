@@ -361,31 +361,7 @@ export function OrderPage() {
                             {/* Right side - Quantity Controls */}
                             <div className="flex flex-col items-center">
                               <div className="flex items-center space-x-1 mb-1">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const checkbox = document.getElementById(`extras-${product.productId}`) as HTMLInputElement;
-                                    if (checkbox?.checked) {
-                                      openExtrasModal(product);
-                                    } else {
-                                      addToOrder(product, [], []);
-                                    }
-                                  }}
-                                  style={{
-                                    padding: '2px 6px',
-                                    borderRadius: '3px',
-                                    border: '1px solid #10b981',
-                                    backgroundColor: '#065f46',
-                                    color: 'white',
-                                    fontSize: '10px',
-                                    fontWeight: 'bold',
-                                    cursor: 'pointer',
-                                    minWidth: '20px'
-                                  }}
-                                >
-                                  +
-                                </button>
-                                <span className="text-xs text-gray-300 min-w-[16px] text-center">
+                                <span className="text-lg font-bold text-gray-100 min-w-[24px] text-center">
                                   {orderItems.find(item => item.productId === product.productId)?.quantity || 0}
                                 </span>
                                 <button
