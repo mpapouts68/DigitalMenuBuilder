@@ -130,10 +130,14 @@ export function ProductExtrasModal({
       // Add combination to final list
       const prefixText = selectedPrefix ? selectedPrefix.label : '';
       const combinationText = prefixText ? `${prefixText} ${extra.description}` : extra.description;
+      
+      // For "Without" prefix, don't add the price since it's removing an ingredient
+      const effectivePrice = selectedPrefix?.id === 'without' ? '0.00' : extra.price;
+      
       const newCombination = {
         id: `${Date.now()}-${extraId}`,
         text: combinationText,
-        price: extra.price
+        price: effectivePrice
       };
       
       setFinalCombinations(prev => [...prev, newCombination]);
