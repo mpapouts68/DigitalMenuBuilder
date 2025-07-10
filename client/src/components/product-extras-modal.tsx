@@ -188,7 +188,7 @@ export function ProductExtrasModal({
                     </div>
                   </div>
                   
-                  {/* Right Side: Price and Quantity */}
+                  {/* Right Side: Price, Quantity, and Clear */}
                   <div className="flex flex-col items-end space-y-3">
                     <Badge variant="outline" className="text-green-300 border-green-600">
                       €{product.price}
@@ -216,6 +216,20 @@ export function ProductExtrasModal({
                         <Plus className="w-3 h-3" />
                       </Button>
                     </div>
+
+                    {/* Clear All Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
+                        setPrefixes(prev => prev.map(prefix => ({ ...prefix, selected: false })));
+                      }}
+                      className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-2 py-1 h-6 text-xs"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Clear All
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -257,21 +271,7 @@ export function ProductExtrasModal({
               </div>
             </div>
 
-            {/* Clear All Button - Outside Prefix Container */}
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
-                  setPrefixes(prev => prev.map(prefix => ({ ...prefix, selected: false })));
-                }}
-                className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-3 py-1 h-7 text-xs"
-              >
-                <X className="w-3 h-3 mr-1" />
-                Clear All
-              </Button>
-            </div>
+
 
             {/* Extras */}
             <div>
