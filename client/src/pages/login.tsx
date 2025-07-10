@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { NumericKeypad } from '@/components/numeric-keypad';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import logoPath from '@assets/logoB_1752121880525.ico';
 
 export function LoginPage() {
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -20,9 +21,7 @@ export function LoginPage() {
     }
   }, [isAuthenticated, setLocation]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleLogin = async () => {
     if (!pin) {
       toast({
         title: "Error",
@@ -49,6 +48,7 @@ export function LoginPage() {
           description: result.message || "Invalid PIN",
           variant: "destructive",
         });
+        setPin(''); // Clear PIN on error
       }
     } catch (error) {
       toast({
@@ -56,56 +56,70 @@ export function LoginPage() {
         description: "Network error. Please try again.",
         variant: "destructive",
       });
+      setPin(''); // Clear PIN on error
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-    setPin(value);
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <Lock className="w-6 h-6 text-blue-600" />
-          </div>
-          <CardTitle className="text-2xl font-bold">Restaurant POS</CardTitle>
-          <CardDescription>Enter your PIN to access the system</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Input
-                type="password"
-                placeholder="Enter your PIN"
-                value={pin}
-                onChange={handlePinChange}
-                className="text-center text-lg font-mono tracking-widest"
-                maxLength={6}
-                autoFocus
-              />
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header with Logo */}
+      <div className="w-full bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-center">
+            <img 
+              src={logoPath} 
+              alt="OlymPOS Logo" 
+              className="h-12 w-auto mr-3"
+              onError={(e) => {
+                // Fallback if logo fails to load
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-gray-900">OlymPOS</h1>
+              <p className="text-sm text-gray-600">Restaurant Point of Sale System</p>
             </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading || !pin}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Logging in...
-                </>
-              ) : (
-                'Login'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Login Form */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-lg">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Staff Login</CardTitle>
+            <CardDescription>Enter your PIN to access the system</CardDescription>
+          </CardHeader>
+          <CardContent className="px-6 pb-6">
+            {isLoading ? (
+              <div className="text-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+                <p className="text-gray-600">Logging in...</p>
+              </div>
+            ) : (
+              <NumericKeypad
+                value={pin}
+                onChange={setPin}
+                maxLength={6}
+                showValue={showPin}
+                onToggleVisibility={() => setShowPin(!showPin)}
+                onEnter={handleLogin}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Footer */}
+      <div className="w-full bg-white border-t">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="text-center text-sm text-gray-500">
+            Powered by OlymPOS • Mobile Restaurant Management System
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

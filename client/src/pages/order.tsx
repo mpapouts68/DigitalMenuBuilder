@@ -170,7 +170,7 @@ export function OrderPage() {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Table {table.postNumber || table.postId}
+                  OlymPOS - Table {table.postNumber || table.postId}
                 </h1>
                 <p className="text-sm text-gray-500">
                   {table.description || 'Order Management'}

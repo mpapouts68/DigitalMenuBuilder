@@ -105,7 +105,7 @@ export function TablesPage() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Restaurant POS</h1>
+                <h1 className="text-2xl font-bold text-gray-900">OlymPOS</h1>
                 <p className="text-sm text-gray-500">Welcome, {staff?.name}</p>
               </div>
             </div>

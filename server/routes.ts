@@ -295,7 +295,7 @@ export async function registerRoutes(app: Express) {
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      system: 'POS Mobile API'
+      system: 'OlymPOS Mobile API'
     });
   });
   

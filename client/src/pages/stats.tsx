@@ -102,7 +102,7 @@ export function StatsPage() {
                 Back to Tables
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Statistics</h1>
+                <h1 className="text-2xl font-bold text-gray-900">OlymPOS Statistics</h1>
                 <p className="text-sm text-gray-500">Performance overview for {staff?.name}</p>
               </div>
             </div>
