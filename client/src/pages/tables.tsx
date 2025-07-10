@@ -172,7 +172,7 @@ export function TablesPage() {
             <div className="flex items-center py-2">
               {/* Left - Large Logo spanning to Statistics button */}
               <div className="flex-1 flex items-center">
-                <img src={logoPath} alt="Logo" className="h-20 w-auto" />
+                <img src={logoPath} alt="Logo" className="h-32 w-auto" />
               </div>
               
               {/* Center - Time */}
@@ -187,7 +187,7 @@ export function TablesPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setLocation('/settings')}
-                  className="bg-purple-600/20 border-purple-500 text-purple-300 hover:bg-purple-600/30 hover:text-purple-200 transition-all duration-200 w-10 h-10 p-0"
+                  className="bg-purple-600/20 border-purple-500 text-purple-300 hover:bg-purple-600/30 hover:text-purple-200 transition-all duration-200 px-3"
                 >
                   <Settings className="w-4 h-4" />
                 </Button>
