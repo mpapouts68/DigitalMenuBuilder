@@ -189,11 +189,14 @@ export function ProductExtrasModal({
                         const selectedPrefix = prefixes.find(p => p.selected);
                         const selectedExtras = extras.filter(e => e.selected);
                         
-                        if (selectedPrefix && selectedExtras.length > 0) {
+                        // Show combinations if we have extras selected
+                        if (selectedExtras.length > 0) {
                           return selectedExtras.map(extra => (
                             <div key={extra.productId} className="ml-4 text-sm text-green-300 flex items-center">
                               <span className="text-gray-500 mr-2">├─</span>
-                              <span>{selectedPrefix.label} {extra.description}</span>
+                              <span>
+                                {selectedPrefix ? `${selectedPrefix.label} ${extra.description}` : extra.description}
+                              </span>
                               <span className="ml-2 text-xs text-gray-400">
                                 {parseFloat(extra.price) === 0 ? '(Free)' : `(+€${extra.price})`}
                               </span>
