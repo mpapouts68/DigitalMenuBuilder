@@ -55,20 +55,30 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
   if (isMobile) {
     return (
       <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
-        <DebugCategoryButton
-          isActive={activeCategory === "all"}
+        <button
           onClick={() => onCategoryChange("all")}
+          className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
+            activeCategory === "all"
+              ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
+              : "bg-white border border-gray-400"
+          }`}
+          style={{ color: activeCategory === "all" ? "white" : "#000000" }}
         >
           All Items
-        </DebugCategoryButton>
+        </button>
         {categories.map((category) => (
-          <DebugCategoryButton
+          <button
             key={category.id}
-            isActive={activeCategory === category.id}
             onClick={() => onCategoryChange(category.id)}
+            className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
+              activeCategory === category.id
+                ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
+                : "bg-white border border-gray-400"
+            }`}
+            style={{ color: activeCategory === category.id ? "white" : "#000000" }}
           >
             {category.name}
-          </DebugCategoryButton>
+          </button>
         ))}
       </div>
     );
@@ -112,16 +122,11 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === "all"
                 ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : ""
+                : "bg-white border border-gray-400"
             }`}
-            style={activeCategory !== "all" ? {
-              backgroundColor: "#ffffff",
-              color: "#000000", 
-              border: "1px solid #888888",
-              fontWeight: "600"
-            } : {}}
+            style={{ color: activeCategory === "all" ? "white" : "#000000" }}
           >
-            <span style={{ color: activeCategory === "all" ? "white" : "#000000" }}>All Items</span>
+            All Items
           </button>
           {categories.map((category) => (
             <button
@@ -130,16 +135,11 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
               className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
                 activeCategory === category.id
                   ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                  : ""
+                  : "bg-white border border-gray-400"
               }`}
-              style={activeCategory !== category.id ? {
-                backgroundColor: "#ffffff",
-                color: "#000000", 
-                border: "1px solid #888888",
-                fontWeight: "600"
-              } : {}}
+              style={{ color: activeCategory === category.id ? "white" : "#000000" }}
             >
-              <span style={{ color: activeCategory === category.id ? "white" : "#000000" }}>{category.name}</span>
+              {category.name}
             </button>
           ))}
         </div>

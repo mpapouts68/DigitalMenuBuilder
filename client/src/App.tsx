@@ -24,7 +24,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <MegaTest />
+
         <Router>
           <div className="min-h-screen bg-gray-50">
             <Switch>
