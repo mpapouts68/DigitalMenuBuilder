@@ -3,7 +3,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Category } from "@shared/schema";
-import { DebugCategoryButton } from "./debug-category-button";
 
 interface CategoryPillsProps {
   categories: Category[];
@@ -13,9 +12,30 @@ interface CategoryPillsProps {
 
 export function CategoryPills({ categories, activeCategory, onCategoryChange }: CategoryPillsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+
+  // Force text color after render
+  useEffect(() => {
+    const forceTextColor = () => {
+      if (containerRef.current) {
+        const buttons = containerRef.current.querySelectorAll('button');
+        buttons.forEach((button) => {
+          const isActive = button.classList.contains('bg-blue-600');
+          if (!isActive) {
+            button.style.backgroundColor = '#ffffff';
+            button.style.color = '#000000';
+            button.style.border = '1px solid #666666';
+          }
+        });
+      }
+    };
+    
+    const timer = setTimeout(forceTextColor, 50);
+    return () => clearTimeout(timer);
+  }, [activeCategory, categories]);
 
   const checkScrollability = () => {
     if (scrollRef.current) {
@@ -54,15 +74,14 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
 
   if (isMobile) {
     return (
-      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+      <div ref={containerRef} className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
         <button
           onClick={() => onCategoryChange("all")}
           className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
             activeCategory === "all"
               ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-              : "bg-white border border-gray-400"
+              : ""
           }`}
-          style={{ color: activeCategory === "all" ? "white" : "#000000" }}
         >
           All Items
         </button>
@@ -73,9 +92,8 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === category.id
                 ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : "bg-white border border-gray-400"
+                : ""
             }`}
-            style={{ color: activeCategory === category.id ? "white" : "#000000" }}
           >
             {category.name}
           </button>
@@ -116,15 +134,14 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
         className="w-full overflow-x-auto px-8 scrollbar-hide"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        <div className="flex space-x-3 pb-3 px-1 min-w-max">
+        <div ref={containerRef} className="flex space-x-3 pb-3 px-1 min-w-max">
           <button
             onClick={() => onCategoryChange("all")}
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === "all"
                 ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : "bg-white border border-gray-400"
+                : ""
             }`}
-            style={{ color: activeCategory === "all" ? "white" : "#000000" }}
           >
             All Items
           </button>
@@ -135,9 +152,8 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
               className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
                 activeCategory === category.id
                   ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                  : "bg-white border border-gray-400"
+                  : ""
               }`}
-              style={{ color: activeCategory === category.id ? "white" : "#000000" }}
             >
               {category.name}
             </button>
