@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { ProductExtrasModal } from '@/components/product-extras-modal';
 import { 
@@ -12,11 +11,7 @@ import {
   Plus, 
   Minus, 
   ShoppingCart,
-  Receipt,
-  Search,
-  Star,
-  Grid3X3,
-  Coffee
+  Receipt
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -198,7 +193,7 @@ export function OrderPage() {
     return matchesCategory && matchesSearch;
   });
 
-  const favoriteProducts = products.filter(p => p.favorite);
+
 
   return (
     <div className="min-h-screen bg-gray-900 dark:bg-gray-950">
@@ -239,27 +234,9 @@ export function OrderPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Panel - Menu */}
           <div className="lg:col-span-2">
-            <Tabs defaultValue="menu" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 bg-gray-800">
-                <TabsTrigger value="menu" className="data-[state=active]:bg-gray-700">
-                  <Coffee className="w-4 h-4 mr-2" />
-                  Menu
-                </TabsTrigger>
-                <TabsTrigger value="favorites" className="data-[state=active]:bg-gray-700">
-                  <Star className="w-4 h-4 mr-2" />
-                  Favorites
-                </TabsTrigger>
-                <TabsTrigger value="numeric" className="data-[state=active]:bg-gray-700">
-                  <Grid3X3 className="w-4 h-4 mr-2" />
-                  Numeric
-                </TabsTrigger>
-                <TabsTrigger value="search" className="data-[state=active]:bg-gray-700">
-                  <Search className="w-4 h-4 mr-2" />
-                  Search
-                </TabsTrigger>
-              </TabsList>
+            <div className="w-full">
 
-              <TabsContent value="menu" className="mt-4">
+              <div className="mt-4">
                 {/* Category Navigation */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {parentCategory ? (
@@ -341,74 +318,9 @@ export function OrderPage() {
                     </Card>
                   ))}
                 </div>
-              </TabsContent>
 
-              <TabsContent value="favorites" className="mt-4">
-                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {favoriteProducts.map((product) => (
-                    <Card 
-                      key={product.productId}
-                      className="cursor-pointer transition-all duration-200 hover:scale-105 bg-gray-800 border-gray-700"
-                      onClick={() => openExtrasModal(product)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="text-center">
-                          <Star className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
-                          <h3 className="font-semibold text-gray-100 mb-1 text-sm line-clamp-2">
-                            {product.description}
-                          </h3>
-                          <Badge variant="outline" className="text-green-300 border-green-600 text-xs">
-                            €{product.price}
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="numeric" className="mt-4">
-                <div className="text-center py-8">
-                  <Grid3X3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400">Numeric ordering system coming soon</p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="search" className="mt-4">
-                <div className="mb-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search products..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-md text-gray-100 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {filteredProducts.map((product) => (
-                    <Card 
-                      key={product.productId}
-                      className="cursor-pointer transition-all duration-200 hover:scale-105 bg-gray-800 border-gray-700"
-                      onClick={() => addToOrder(product)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="text-center">
-                          <h3 className="font-semibold text-gray-100 mb-2 line-clamp-2">
-                            {product.description}
-                          </h3>
-                          <Badge variant="outline" className="text-green-300 border-green-600">
-                            €{product.price}
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
+              </div>
+            </div>
           </div>
 
           {/* Right Panel - Order Summary */}
