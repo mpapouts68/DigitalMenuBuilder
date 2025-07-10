@@ -216,9 +216,7 @@ export function TablesPage() {
                         {table.description || `Table ${table.postNumber || table.postId}`}
                       </span>
                       
-                      <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
-                        #{table.postNumber || table.postId}
-                      </Badge>
+
                       
                       {table.currentOrder && (
                         <div className="text-xs text-green-300">
