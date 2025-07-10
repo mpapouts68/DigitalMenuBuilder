@@ -338,10 +338,10 @@ export function OrderPage() {
                             </Badge>
                           </div>
                           
-                          {/* Layout: Checkbox left, Quantity controls right */}
-                          <div className="flex items-center justify-between">
+                          {/* Centered Quantity with side elements */}
+                          <div className="relative flex items-center justify-center">
                             {/* Left side - Checkbox for extras */}
-                            <div className="flex flex-col items-center">
+                            <div className="absolute left-0 flex flex-col items-center">
                               <input
                                 type="checkbox"
                                 id={`extras-${product.productId}`}
@@ -358,36 +358,39 @@ export function OrderPage() {
                               </label>
                             </div>
 
-                            {/* Right side - Quantity Controls */}
+                            {/* Center - Quantity Number */}
                             <div className="flex flex-col items-center">
-                              <div className="flex flex-col items-center space-y-1 mb-1">
-                                <span className="text-lg font-bold text-gray-100 text-center">
-                                  {orderItems.find(item => item.productId === product.productId)?.quantity || 0}
-                                </span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const existingItem = orderItems.find(item => item.productId === product.productId);
-                                    if (existingItem && existingItem.quantity > 0) {
-                                      updateQuantity(product.productId, existingItem.quantity - 1);
-                                    }
-                                  }}
-                                  style={{
-                                    padding: '2px 6px',
-                                    borderRadius: '3px',
-                                    border: '1px solid #ef4444',
-                                    backgroundColor: '#991b1b',
-                                    color: 'white',
-                                    fontSize: '10px',
-                                    fontWeight: 'bold',
-                                    cursor: 'pointer',
-                                    minWidth: '20px'
-                                  }}
-                                >
-                                  -
-                                </button>
-                              </div>
+                              <span className="text-lg font-bold text-gray-100 text-center">
+                                {orderItems.find(item => item.productId === product.productId)?.quantity || 0}
+                              </span>
                               <span className="text-xs text-gray-400">Qty</span>
+                            </div>
+
+                            {/* Right side - Minus button */}
+                            <div className="absolute right-0 flex flex-col items-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const existingItem = orderItems.find(item => item.productId === product.productId);
+                                  if (existingItem && existingItem.quantity > 0) {
+                                    updateQuantity(product.productId, existingItem.quantity - 1);
+                                  }
+                                }}
+                                style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '3px',
+                                  border: '1px solid #ef4444',
+                                  backgroundColor: '#991b1b',
+                                  color: 'white',
+                                  fontSize: '10px',
+                                  fontWeight: 'bold',
+                                  cursor: 'pointer',
+                                  minWidth: '20px'
+                                }}
+                              >
+                                -
+                              </button>
+                              <span className="text-xs text-gray-400">Remove</span>
                             </div>
                           </div>
                         </div>
