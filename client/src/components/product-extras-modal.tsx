@@ -149,7 +149,7 @@ export function ProductExtrasModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-800 border-gray-700">
         {product && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Product Info with Quantity Controls */}
             <Card className="bg-gray-900 border-gray-700">
               <CardContent className="p-4">
@@ -183,7 +183,7 @@ export function ProductExtrasModal({
                   </div>
                   
                   {/* Right Side: Price, Quantity, and Clear */}
-                  <div className="flex flex-col items-end space-y-3">
+                  <div className="flex flex-col items-end space-y-2">
                     <Badge variant="outline" className="text-green-300 border-green-600">
                       €{product.price}
                     </Badge>
@@ -304,14 +304,14 @@ export function ProductExtrasModal({
             </div>
 
             {/* Summary & Actions */}
-            <div className="border-t border-gray-700 pt-4 space-y-4">
+            <div className="border-t border-gray-700 pt-3 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold text-gray-100">Total:</span>
                 <span className="text-xl font-bold text-green-300">€{calculateTotal()}</span>
               </div>
               
               {/* Additional Control Buttons */}
-              <div className="flex justify-center space-x-3 pb-2 border-b border-gray-600">
+              <div className="flex justify-center space-x-3 pb-1 border-b border-gray-600">
                 <Button
                   variant="outline"
                   size="sm"
