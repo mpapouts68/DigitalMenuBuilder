@@ -56,11 +56,26 @@ export function OrderPage() {
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [parentCategory, setParentCategory] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
   const products = cacheData?.products || [];
   const groups = cacheData?.groups || [];
   const tables = cacheData?.tables || [];
+  
+  // Get parent categories (has_sub = true, is_sub = false)
+  const parentCategories = groups.filter(g => g.hasSub && !g.isSub);
+  
+  // Get subcategories for current parent (is_sub = true, sub_from_group_id = parentCategory)
+  const subCategories = parentCategory 
+    ? groups.filter(g => g.isSub && g.subFromGroupId === parentCategory)
+    : [];
+  
+  // Get direct categories (has_sub = false, is_sub = false)
+  const directCategories = groups.filter(g => !g.hasSub && !g.isSub);
+  
+  // Current visible categories based on navigation state
+  const visibleCategories = parentCategory ? subCategories : [...parentCategories, ...directCategories];
   
   const currentTable = tables.find(t => t.postId === parseInt(postId!));
   
@@ -197,27 +212,43 @@ export function OrderPage() {
               </TabsList>
 
               <TabsContent value="menu" className="mt-4">
-                {/* Category Pills */}
+                {/* Category Navigation */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <Button
-                    variant={selectedCategory === null ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedCategory(null)}
-                    className={cn(
-                      "border-gray-600",
-                      selectedCategory === null 
-                        ? "bg-blue-600 text-white" 
-                        : "text-gray-300 hover:bg-gray-700"
-                    )}
-                  >
-                    All Categories
-                  </Button>
-                  {groups.map((group) => (
+                  {parentCategory ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBackToParent}
+                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back to Categories
+                    </Button>
+                  ) : (
+                    <Button
+                      variant={selectedCategory === null && parentCategory === null ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCategory(null);
+                        setParentCategory(null);
+                      }}
+                      className={cn(
+                        "border-gray-600",
+                        (selectedCategory === null && parentCategory === null)
+                          ? "bg-blue-600 text-white" 
+                          : "text-gray-300 hover:bg-gray-700"
+                      )}
+                    >
+                      All Categories
+                    </Button>
+                  )}
+                  
+                  {visibleCategories.map((group) => (
                     <Button
                       key={group.productGroupId}
                       variant={selectedCategory === group.productGroupId ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setSelectedCategory(group.productGroupId)}
+                      onClick={() => handleCategoryClick(group.productGroupId)}
                       className={cn(
                         "border-gray-600",
                         selectedCategory === group.productGroupId 
@@ -226,6 +257,9 @@ export function OrderPage() {
                       )}
                     >
                       {group.description}
+                      {group.hasSub && !group.isSub && (
+                        <span className="ml-1 text-xs">→</span>
+                      )}
                     </Button>
                   ))}
                 </div>

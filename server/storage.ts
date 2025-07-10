@@ -270,7 +270,22 @@ export class DatabaseStorage implements IStorage {
         portionCount: false,
         group: row.category_name ? {
           productGroupId: row.category_id,
-          description: row.category_name
+          description: row.category_name,
+          description2: null,
+          sortNumber: 0,
+          printer: null,
+          view: null,
+          viewOrder: null,
+          extraId: null,
+          iconId: null,
+          isSub: false,
+          subFromGroupId: null,
+          hasSub: false,
+          options: null,
+          rowPrint: null,
+          importId: null,
+          picturePath: null,
+          quickMenu: false
         } : undefined
       }));
     } catch (error) {
@@ -301,12 +316,16 @@ export class DatabaseStorage implements IStorage {
   
   async getGroups(): Promise<ProductGroup[]> {
     try {
-      // Use raw query for existing product_groups table
+      // Use raw query for existing product_groups table with hierarchical support
       const result = await db.execute(`
-        SELECT product_group_id, description, sort_order, active, created_at
+        SELECT product_group_id, description, sort_order, active, created_at, has_sub, is_sub, sub_from_group_id
         FROM product_groups
         WHERE active = true
-        ORDER BY sort_order ASC, product_group_id ASC
+        ORDER BY 
+          CASE WHEN is_sub = false THEN sort_order ELSE 999 END ASC,
+          sub_from_group_id ASC,
+          sort_order ASC,
+          product_group_id ASC
       `);
       
       return (result.rows as any[]).map((row) => ({
@@ -319,9 +338,9 @@ export class DatabaseStorage implements IStorage {
         viewOrder: null,
         extraId: null,
         iconId: null,
-        isSub: false,
-        subFromGroupId: null,
-        hasSub: false,
+        isSub: row.is_sub || false,
+        subFromGroupId: row.sub_from_group_id || null,
+        hasSub: row.has_sub || false,
         options: null,
         rowPrint: null,
         importId: null,
