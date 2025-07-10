@@ -298,7 +298,7 @@ export function ProductExtrasModal({
                         setComment('');
                         setServingCourse('main');
                       }}
-                      className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-2 py-1 h-6 text-xs"
+                      className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-2 py-1 h-8 text-xs w-32"
                     >
                       <X className="w-3 h-3 mr-1" />
                       Clear All
