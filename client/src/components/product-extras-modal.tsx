@@ -78,6 +78,7 @@ export function ProductExtrasModal({
   const [prefixes, setPrefixes] = useState<PrefixOption[]>(PREFIXES);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [finalCombinations, setFinalCombinations] = useState<Array<{id: string, text: string, price: string}>>([]);
 
   useEffect(() => {
     if (product && open) {
@@ -118,13 +119,34 @@ export function ProductExtrasModal({
   };
 
   const toggleExtra = (extraId: number) => {
-    setExtras(prev => 
-      prev.map(extra => 
-        extra.productId === extraId 
-          ? { ...extra, selected: !extra.selected }
-          : extra
-      )
-    );
+    const extra = extras.find(e => e.productId === extraId);
+    const selectedPrefix = prefixes.find(p => p.selected);
+    
+    if (extra && !extra.selected) {
+      // Add combination to final list
+      const prefixText = selectedPrefix ? selectedPrefix.label : '';
+      const combinationText = prefixText ? `${prefixText} ${extra.description}` : extra.description;
+      const newCombination = {
+        id: `${Date.now()}-${extraId}`,
+        text: combinationText,
+        price: extra.price
+      };
+      
+      setFinalCombinations(prev => [...prev, newCombination]);
+      
+      // Reset all selections
+      setExtras(prev => prev.map(e => ({ ...e, selected: false })));
+      setPrefixes(PREFIXES.map(p => ({ ...p, selected: false })));
+    } else if (extra && extra.selected) {
+      // Just deselect if already selected
+      setExtras(prev => 
+        prev.map(e => 
+          e.productId === extraId 
+            ? { ...e, selected: false }
+            : e
+        )
+      );
+    }
   };
 
   const togglePrefix = (prefixId: string) => {
@@ -138,24 +160,30 @@ export function ProductExtrasModal({
 
   const calculateTotal = () => {
     const basePrice = parseFloat(product?.price || '0');
-    const extrasTotal = extras
-      .filter(extra => extra.selected)
-      .reduce((sum, extra) => sum + parseFloat(extra.price), 0);
+    const extrasTotal = finalCombinations
+      .reduce((sum, combination) => sum + parseFloat(combination.price), 0);
     return ((basePrice + extrasTotal) * quantity).toFixed(2);
   };
 
   const handleAddToOrder = () => {
     if (!product) return;
     
-    const selectedExtras = extras.filter(extra => extra.selected);
-    const selectedPrefix = prefixes.find(prefix => prefix.selected);
+    // Convert final combinations back to the expected format for compatibility
+    const combinationExtras = finalCombinations.map(combo => ({
+      productId: parseInt(combo.id.split('-')[1]),
+      description: combo.text,
+      price: combo.price,
+      selected: true,
+      source: 'item' as const
+    }));
     
-    onAddToOrder(product, selectedExtras, selectedPrefix ? [selectedPrefix] : []);
+    onAddToOrder(product, combinationExtras, []);
     
     // Reset state
     setQuantity(1);
     setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
     setPrefixes(PREFIXES.map(p => ({ ...p, selected: false })));
+    setFinalCombinations([]);
     onOpenChange(false);
   };
 
@@ -183,28 +211,17 @@ export function ProductExtrasModal({
                       <p className="text-sm text-gray-400">{product.description2}</p>
                     )}
                     
-                    {/* Selected Combinations Tree */}
+                    {/* Final Combinations Tree */}
                     <div className="mt-3 space-y-1">
-                      {(() => {
-                        const selectedPrefix = prefixes.find(p => p.selected);
-                        const selectedExtras = extras.filter(e => e.selected);
-                        
-                        // Show combinations if we have extras selected
-                        if (selectedExtras.length > 0) {
-                          return selectedExtras.map(extra => (
-                            <div key={extra.productId} className="ml-4 text-sm text-green-300 flex items-center">
-                              <span className="text-gray-500 mr-2">├─</span>
-                              <span>
-                                {selectedPrefix ? `${selectedPrefix.label} ${extra.description}` : extra.description}
-                              </span>
-                              <span className="ml-2 text-xs text-gray-400">
-                                {parseFloat(extra.price) === 0 ? '(Free)' : `(+€${extra.price})`}
-                              </span>
-                            </div>
-                          ));
-                        }
-                        return null;
-                      })()}
+                      {finalCombinations.map(combination => (
+                        <div key={combination.id} className="ml-4 text-sm text-green-300 flex items-center">
+                          <span className="text-gray-500 mr-2">├─</span>
+                          <span>{combination.text}</span>
+                          <span className="ml-2 text-xs text-gray-400">
+                            {parseFloat(combination.price) === 0 ? '(Free)' : `(+€${combination.price})`}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                   
@@ -244,6 +261,7 @@ export function ProductExtrasModal({
                       onClick={() => {
                         setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
                         setPrefixes(prev => prev.map(prefix => ({ ...prefix, selected: false })));
+                        setFinalCombinations([]);
                       }}
                       className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-2 py-1 h-6 text-xs"
                     >
