@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Category } from "@shared/schema";
+import { DebugCategoryButton } from "./debug-category-button";
 
 interface CategoryPillsProps {
   categories: Category[];
@@ -54,40 +55,20 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
   if (isMobile) {
     return (
       <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
-        <button
+        <DebugCategoryButton
+          isActive={activeCategory === "all"}
           onClick={() => onCategoryChange("all")}
-          className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
-            activeCategory === "all"
-              ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-              : ""
-          }`}
-          style={activeCategory !== "all" ? {
-            backgroundColor: "#ffffff",
-            color: "#000000", 
-            border: "1px solid #888888",
-            fontWeight: "600"
-          } : {}}
         >
-          <span style={{ color: activeCategory === "all" ? "white" : "#000000" }}>All Items</span>
-        </button>
+          All Items
+        </DebugCategoryButton>
         {categories.map((category) => (
-          <button
+          <DebugCategoryButton
             key={category.id}
+            isActive={activeCategory === category.id}
             onClick={() => onCategoryChange(category.id)}
-            className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
-              activeCategory === category.id
-                ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : ""
-            }`}
-            style={activeCategory !== category.id ? {
-              backgroundColor: "#ffffff",
-              color: "#000000", 
-              border: "1px solid #888888",
-              fontWeight: "600"
-            } : {}}
           >
-            <span style={{ color: activeCategory === category.id ? "white" : "#000000" }}>{category.name}</span>
-          </button>
+            {category.name}
+          </DebugCategoryButton>
         ))}
       </div>
     );
