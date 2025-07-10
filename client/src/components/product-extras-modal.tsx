@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Plus, Minus, Check, X } from 'lucide-react';
 
@@ -79,6 +80,7 @@ export function ProductExtrasModal({
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [finalCombinations, setFinalCombinations] = useState<Array<{id: string, text: string, price: string}>>([]);
+  const [comment, setComment] = useState('');
 
   useEffect(() => {
     if (product && open) {
@@ -184,6 +186,7 @@ export function ProductExtrasModal({
     setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
     setPrefixes(PREFIXES.map(p => ({ ...p, selected: false })));
     setFinalCombinations([]);
+    setComment('');
     onOpenChange(false);
   };
 
@@ -222,6 +225,12 @@ export function ProductExtrasModal({
                           </span>
                         </div>
                       ))}
+                      {comment && (
+                        <div className="ml-4 text-sm text-yellow-300 flex items-center">
+                          <span className="text-gray-500 mr-2">├─</span>
+                          <span>Note: {comment}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -262,6 +271,7 @@ export function ProductExtrasModal({
                         setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
                         setPrefixes(prev => prev.map(prefix => ({ ...prefix, selected: false })));
                         setFinalCombinations([]);
+                        setComment('');
                       }}
                       className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-2 py-1 h-6 text-xs"
                     >
@@ -343,6 +353,20 @@ export function ProductExtrasModal({
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Comment Section */}
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Add special instructions or comments..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="bg-gray-900 border-gray-600 text-gray-100 placeholder-gray-400 resize-none h-20"
+                maxLength={200}
+              />
+              <div className="text-xs text-gray-400 text-right">
+                {comment.length}/200 characters
+              </div>
             </div>
 
             {/* Summary & Actions */}
