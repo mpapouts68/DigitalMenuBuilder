@@ -192,9 +192,7 @@ export function TablesPage() {
 
       {/* Enhanced Tables Grid - 5 columns equally distributed */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-100">Table Management</h2>
-        </div>
+
         
         <div className="grid grid-cols-6 gap-3">
           {tables.map((table) => {
