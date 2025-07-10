@@ -224,8 +224,55 @@ export class DatabaseStorage implements IStorage {
   
   async getProducts(): Promise<ProductWithGroup[]> {
     try {
-      // Return empty array for now while we fix the database schema
-      return [];
+      // Use raw query for existing products table structure
+      const result = await db.execute(`
+        SELECT p.id, p.name, p.description, p.details, p.price, p.category_id, p.image_url,
+               c.description as category_name
+        FROM products p
+        LEFT JOIN product_groups c ON p.category_id = c.product_group_id
+        ORDER BY p.id
+      `);
+      
+      return (result.rows as any[]).map((row) => ({
+        productId: row.id,
+        description: row.name || row.description || '',
+        description2: row.details,
+        price: row.price?.toString() || '0.00',
+        productType: null,
+        unit: null,
+        productGroupId: row.category_id,
+        printerName: null,
+        vat: null,
+        build: false,
+        extraId: null,
+        rowPrint: null,
+        iconId: null,
+        autoExtra: false,
+        hasOptions: false,
+        extraIdKey: null,
+        picturePath: null,
+        recipeId: null,
+        purchased: 0,
+        sold: 0,
+        stock: 0,
+        stockCorrection: 0,
+        picture: row.image_url,
+        menuNumber: row.id,
+        options: null,
+        favorite: false,
+        saleLock: false,
+        countPersons: false,
+        includeGroup: false,
+        combo: false,
+        partOfCombo: false,
+        drinkOrFood: null,
+        cPrinter: null,
+        portionCount: false,
+        group: row.category_name ? {
+          productGroupId: row.category_id,
+          description: row.category_name
+        } : undefined
+      }));
     } catch (error) {
       console.error("Error getting products:", error);
       return [];
@@ -254,8 +301,33 @@ export class DatabaseStorage implements IStorage {
   
   async getGroups(): Promise<ProductGroup[]> {
     try {
-      // Return empty array for now while we fix the database schema
-      return [];
+      // Use raw query for existing product_groups table
+      const result = await db.execute(`
+        SELECT product_group_id, description, sort_order, active, created_at
+        FROM product_groups
+        WHERE active = true
+        ORDER BY sort_order ASC, product_group_id ASC
+      `);
+      
+      return (result.rows as any[]).map((row) => ({
+        productGroupId: row.product_group_id,
+        description: row.description || '',
+        description2: null,
+        sortNumber: row.sort_order || 0,
+        printer: null,
+        view: null,
+        viewOrder: null,
+        extraId: null,
+        iconId: null,
+        isSub: false,
+        subFromGroupId: null,
+        hasSub: false,
+        options: null,
+        rowPrint: null,
+        importId: null,
+        picturePath: null,
+        quickMenu: false
+      }));
     } catch (error) {
       console.error("Error getting groups:", error);
       return [];

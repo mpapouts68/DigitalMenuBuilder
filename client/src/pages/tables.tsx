@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -10,7 +10,14 @@ import {
   RefreshCw,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  Users,
+  Calculator,
+  Settings,
+  BarChart3,
+  Coffee,
+  Timer,
+  User
 } from 'lucide-react';
 import { TableWithOrder } from '@shared/schema';
 import logoPath from '@assets/logoB_1752121880525.ico';
@@ -20,6 +27,17 @@ export function TablesPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [showQuickStats, setShowQuickStats] = useState(true);
+
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    
+    return () => clearInterval(timer);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -92,29 +110,69 @@ export function TablesPage() {
   };
 
   const tables = cacheData?.tables || [];
+  const products = cacheData?.products || [];
+  const groups = cacheData?.groups || [];
+  
   const activeTableCount = tables.filter(t => t.active).length;
   const occupiedTableCount = tables.filter(t => t.currentOrder).length;
   const freeTableCount = tables.filter(t => t.active && !t.currentOrder && !t.reserve).length;
+  const reservedTableCount = tables.filter(t => t.reserve).length;
+  
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short',
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 dark:bg-gray-950">
-      {/* Header */}
+      {/* Enhanced Header */}
       <div className="bg-gray-800 dark:bg-gray-900 shadow-sm border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <img src={logoPath} alt="Logo" className="w-8 h-8" />
+              <img src={logoPath} alt="Logo" className="w-10 h-10" />
               <div>
-                <p className="text-sm text-gray-300 dark:text-gray-400">Welcome, {staff?.name}</p>
+                <h1 className="text-xl font-bold text-gray-100">Restaurant POS</h1>
+                <p className="text-sm text-gray-300">Welcome, {staff?.name}</p>
               </div>
             </div>
+            
+            {/* Center - Time and Date */}
+            <div className="hidden md:flex items-center space-x-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-100">{formatTime(currentTime)}</div>
+                <div className="text-xs text-gray-400">{formatDate(currentTime)}</div>
+              </div>
+            </div>
+            
             <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowQuickStats(!showQuickStats)}
+                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Stats
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="border-gray-600 text-gray-300 hover:bg-gray-700 dark:border-gray-500 dark:text-gray-200 dark:hover:bg-gray-800"
+                className="border-gray-600 text-gray-300 hover:bg-gray-700"
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 Refresh
@@ -123,7 +181,7 @@ export function TablesPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="border-gray-600 text-gray-300 hover:bg-gray-700 dark:border-gray-500 dark:text-gray-200 dark:hover:bg-gray-800"
+                className="border-gray-600 text-gray-300 hover:bg-gray-700"
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
@@ -133,42 +191,152 @@ export function TablesPage() {
         </div>
       </div>
 
-      {/* Tables Grid - 5 columns equally distributed */}
+      {/* Quick Stats Panel */}
+      {showQuickStats && (
+        <div className="bg-gray-800 border-b border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <Card className="bg-gray-700 border-gray-600">
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <Users className="w-5 h-5 text-blue-400" />
+                    <div>
+                      <div className="text-lg font-bold text-gray-100">{activeTableCount}</div>
+                      <div className="text-xs text-gray-400">Active Tables</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-700 border-gray-600">
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    <div>
+                      <div className="text-lg font-bold text-gray-100">{freeTableCount}</div>
+                      <div className="text-xs text-gray-400">Free Tables</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-700 border-gray-600">
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <XCircle className="w-5 h-5 text-red-400" />
+                    <div>
+                      <div className="text-lg font-bold text-gray-100">{occupiedTableCount}</div>
+                      <div className="text-xs text-gray-400">Occupied</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-700 border-gray-600">
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="w-5 h-5 text-yellow-400" />
+                    <div>
+                      <div className="text-lg font-bold text-gray-100">{reservedTableCount}</div>
+                      <div className="text-xs text-gray-400">Reserved</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-700 border-gray-600">
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <Coffee className="w-5 h-5 text-purple-400" />
+                    <div>
+                      <div className="text-lg font-bold text-gray-100">{products.length}</div>
+                      <div className="text-xs text-gray-400">Products</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-700 border-gray-600">
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <User className="w-5 h-5 text-indigo-400" />
+                    <div>
+                      <div className="text-lg font-bold text-gray-100">{staff?.name?.split(' ')[0] || 'Staff'}</div>
+                      <div className="text-xs text-gray-400">On Duty</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Tables Grid - 5 columns equally distributed */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-100 mb-2">Table Management</h2>
+          <p className="text-gray-400">Click on any table to start taking orders</p>
+        </div>
+        
         <div className="grid grid-cols-5 gap-4">
           {tables.map((table) => {
             const status = getTableStatus(table);
             return (
               <Card 
                 key={table.postId}
-                className={`cursor-pointer transition-all duration-200 border-2 ${getTableColor(status)} bg-gray-800 dark:bg-gray-850 ${
+                className={`cursor-pointer transition-all duration-300 border-2 ${getTableColor(status)} bg-gray-800 hover:shadow-lg transform hover:scale-105 ${
                   status === 'inactive' ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 onClick={() => status !== 'inactive' ? setLocation(`/order/${table.postId}`) : null}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-gray-100 dark:text-gray-200">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-bold text-gray-100 truncate">
                       {table.description || `Table ${table.postNumber || table.postId}`}
-                    </h3>
+                    </CardTitle>
                     {getStatusIcon(status)}
                   </div>
-                  
-                  <div className="space-y-2">
-                    {getStatusBadge(status)}
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-3">
+                    <div className="flex justify-center">
+                      {getStatusBadge(status)}
+                    </div>
                     
                     {table.currentOrder && (
-                      <div className="text-xs text-gray-300 dark:text-gray-400">
-                        <p>Order: #{table.currentOrder.orderId}</p>
-                        <p>Total: €{table.currentOrder.orderTotal}</p>
+                      <div className="bg-gray-700 rounded-lg p-3 text-center">
+                        <div className="text-xs text-gray-300 space-y-1">
+                          <p className="font-semibold">Order #{table.currentOrder.orderId}</p>
+                          <p className="text-green-300">Total: €{table.currentOrder.orderTotal}</p>
+                          <div className="flex items-center justify-center space-x-1 text-xs">
+                            <Timer className="w-3 h-3" />
+                            <span>Active</span>
+                          </div>
+                        </div>
                       </div>
                     )}
                     
                     {table.reserve && table.nameReserve && (
-                      <div className="text-xs text-yellow-300 dark:text-yellow-200">
-                        Reserved: {table.nameReserve}
+                      <div className="bg-yellow-900/20 rounded-lg p-3 text-center">
+                        <div className="text-xs text-yellow-300">
+                          <p className="font-semibold">Reserved</p>
+                          <p className="truncate">{table.nameReserve}</p>
+                        </div>
                       </div>
                     )}
+                    
+                    {status === 'free' && (
+                      <div className="text-center">
+                        <p className="text-xs text-gray-400">Ready for new order</p>
+                      </div>
+                    )}
+                    
+                    <div className="text-center">
+                      <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
+                        Table #{table.postNumber || table.postId}
+                      </Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -177,9 +345,20 @@ export function TablesPage() {
         </div>
 
         {tables.length === 0 && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-100 dark:text-gray-200 mb-2">No tables available</h3>
-            <p className="text-gray-300 dark:text-gray-400">Tables will appear here once they are configured in the system.</p>
+          <div className="text-center py-16">
+            <div className="bg-gray-800 rounded-lg p-8 max-w-md mx-auto">
+              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-medium text-gray-100 mb-2">No tables configured</h3>
+              <p className="text-gray-400 mb-4">Tables will appear here once they are set up in the system.</p>
+              <Button 
+                variant="outline" 
+                onClick={handleRefresh}
+                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh Tables
+              </Button>
+            </div>
           </div>
         )}
       </div>
