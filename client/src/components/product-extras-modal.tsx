@@ -217,8 +217,8 @@ export function ProductExtrasModal({
               </Button>
             </div>
 
-            {/* Prefixes with Clear Button */}
-            <div>
+            {/* Prefixes with Clear Button - Rectangle Container */}
+            <div className="border-2 border-gray-600 rounded-lg p-4 bg-gray-900/50">
               <div className="flex items-center justify-between mb-3">
                 <div></div>
                 <Button
@@ -304,12 +304,45 @@ export function ProductExtrasModal({
             </div>
 
             {/* Summary & Actions */}
-            <div className="border-t border-gray-700 pt-4">
-              <div className="flex justify-between items-center mb-4">
+            <div className="border-t border-gray-700 pt-4 space-y-4">
+              <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold text-gray-100">Total:</span>
                 <span className="text-xl font-bold text-green-300">€{calculateTotal()}</span>
               </div>
               
+              {/* Additional Control Buttons */}
+              <div className="flex justify-center space-x-3 pb-2 border-b border-gray-600">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-blue-900/20 border-blue-600 text-blue-300 hover:bg-blue-900/30 px-3 py-1 h-8 text-xs"
+                >
+                  Favorites
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-purple-900/20 border-purple-600 text-purple-300 hover:bg-purple-900/30 px-3 py-1 h-8 text-xs"
+                >
+                  Notes
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-orange-900/20 border-orange-600 text-orange-300 hover:bg-orange-900/30 px-3 py-1 h-8 text-xs"
+                >
+                  Portions
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-yellow-900/20 border-yellow-600 text-yellow-300 hover:bg-yellow-900/30 px-3 py-1 h-8 text-xs"
+                >
+                  Discount
+                </Button>
+              </div>
+              
+              {/* Main Action Buttons */}
               <div className="flex space-x-3">
                 <Button 
                   variant="outline" 
