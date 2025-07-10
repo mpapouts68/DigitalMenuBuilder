@@ -216,7 +216,6 @@ export function ProductExtrasModal({
 
             {/* Prefixes - Radio Button Style */}
             <div>
-              <h4 className="text-lg font-semibold text-gray-100 mb-3">Prefix (Select One)</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {prefixes.map((prefix) => (
                   <Card 
