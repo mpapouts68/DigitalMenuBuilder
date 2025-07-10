@@ -77,9 +77,8 @@ export function NumericKeypad({
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
           <Button
             key={num}
-            variant="outline"
             size="lg"
-            className="h-16 text-xl font-semibold hover:bg-blue-50 active:bg-blue-100 transition-colors"
+            className="h-16 text-xl font-semibold bg-slate-600 hover:bg-slate-700 active:bg-slate-800 text-white border-slate-500 transition-colors"
             onClick={() => handleNumberClick(num.toString())}
           >
             {num}
@@ -88,27 +87,24 @@ export function NumericKeypad({
 
         {/* Bottom row: Clear, 0, Backspace */}
         <Button
-          variant="outline"
           size="lg"
-          className="h-16 text-lg font-medium hover:bg-red-50 active:bg-red-100 transition-colors"
+          className="h-16 text-lg font-medium bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border-red-500 transition-colors"
           onClick={handleClear}
         >
           Clear
         </Button>
         
         <Button
-          variant="outline"
           size="lg"
-          className="h-16 text-xl font-semibold hover:bg-blue-50 active:bg-blue-100 transition-colors"
+          className="h-16 text-xl font-semibold bg-slate-600 hover:bg-slate-700 active:bg-slate-800 text-white border-slate-500 transition-colors"
           onClick={() => handleNumberClick('0')}
         >
           0
         </Button>
         
         <Button
-          variant="outline"
           size="lg"
-          className="h-16 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+          className="h-16 bg-slate-600 hover:bg-slate-700 active:bg-slate-800 text-white border-slate-500 transition-colors"
           onClick={handleBackspace}
         >
           <Delete className="w-6 h-6" />
@@ -118,7 +114,7 @@ export function NumericKeypad({
       {/* Enter Button */}
       {onEnter && (
         <Button
-          className="w-full mt-4 h-12 text-lg font-semibold"
+          className="w-full mt-4 h-12 text-lg font-semibold bg-slate-600 hover:bg-slate-700 active:bg-slate-800 text-white disabled:bg-gray-400 disabled:text-gray-600 transition-colors"
           onClick={handleEnterKey}
           disabled={value.length === 0}
         >

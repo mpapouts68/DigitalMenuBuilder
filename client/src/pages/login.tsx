@@ -65,22 +65,18 @@ export function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header with Logo */}
-      <div className="w-full bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="w-full bg-gray-800 shadow-lg border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center">
             <img 
               src={logoPath} 
-              alt="OlymPOS Logo" 
-              className="h-12 w-auto mr-3"
+              alt="OlymPOS" 
+              className="h-20 w-auto"
               onError={(e) => {
                 // Fallback if logo fails to load
                 e.currentTarget.style.display = 'none';
               }}
             />
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-gray-900">OlymPOS</h1>
-              <p className="text-sm text-gray-600">Restaurant Point of Sale System</p>
-            </div>
           </div>
         </div>
       </div>
@@ -113,10 +109,10 @@ export function LoginPage() {
       </div>
 
       {/* Footer */}
-      <div className="w-full bg-white border-t">
+      <div className="w-full bg-gray-800 border-t border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="text-center text-sm text-gray-500">
-            Powered by OlymPOS • Mobile Restaurant Management System
+          <div className="text-center text-sm text-gray-400">
+            Mobile Restaurant Management System
           </div>
         </div>
       </div>
