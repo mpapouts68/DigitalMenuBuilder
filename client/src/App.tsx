@@ -1,36 +1,58 @@
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { Router, Route, Switch } from "wouter";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth } from "@/hooks/useAuth";
-import Menu from "@/pages/menu";
-import Landing from "@/pages/landing";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { LoginPage } from "@/pages/login";
+import { TablesPage } from "@/pages/tables";
+import { OrderPage } from "@/pages/order";
+import { StatsPage } from "@/pages/stats";
+import { NotFoundPage } from "@/pages/not-found";
+import { ProtectedRoute } from "@/components/protected-route";
+import "./App.css";
 
-function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={Menu} />
-      <Route path="/menu" component={Menu} />
-      <Route>
-        <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-slate-800 mb-4">Page Not Found</h1>
-            <p className="text-slate-600">The page you're looking for doesn't exist.</p>
-          </div>
-        </div>
-      </Route>
-    </Switch>
-  );
-}
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50">
+            <Switch>
+              <Route path="/login" component={LoginPage} />
+              <Route path="/tables" component={() => (
+                <ProtectedRoute>
+                  <TablesPage />
+                </ProtectedRoute>
+              )} />
+              <Route path="/order/:postId" component={() => (
+                <ProtectedRoute>
+                  <OrderPage />
+                </ProtectedRoute>
+              )} />
+              <Route path="/stats" component={() => (
+                <ProtectedRoute>
+                  <StatsPage />
+                </ProtectedRoute>
+              )} />
+              <Route path="/" component={() => (
+                <ProtectedRoute>
+                  <TablesPage />
+                </ProtectedRoute>
+              )} />
+              <Route component={NotFoundPage} />
+            </Switch>
+          </div>
+        </Router>
         <Toaster />
-        <Router />
-      </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
