@@ -1,8 +1,15 @@
-# Restaurant POS - Mobile Table Management System
+# OlymPOS - Advanced Mobile Restaurant Management System
 
 ## Overview
 
-This is a mobile-first Point of Sale (POS) system for restaurant table management that integrates with an existing PDA database structure. The application provides a complete solution for managing tables, orders, and transactions through an intuitive mobile interface with PIN-based authentication.
+OlymPOS is an advanced mobile-first Point of Sale (POS) system specifically designed for restaurant table management with MariaDB integration. This system represents a complete migration from VBA Access applications to a modern web-based solution, featuring sophisticated extras/options functionality, area-based table management, and an extremely compact interface optimized for mobile tablets.
+
+**Key Innovations:**
+- Revolutionary click-and-add extras system with color-coded prefixes
+- Real-time tree display for complex order combinations  
+- Ultra-compact interface design with minimal spacing
+- Area-based table filtering for large restaurant operations
+- Complete VBA Access form migration with enhanced functionality
 
 ## System Architecture
 
@@ -152,6 +159,16 @@ The application follows a client-server architecture with:
 - **Hierarchical Categories**: Implemented parent/child category system with navigation
 - **Compact Interface**: Reduced table and product item sizes, removed "ready for new order" text
 - **Grid Enhancement**: Updated product grids to 5 columns for better space utilization
+
+### Latest Updates (July 2025)
+- **ProductExtrasModal Redesign**: Complete overhaul with click-and-add behavior for building complex combinations
+- **Color-coded Prefix System**: Purple, red, green, yellow, orange prefix buttons (Extra, Without, A Lot, A Little, Only)
+- **Tree Display Format**: Real-time tree updates showing prefix + extra combinations with immediate reset after selection
+- **Comment System**: 200-character limit for custom instructions not covered by database extras
+- **Serving Course Integration**: Dropdown within prefix rectangle to modify timing (Main, Starter, Dessert, Appetizer, Side Dish)
+- **Footer Removal**: Removed unnecessary "Favorites" tabs and buttons for cleaner, compact interface
+- **Area-based Table Management**: Enhanced area filtering with 5 restaurant sections (Main Dining, Terrace, Bar, Private, Garden)
+- **Ultra-compact Header**: Minimized spacing between control buttons and area selector for maximum screen utilization
 
 ## VBA Access Migration Plan
 
