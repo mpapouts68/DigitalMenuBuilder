@@ -38,6 +38,7 @@ interface PrefixOption {
 }
 
 const PREFIXES: PrefixOption[] = [
+  { id: 'extra', label: 'Extra', selected: false },
   { id: 'without', label: 'Without', selected: false },
   { id: 'alot', label: 'A Lot', selected: false },
   { id: 'alittle', label: 'A Little', selected: false },
@@ -165,31 +166,25 @@ export function ProductExtrasModal({
                       <p className="text-sm text-gray-400">{product.description2}</p>
                     )}
                     
-                    {/* Selected Options Display */}
-                    <div className="mt-3 space-y-2">
-                      {/* Selected Prefix as Button */}
-                      {prefixes.filter(p => p.selected).map(prefix => (
-                        <div key={prefix.id} className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-blue-900/20 border-blue-600 text-blue-300 hover:bg-blue-900/30 px-2 py-1 h-6 text-xs"
-                          >
-                            {prefix.label}
-                          </Button>
-                        </div>
-                      ))}
-                      
-                      {/* Selected Extras Tree */}
-                      {extras.filter(e => e.selected).map(extra => (
-                        <div key={extra.productId} className="ml-4 text-sm text-green-300 flex items-center">
-                          <span className="text-gray-500 mr-2">├─</span>
-                          <span>{extra.description}</span>
-                          <span className="ml-2 text-xs text-gray-400">
-                            {parseFloat(extra.price) === 0 ? '(Free)' : `(+€${extra.price})`}
-                          </span>
-                        </div>
-                      ))}
+                    {/* Selected Combinations Tree */}
+                    <div className="mt-3 space-y-1">
+                      {(() => {
+                        const selectedPrefix = prefixes.find(p => p.selected);
+                        const selectedExtras = extras.filter(e => e.selected);
+                        
+                        if (selectedPrefix && selectedExtras.length > 0) {
+                          return selectedExtras.map(extra => (
+                            <div key={extra.productId} className="ml-4 text-sm text-green-300 flex items-center">
+                              <span className="text-gray-500 mr-2">├─</span>
+                              <span>{selectedPrefix.label} {extra.description}</span>
+                              <span className="ml-2 text-xs text-gray-400">
+                                {parseFloat(extra.price) === 0 ? '(Free)' : `(+€${extra.price})`}
+                              </span>
+                            </div>
+                          ));
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
                   <Badge variant="outline" className="text-green-300 border-green-600">
@@ -222,24 +217,23 @@ export function ProductExtrasModal({
               </Button>
             </div>
 
-            {/* Clear Button */}
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
-                  setPrefixes(prev => prev.map(prefix => ({ ...prefix, selected: false })));
-                }}
-                className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-2 py-1 h-6 text-xs"
-              >
-                Clear All
-              </Button>
-            </div>
-
-            {/* Prefixes - Radio Button Style */}
+            {/* Prefixes with Clear Button */}
             <div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="flex items-center justify-between mb-3">
+                <div></div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
+                    setPrefixes(prev => prev.map(prefix => ({ ...prefix, selected: false })));
+                  }}
+                  className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-2 py-1 h-6 text-xs"
+                >
+                  Clear All
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
                 {prefixes.map((prefix) => (
                   <Card 
                     key={prefix.id}
