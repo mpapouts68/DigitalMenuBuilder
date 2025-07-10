@@ -169,6 +169,17 @@ export function ProductExtrasModal({
     return ((basePrice + extrasTotal) * quantity).toFixed(2);
   };
 
+  const getCurrentItemPrice = () => {
+    const basePrice = parseFloat(product?.price || '0');
+    const extrasTotal = finalCombinations
+      .reduce((sum, combination) => sum + parseFloat(combination.price), 0);
+    return (basePrice + extrasTotal).toFixed(2);
+  };
+
+  const removeCombination = (combinationId: string) => {
+    setFinalCombinations(prev => prev.filter(combo => combo.id !== combinationId));
+  };
+
   const handleAddToOrder = () => {
     if (!product) return;
     
@@ -220,12 +231,13 @@ export function ProductExtrasModal({
                     {/* Final Combinations Tree */}
                     <div className="mt-3 space-y-1">
                       {finalCombinations.map(combination => (
-                        <div key={combination.id} className="ml-4 text-sm text-green-300 flex items-center">
+                        <div key={combination.id} className="ml-4 text-sm text-green-300 flex items-center group cursor-pointer hover:text-green-200" onClick={() => removeCombination(combination.id)}>
                           <span className="text-gray-500 mr-2">├─</span>
                           <span>{combination.text}</span>
                           <span className="ml-2 text-xs text-gray-400">
                             {parseFloat(combination.price) === 0 ? '(Free)' : `(+€${combination.price})`}
                           </span>
+                          <X className="w-3 h-3 ml-2 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                       ))}
                       {comment && (
@@ -247,8 +259,8 @@ export function ProductExtrasModal({
                   <div className="flex flex-col items-end space-y-2">
                     {/* Price and Course on same row */}
                     <div className="flex items-center space-x-3">
-                      <Badge variant="outline" className="text-green-300 border-green-600">
-                        €{product.price}
+                      <Badge variant="outline" className={`${finalCombinations.length > 0 ? 'text-yellow-300 border-yellow-600' : 'text-green-300 border-green-600'}`}>
+                        €{getCurrentItemPrice()}
                       </Badge>
                       <Select value={servingCourse} onValueChange={setServingCourse}>
                         <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 text-xs h-8 w-32">
