@@ -12,7 +12,8 @@ import {
   CheckCircle,
   XCircle,
   Users,
-  Timer
+  Timer,
+  BarChart3
 } from 'lucide-react';
 import { TableWithOrder } from '@shared/schema';
 import logoPath from '@assets/logoB_1752121880525.ico';
@@ -135,16 +136,13 @@ export function TablesPage() {
       <div className="bg-gray-800 dark:bg-gray-900 shadow-sm border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <img src={logoPath} alt="Logo" className="w-10 h-10" />
-              <div>
-                <h1 className="text-xl font-bold text-gray-100">Restaurant POS</h1>
-                <p className="text-sm text-gray-300">Welcome, {staff?.name}</p>
-              </div>
+            {/* Left - Logo */}
+            <div className="flex items-center">
+              <img src={logoPath} alt="Logo" className="w-16 h-16" />
             </div>
             
-            {/* Area Selector */}
-            <div className="hidden md:flex items-center space-x-4">
+            {/* Center - Area Selector and Time */}
+            <div className="flex items-center space-x-6">
               <select className="bg-gray-700 text-gray-100 border border-gray-600 rounded px-3 py-1 text-sm">
                 <option value="">All Areas</option>
                 <option value="1">Main Dining Room</option>
@@ -153,17 +151,27 @@ export function TablesPage() {
                 <option value="4">Private Room</option>
                 <option value="5">Garden</option>
               </select>
-            </div>
-            
-            {/* Center - Time and Date */}
-            <div className="hidden md:flex items-center space-x-6">
-              <div className="text-center">
+              
+              <div className="hidden md:block text-center">
                 <div className="text-2xl font-bold text-gray-100">{formatTime(currentTime)}</div>
                 <div className="text-xs text-gray-400">{formatDate(currentTime)}</div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
+            {/* Right - Staff Badge and Controls */}
+            <div className="flex items-center space-x-3">
+              <Badge variant="outline" className="bg-blue-800/20 text-blue-300 border-blue-600 px-3 py-1">
+                {staff?.name}
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocation('/stats')}
+                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Statistics
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
