@@ -105,11 +105,10 @@ export function ProductExtrasModal({
 
   const togglePrefix = (prefixId: string) => {
     setPrefixes(prev => 
-      prev.map(prefix => 
-        prefix.id === prefixId 
-          ? { ...prefix, selected: !prefix.selected }
-          : prefix
-      )
+      prev.map(prefix => ({
+        ...prefix,
+        selected: prefix.id === prefixId ? !prefix.selected : false
+      }))
     );
   };
 
@@ -125,14 +124,14 @@ export function ProductExtrasModal({
     if (!product) return;
     
     const selectedExtras = extras.filter(extra => extra.selected);
-    const selectedPrefixes = prefixes.filter(prefix => prefix.selected);
+    const selectedPrefix = prefixes.find(prefix => prefix.selected);
     
-    onAddToOrder(product, selectedExtras, selectedPrefixes);
+    onAddToOrder(product, selectedExtras, selectedPrefix ? [selectedPrefix] : []);
     
     // Reset state
     setQuantity(1);
     setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
-    setPrefixes(PREFIXES);
+    setPrefixes(PREFIXES.map(p => ({ ...p, selected: false })));
     onOpenChange(false);
   };
 
@@ -160,11 +159,30 @@ export function ProductExtrasModal({
             <Card className="bg-gray-900 border-gray-700">
               <CardContent className="p-4">
                 <div className="flex justify-between items-center">
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-100">{product.description}</h3>
                     {product.description2 && (
                       <p className="text-sm text-gray-400">{product.description2}</p>
                     )}
+                    
+                    {/* Selected Options Tree */}
+                    <div className="mt-3 space-y-1">
+                      {prefixes.filter(p => p.selected).map(prefix => (
+                        <div key={prefix.id} className="ml-4 text-sm text-blue-300 flex items-center">
+                          <span className="text-gray-500 mr-2">├─</span>
+                          <span>{prefix.label}</span>
+                        </div>
+                      ))}
+                      {extras.filter(e => e.selected).map(extra => (
+                        <div key={extra.productId} className="ml-4 text-sm text-green-300 flex items-center">
+                          <span className="text-gray-500 mr-2">├─</span>
+                          <span>{extra.description}</span>
+                          <span className="ml-2 text-xs text-gray-400">
+                            {parseFloat(extra.price) === 0 ? '(Free)' : `(+€${extra.price})`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <Badge variant="outline" className="text-green-300 border-green-600">
                     €{product.price}
@@ -196,9 +214,9 @@ export function ProductExtrasModal({
               </Button>
             </div>
 
-            {/* Prefixes */}
+            {/* Prefixes - Radio Button Style */}
             <div>
-              <h4 className="text-lg font-semibold text-gray-100 mb-3">Prefixes</h4>
+              <h4 className="text-lg font-semibold text-gray-100 mb-3">Prefix (Select One)</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {prefixes.map((prefix) => (
                   <Card 
@@ -206,14 +224,23 @@ export function ProductExtrasModal({
                     className={cn(
                       "cursor-pointer transition-all border-2",
                       prefix.selected 
-                        ? "bg-blue-900/20 border-blue-600" 
+                        ? "bg-blue-900/20 border-blue-600 ring-2 ring-blue-500/50" 
                         : "bg-gray-900 border-gray-700 hover:border-gray-600"
                     )}
                     onClick={() => togglePrefix(prefix.id)}
                   >
                     <CardContent className="p-3 text-center">
                       <div className="flex items-center justify-center space-x-2">
-                        <Checkbox checked={prefix.selected} onChange={() => {}} />
+                        <div className={cn(
+                          "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                          prefix.selected 
+                            ? "border-blue-500 bg-blue-500" 
+                            : "border-gray-400"
+                        )}>
+                          {prefix.selected && (
+                            <div className="w-2 h-2 rounded-full bg-white"></div>
+                          )}
+                        </div>
                         <span className="text-sm font-medium text-gray-100">
                           {prefix.label}
                         </span>
@@ -226,7 +253,7 @@ export function ProductExtrasModal({
 
             {/* Extras */}
             <div>
-              <h4 className="text-lg font-semibold text-gray-100 mb-3">Available Extras</h4>
+              <h4 className="text-lg font-semibold text-gray-100 mb-3">Available Extras (Select Multiple)</h4>
               {loading ? (
                 <div className="text-center py-8 text-gray-400">Loading extras...</div>
               ) : (
