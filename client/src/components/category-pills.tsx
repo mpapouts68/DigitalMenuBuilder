@@ -59,8 +59,13 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
           className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
             activeCategory === "all"
               ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-              : "category-button-inactive"
+              : ""
           }`}
+          style={activeCategory !== "all" ? {
+            backgroundColor: "white",
+            color: "#000000", 
+            border: "1px solid #666666"
+          } : {}}
         >
           All Items
         </button>
@@ -71,8 +76,13 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === category.id
                 ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : "category-button-inactive"
+                : ""
             }`}
+            style={activeCategory !== category.id ? {
+              backgroundColor: "white",
+              color: "#000000", 
+              border: "1px solid #666666"
+            } : {}}
           >
             {category.name}
           </button>
@@ -119,8 +129,13 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === "all"
                 ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : "category-button-inactive"
+                : ""
             }`}
+            style={activeCategory !== "all" ? {
+              backgroundColor: "white",
+              color: "#000000", 
+              border: "1px solid #666666"
+            } : {}}
           >
             All Items
           </button>
@@ -131,8 +146,13 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
               className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
                 activeCategory === category.id
                   ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                  : "category-button-inactive"
+                  : ""
               }`}
+              style={activeCategory !== category.id ? {
+                backgroundColor: "white",
+                color: "#000000", 
+                border: "1px solid #666666"
+              } : {}}
             >
               {category.name}
             </button>
