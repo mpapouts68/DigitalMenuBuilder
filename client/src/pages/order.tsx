@@ -324,11 +324,10 @@ export function OrderPage() {
                               {product.description2}
                             </p>
                           )}
-                          <div className="flex justify-between items-center">
+                          <div className="flex justify-center items-center">
                             <Badge variant="outline" className="text-green-300 border-green-600 text-xs">
                               €{product.price}
                             </Badge>
-
                           </div>
                         </div>
                       </CardContent>
