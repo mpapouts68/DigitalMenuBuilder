@@ -375,9 +375,6 @@ export function ProductExtrasModal({
                     >
                       <CardContent className="p-2">
                         <div className="text-center space-y-1">
-                          <div className="flex justify-center">
-                            <Checkbox checked={extra.selected} onChange={() => {}} />
-                          </div>
                           <h3 className="text-xs font-medium text-gray-100 truncate">
                             {extra.description}
                           </h3>
