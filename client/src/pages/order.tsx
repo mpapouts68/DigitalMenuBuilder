@@ -77,6 +77,14 @@ export function OrderPage() {
   // Current visible categories based on navigation state
   const visibleCategories = parentCategory ? subCategories : [...parentCategories, ...directCategories];
   
+  // Debug logging
+  console.log('Groups:', groups);
+  console.log('Parent categories:', parentCategories);
+  console.log('Direct categories:', directCategories);
+  console.log('Parent category selected:', parentCategory);
+  console.log('Sub categories:', subCategories);
+  console.log('Visible categories:', visibleCategories);
+  
   const currentTable = tables.find(t => t.postId === parseInt(postId!));
   
   useEffect(() => {
@@ -141,6 +149,36 @@ export function OrderPage() {
     return orderItems.reduce((total, item) => {
       return total + (parseFloat(item.price) * item.quantity);
     }, 0).toFixed(2);
+  };
+
+  const handleCategoryClick = (categoryId: number) => {
+    try {
+      const category = groups.find(g => g.productGroupId === categoryId);
+      console.log('Category clicked:', categoryId, category);
+      
+      if (category?.hasSub) {
+        // This is a parent category, show subcategories
+        console.log('Setting parent category:', categoryId);
+        setParentCategory(categoryId);
+        setSelectedCategory(null);
+      } else {
+        // This is a subcategory or direct category, show products
+        console.log('Setting selected category:', categoryId);
+        setSelectedCategory(categoryId);
+      }
+    } catch (error) {
+      console.error('Error in handleCategoryClick:', error);
+      toast({
+        title: "Category Error",
+        description: "Failed to navigate category. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleBackToParent = () => {
+    setParentCategory(null);
+    setSelectedCategory(null);
   };
 
   const filteredProducts = products.filter(product => {
