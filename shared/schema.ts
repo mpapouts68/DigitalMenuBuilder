@@ -1,10 +1,10 @@
-import { pgTable, serial, text, timestamp, integer, decimal, boolean, varchar, doublePrecision } from "drizzle-orm/pg-core";
+import { mysqlTable, int, text, timestamp, decimal, boolean, varchar, double } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Staff table - matches existing Staff table structure
-export const staff = pgTable("staff", {
-  staffId: serial("staff_id").primaryKey(),
+export const staff = mysqlTable("staff", {
+  staffId: int("staff_id").primaryKey().autoincrement(),
   name: text("name").notNull(),
   surName: text("sur_name"),
   password: text("password").notNull(), // PIN for mobile login
@@ -18,85 +18,85 @@ export const staff = pgTable("staff", {
   displayLanguage: text("display_language"),
   picture: text("picture"),
   freeDrinks: boolean("free_drinks").default(false),
-  priceCat: integer("price_cat"),
+  priceCat: int("price_cat"),
   printerOn: boolean("printer_on").default(false),
-  menuCard: integer("menu_card"),
+  menuCard: int("menu_card"),
   orderBy: text("order_by"),
   orderByMenu: text("order_by_menu"),
   startUpMenu: text("start_up_menu"),
-  maxDiscount: integer("max_discount"),
+  maxDiscount: int("max_discount"),
 });
 
 // Posts_Main table - restaurant tables/posts
-export const postsMain = pgTable("posts_main", {
-  yperMainId: serial("yper_main_id").primaryKey(),
-  postId: integer("post_id").notNull().unique(),
+export const postsMain = mysqlTable("posts_main", {
+  yperMainId: int("yper_main_id").primaryKey().autoincrement(),
+  postId: int("post_id").notNull().unique(),
   description: text("description"),
-  postNumber: integer("post_number"),
+  postNumber: int("post_number"),
   active: boolean("active").default(true),
   heeftPool: boolean("heeft_pool").default(false),
   reserve: boolean("reserve").default(false),
   nameReserve: text("name_reserve"),
-  reserveId: integer("reserve_id"),
+  reserveId: int("reserve_id"),
   time: timestamp("time"),
   checkInTime: timestamp("check_in_time"),
   split: boolean("split").default(false),
-  sortNumber: integer("sort_number"),
-  top: integer("top"), // Layout positioning
-  left: integer("left"), // Layout positioning
-  clerkId: integer("clerk_id"),
-  activeOrderId: doublePrecision("active_order_id"),
-  iconId: integer("icon_id"),
-  iconIdOccu: integer("icon_id_occu"),
+  sortNumber: int("sort_number"),
+  top: int("top"), // Layout positioning
+  left: int("left"), // Layout positioning
+  clerkId: int("clerk_id"),
+  activeOrderId: double("active_order_id"),
+  iconId: int("icon_id"),
+  iconIdOccu: int("icon_id_occu"),
 });
 
 // ProductGroups table
-export const productGroups = pgTable("product_groups", {
-  productGroupId: serial("product_group_id").primaryKey(),
+export const productGroups = mysqlTable("product_groups", {
+  productGroupId: int("product_group_id").primaryKey().autoincrement(),
   description: text("description").notNull(),
   description2: text("description2"),
-  sortNumber: integer("sort_number").default(0),
+  sortNumber: int("sort_number").default(0),
   printer: text("printer"),
-  view: integer("view"),
-  viewOrder: integer("view_order"),
-  extraId: integer("extra_id"),
-  iconId: integer("icon_id"),
+  view: int("view"),
+  viewOrder: int("view_order"),
+  extraId: int("extra_id"),
+  iconId: int("icon_id"),
   isSub: boolean("is_sub").default(false),
-  subFromGroupId: integer("sub_from_group_id"),
+  subFromGroupId: int("sub_from_group_id"),
   hasSub: boolean("has_sub").default(false),
   options: text("options"),
-  rowPrint: integer("row_print"),
-  importId: integer("import_id"),
+  rowPrint: int("row_print"),
+  importId: int("import_id"),
   picturePath: text("picture_path"),
   quickMenu: boolean("quick_menu").default(false),
 });
 
 // Products table
-export const products = pgTable("products", {
-  productId: serial("product_id").primaryKey(),
+export const products = mysqlTable("products", {
+  productId: int("product_id").primaryKey().autoincrement(),
   description: text("description").notNull(),
   description2: text("description2"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   productType: text("product_type"),
   unit: text("unit"),
-  productGroupId: integer("product_group_id").references(() => productGroups.productGroupId),
+  productGroupId: int("product_group_id"),
   printerName: text("printer_name"),
-  vat: integer("vat"),
+  vat: int("vat"),
   build: boolean("build").default(false),
-  extraId: integer("extra_id"),
-  rowPrint: integer("row_print"),
-  iconId: integer("icon_id"),
+  extraId: int("extra_id"),
+  rowPrint: int("row_print"),
+  iconId: int("icon_id"),
   autoExtra: boolean("auto_extra").default(false),
   hasOptions: boolean("has_options").default(false),
-  extraIdKey: integer("extra_id_key"),
+  extraIdKey: int("extra_id_key"),
   picturePath: text("picture_path"),
-  recipeId: integer("recipe_id"),
-  purchased: doublePrecision("purchased").default(0),
-  sold: doublePrecision("sold").default(0),
-  stock: doublePrecision("stock").default(0),
-  stockCorrection: doublePrecision("stock_correction").default(0),
+  recipeId: int("recipe_id"),
+  purchased: double("purchased").default(0),
+  sold: double("sold").default(0),
+  stock: double("stock").default(0),
+  stockCorrection: double("stock_correction").default(0),
   picture: text("picture"),
-  menuNumber: integer("menu_number"), // For Chinese numeric ordering
+  menuNumber: int("menu_number"), // For Chinese numeric ordering
   options: text("options"),
   includeGroup: boolean("include_group").default(false),
   favorite: boolean("favorite").default(false),
@@ -110,43 +110,43 @@ export const products = pgTable("products", {
 });
 
 // Orders table
-export const orders = pgTable("orders", {
-  orderId: doublePrecision("order_id").primaryKey(),
+export const orders = mysqlTable("orders", {
+  orderId: double("order_id").primaryKey(),
   timeDate: timestamp("time_date").defaultNow().notNull(),
-  clerkId: integer("clerk_id"),
+  clerkId: int("clerk_id"),
   orderType: text("order_type"),
   orderTotal: decimal("order_total", { precision: 10, scale: 2 }).default("0.00"),
   receipt: boolean("receipt").default(false),
   history: boolean("history").default(false),
   served: boolean("served").default(false),
-  postId: integer("post_id").references(() => postsMain.postId),
-  nameId: integer("name_id"),
-  customerId: integer("customer_id"),
+  postId: int("post_id"),
+  nameId: int("name_id"),
+  customerId: int("customer_id"),
   hasDiscount: boolean("has_discount").default(false),
-  discountPercentage: integer("discount_percentage"),
+  discountPercentage: int("discount_percentage"),
   closed: boolean("closed").default(false),
   closedDate: timestamp("closed_date"),
-  orderDiscountAmount: doublePrecision("order_discount_amount").default(0),
-  orderTotalAfterD: doublePrecision("order_total_after_d").default(0),
+  orderDiscountAmount: double("order_discount_amount").default(0),
+  orderTotalAfterD: double("order_total_after_d").default(0),
   splitPayment: decimal("split_payment", { precision: 10, scale: 2 }),
-  catIdOpen: integer("cat_id_open"),
-  catIdClose: integer("cat_id_close"),
+  catIdOpen: int("cat_id_open"),
+  catIdClose: int("cat_id_close"),
   vatHigh: decimal("vat_high", { precision: 10, scale: 2 }),
   vatLow: decimal("vat_low", { precision: 10, scale: 2 }),
-  employeeId: integer("employee_id"),
-  numberOfPersons: integer("number_of_persons"),
+  employeeId: int("employee_id"),
+  numberOfPersons: int("number_of_persons"),
 });
 
 // Orders_Actual table - current order items
-export const ordersActual = pgTable("orders_actual", {
-  orderIdSub: serial("order_id_sub").primaryKey(),
-  orderId: doublePrecision("order_id").references(() => orders.orderId),
-  productId: integer("product_id").references(() => products.productId),
+export const ordersActual = mysqlTable("orders_actual", {
+  orderIdSub: int("order_id_sub").primaryKey().autoincrement(),
+  orderId: double("order_id"),
+  productId: int("product_id"),
   unit: text("unit"),
-  quantity: integer("quantity").default(1),
-  postId: integer("post_id"),
-  nameId: integer("name_id"),
-  postP2Id: integer("post_p2_id"),
+  quantity: int("quantity").default(1),
+  postId: int("post_id"),
+  nameId: int("name_id"),
+  postP2Id: int("post_p2_id"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   descriptionEx: text("description_ex"),
   descriptionExUk: text("description_ex_uk"),
@@ -159,16 +159,16 @@ export const ordersActual = pgTable("orders_actual", {
   priceFree: decimal("price_free", { precision: 10, scale: 2 }),
   cancelled: boolean("cancelled").default(false),
   orderBy: text("order_by"),
-  servingRow: integer("serving_row"),
+  servingRow: int("serving_row"),
   hasExtra: boolean("has_extra").default(false),
   served: boolean("served").default(false),
-  ecrVoidLine: integer("ecr_void_line"),
+  ecrVoidLine: int("ecr_void_line"),
 });
 
 // Sessions for mobile authentication
-export const sessions = pgTable("sessions", {
+export const sessions = mysqlTable("sessions", {
   id: text("id").primaryKey(),
-  staffId: integer("staff_id").references(() => staff.staffId),
+  staffId: int("staff_id"),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

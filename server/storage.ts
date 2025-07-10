@@ -328,13 +328,19 @@ export class DatabaseStorage implements IStorage {
   async createOrder(orderData: InsertOrder): Promise<Order> {
     const orderId = Date.now(); // Use timestamp as order ID
     
-    const [order] = await db
+    await db
       .insert(orders)
       .values({
         ...orderData,
         orderId
-      })
-      .returning();
+      });
+    
+    // Get the inserted order for MySQL
+    const [order] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.orderId, orderId))
+      .limit(1);
     
     // Update table status
     if (orderData.postId) {
@@ -345,26 +351,38 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateOrder(orderId: number, updates: Partial<InsertOrder>): Promise<Order | undefined> {
-    const [order] = await db
+    await db
       .update(orders)
       .set(updates)
+      .where(eq(orders.orderId, orderId));
+    
+    // Get the updated order for MySQL
+    const [order] = await db
+      .select()
+      .from(orders)
       .where(eq(orders.orderId, orderId))
-      .returning();
+      .limit(1);
     
     return order;
   }
   
   async closeOrder(orderId: number): Promise<boolean> {
     try {
+      // Get order before updating for MySQL
       const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.orderId, orderId))
+        .limit(1);
+      
+      await db
         .update(orders)
         .set({
           closed: true,
           closedDate: new Date(),
           history: true
         })
-        .where(eq(orders.orderId, orderId))
-        .returning();
+        .where(eq(orders.orderId, orderId));
       
       // Free the table
       if (order?.postId) {
@@ -387,10 +405,17 @@ export class DatabaseStorage implements IStorage {
   }
   
   async addOrderItem(item: InsertOrdersActual): Promise<OrdersActual> {
-    const [orderItem] = await db
+    const result = await db
       .insert(ordersActual)
-      .values(item)
-      .returning();
+      .values(item);
+    
+    // Get the inserted item using auto-increment ID for MySQL
+    const insertId = (result as any).insertId;
+    const [orderItem] = await db
+      .select()
+      .from(ordersActual)
+      .where(eq(ordersActual.orderIdSub, insertId))
+      .limit(1);
     
     // Update order total
     await this.updateOrderTotal(item.orderId!);
@@ -399,11 +424,17 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateOrderItem(itemId: number, updates: Partial<InsertOrdersActual>): Promise<OrdersActual | undefined> {
-    const [orderItem] = await db
+    await db
       .update(ordersActual)
       .set(updates)
+      .where(eq(ordersActual.orderIdSub, itemId));
+    
+    // Get the updated item for MySQL
+    const [orderItem] = await db
+      .select()
+      .from(ordersActual)
       .where(eq(ordersActual.orderIdSub, itemId))
-      .returning();
+      .limit(1);
     
     if (orderItem && orderItem.orderId) {
       await this.updateOrderTotal(orderItem.orderId);
