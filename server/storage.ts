@@ -172,28 +172,40 @@ export class DatabaseStorage implements IStorage {
         ORDER BY post_number ASC
       `);
       
-      return (result.rows as any[]).map((row) => ({
-        yperMainId: row.post_id,
-        postId: row.post_id,
-        description: row.description || `Table ${row.post_number}`,
-        postNumber: row.post_number,
-        active: row.active !== false, // Default to true if null
-        heeftPool: false,
-        reserve: row.reserve || false,
-        nameReserve: row.name_reserve,
-        reserveId: null,
-        time: null,
-        checkInTime: null,
-        split: false,
-        sortNumber: row.post_number || row.post_id,
-        top: null,
-        left: null,
-        clerkId: null,
-        activeOrderId: null,
-        iconId: null,
-        iconIdOccu: null,
-        currentOrder: undefined
-      }));
+      return (result.rows as any[]).map((row, index) => {
+        // Assign areas based on table numbers for demonstration
+        let areaId = 1; // Default to Main Dining
+        const tableNum = row.post_number || row.post_id;
+        
+        if (tableNum >= 1 && tableNum <= 7) areaId = 1;      // Main Dining
+        else if (tableNum >= 8 && tableNum <= 14) areaId = 2;  // Terrace
+        else if (tableNum >= 15 && tableNum <= 21) areaId = 3; // Bar Area
+        else if (tableNum >= 22 && tableNum <= 28) areaId = 4; // Private Room
+        else if (tableNum >= 29 && tableNum <= 35) areaId = 5; // Garden
+        
+        return {
+          yperMainId: areaId,
+          postId: row.post_id,
+          description: row.description || `Table ${row.post_number}`,
+          postNumber: row.post_number,
+          active: row.active !== false, // Default to true if null
+          heeftPool: false,
+          reserve: row.reserve || false,
+          nameReserve: row.name_reserve,
+          reserveId: null,
+          time: null,
+          checkInTime: null,
+          split: false,
+          sortNumber: row.post_number || row.post_id,
+          top: null,
+          left: null,
+          clerkId: null,
+          activeOrderId: null,
+          iconId: null,
+          iconIdOccu: null,
+          currentOrder: undefined
+        };
+      });
     } catch (error) {
       console.error("Error getting tables:", error);
       return [];

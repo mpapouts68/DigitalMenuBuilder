@@ -50,7 +50,7 @@ export function TablesPage() {
         console.error('Error loading areas:', error);
         // Fallback areas if API fails
         setAreas([
-          { yperMainId: 1, description: 'Main Dining Room' },
+          { yperMainId: 1, description: 'Main Dining' },
           { yperMainId: 2, description: 'Terrace' },
           { yperMainId: 3, description: 'Bar Area' },
           { yperMainId: 4, description: 'Private Room' },
@@ -225,7 +225,7 @@ export function TablesPage() {
             {/* Second Row - Areas and User */}
             <div className="flex justify-between items-center pb-1 border-t border-gray-700">
               {/* Left - Area Selector */}
-              <div className="flex items-center">
+              <div className="flex items-center space-x-2">
                 <select 
                   className="bg-gray-700 text-gray-100 border border-gray-600 rounded px-3 py-1 text-sm"
                   onChange={(e) => setSelectedArea(e.target.value)}
@@ -238,6 +238,11 @@ export function TablesPage() {
                     </option>
                   ))}
                 </select>
+                {selectedArea && (
+                  <span className="text-xs text-gray-400">
+                    {tables.length} tables
+                  </span>
+                )}
               </div>
               
               {/* Right - User Badge */}
@@ -279,7 +284,11 @@ export function TablesPage() {
                         {table.description || `Table ${table.postNumber || table.postId}`}
                       </span>
                       
-
+                      {selectedArea && (
+                        <div className="text-xs text-blue-300">
+                          {areas.find(a => a.yperMainId === table.yperMainId)?.description}
+                        </div>
+                      )}
                       
                       {table.currentOrder && (
                         <div className="text-xs text-green-300">
@@ -298,8 +307,14 @@ export function TablesPage() {
           <div className="text-center py-16">
             <div className="bg-gray-800 rounded-lg p-8 max-w-md mx-auto">
               <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-gray-100 mb-2">No tables configured</h3>
-              <p className="text-gray-400 mb-4">Tables will appear here once they are set up in the system.</p>
+              <h3 className="text-xl font-medium text-gray-100 mb-2">
+                {selectedArea ? 'No tables in this area' : 'No tables configured'}
+              </h3>
+              <p className="text-gray-400 mb-4">
+                {selectedArea 
+                  ? 'Try selecting a different area or clear the filter to see all tables.' 
+                  : 'Tables will appear here once they are set up in the system.'}
+              </p>
               <Button 
                 variant="outline" 
                 onClick={handleRefresh}
