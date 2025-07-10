@@ -1,289 +1,351 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
   TrendingUp, 
-  DollarSign, 
-  ShoppingCart, 
-  Users,
-  Calendar,
+  Users, 
+  CreditCard,
+  Banknote,
+  Gift,
   Clock,
-  Target
+  CheckCircle,
+  XCircle,
+  Calendar,
+  Euro,
+  BarChart3,
+  PieChart,
+  Activity
 } from 'lucide-react';
 
-interface StatsData {
-  totalOrders: number;
-  totalSales: number;
-  averageOrderValue: number;
-  period: {
-    from: Date;
-    to: Date;
-  };
-}
-
 export function StatsPage() {
+  const { staff } = useAuth();
   const [, setLocation] = useLocation();
-  const { staff, token } = useAuth();
-  const [stats, setStats] = useState<StatsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<'today' | 'week' | 'month'>('today');
+  const [selectedPeriod, setSelectedPeriod] = useState('today');
 
-  useEffect(() => {
-    loadStats();
-  }, [period]);
-
-  const loadStats = async () => {
-    if (!token) return;
-    
-    setLoading(true);
-    try {
-      const now = new Date();
-      let fromDate: Date;
-      
-      switch (period) {
-        case 'today':
-          fromDate = new Date(now.setHours(0, 0, 0, 0));
-          break;
-        case 'week':
-          fromDate = new Date(now.setDate(now.getDate() - 7));
-          break;
-        case 'month':
-          fromDate = new Date(now.setMonth(now.getMonth() - 1));
-          break;
-        default:
-          fromDate = new Date(now.setHours(0, 0, 0, 0));
+  // Dummy statistics data
+  const stats = {
+    today: {
+      totalOrders: 156,
+      totalRevenue: 2847.50,
+      avgOrderValue: 18.25,
+      tablesServed: 89,
+      openTables: 8,
+      closedTables: 127,
+      payments: {
+        cash: { count: 52, amount: 945.30 },
+        card: { count: 78, amount: 1547.80 },
+        voucher: { count: 26, amount: 354.40 }
+      },
+      hourlyData: [
+        { hour: '09:00', orders: 12, revenue: 185.50 },
+        { hour: '10:00', orders: 18, revenue: 267.80 },
+        { hour: '11:00', orders: 23, revenue: 421.20 },
+        { hour: '12:00', orders: 31, revenue: 568.90 },
+        { hour: '13:00', orders: 28, revenue: 512.40 },
+        { hour: '14:00', orders: 22, revenue: 398.70 },
+        { hour: '15:00', orders: 15, revenue: 289.30 },
+        { hour: '16:00', orders: 7, revenue: 203.70 }
+      ]
+    },
+    week: {
+      totalOrders: 1247,
+      totalRevenue: 23856.80,
+      avgOrderValue: 19.12,
+      tablesServed: 678,
+      openTables: 8,
+      closedTables: 1239,
+      payments: {
+        cash: { count: 412, amount: 7854.20 },
+        card: { count: 623, amount: 12678.40 },
+        voucher: { count: 212, amount: 3324.20 }
       }
-      
-      const response = await fetch(`/api/staff/stats?from=${fromDate.toISOString()}&to=${new Date().toISOString()}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
+    },
+    month: {
+      totalOrders: 5234,
+      totalRevenue: 98547.60,
+      avgOrderValue: 18.83,
+      tablesServed: 2847,
+      openTables: 8,
+      closedTables: 5226,
+      payments: {
+        cash: { count: 1745, amount: 32167.80 },
+        card: { count: 2567, amount: 51234.90 },
+        voucher: { count: 922, amount: 15144.90 }
       }
-    } catch (error) {
-      console.error('Failed to load stats:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+  const currentStats = stats[selectedPeriod as keyof typeof stats];
+
+  const formatCurrency = (amount: number) => `€${amount.toFixed(2)}`;
+
+  const getPaymentPercentage = (amount: number) => {
+    return ((amount / currentStats.totalRevenue) * 100).toFixed(1);
   };
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
+  const getPeriodLabel = () => {
+    switch(selectedPeriod) {
+      case 'today': return 'Today';
+      case 'week': return 'This Week';
+      case 'month': return 'This Month';
+      default: return 'Today';
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900 dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-gray-800 dark:bg-gray-900 shadow-sm border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <Button variant="outline" onClick={() => setLocation('/tables')}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocation('/tables')}
+                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Tables
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">OlymPOS Statistics</h1>
-                <p className="text-sm text-gray-500">Performance overview for {staff?.name}</p>
+                <h1 className="text-xl font-bold text-gray-100">Restaurant Statistics</h1>
+                <p className="text-sm text-gray-300">Staff: {staff?.name}</p>
               </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <select 
+                className="bg-gray-700 text-gray-100 border border-gray-600 rounded px-3 py-1 text-sm"
+                value={selectedPeriod}
+                onChange={(e) => setSelectedPeriod(e.target.value)}
+              >
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+              </select>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Period Selection */}
-        <div className="mb-6">
-          <div className="flex space-x-2">
-            <Button
-              variant={period === 'today' ? 'default' : 'outline'}
-              onClick={() => setPeriod('today')}
-            >
-              Today
-            </Button>
-            <Button
-              variant={period === 'week' ? 'default' : 'outline'}
-              onClick={() => setPeriod('week')}
-            >
-              This Week
-            </Button>
-            <Button
-              variant={period === 'month' ? 'default' : 'outline'}
-              onClick={() => setPeriod('month')}
-            >
-              This Month
-            </Button>
-          </div>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-gray-100 flex items-center text-sm">
+                <TrendingUp className="w-4 h-4 mr-2 text-green-400" />
+                Total Revenue
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-300">
+                {formatCurrency(currentStats.totalRevenue)}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                {getPeriodLabel()}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-gray-100 flex items-center text-sm">
+                <BarChart3 className="w-4 h-4 mr-2 text-blue-400" />
+                Total Orders
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-300">
+                {currentStats.totalOrders}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Avg: {formatCurrency(currentStats.avgOrderValue)}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-gray-100 flex items-center text-sm">
+                <Users className="w-4 h-4 mr-2 text-purple-400" />
+                Tables Served
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-300">
+                {currentStats.tablesServed}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Total transactions
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-gray-100 flex items-center text-sm">
+                <Activity className="w-4 h-4 mr-2 text-orange-400" />
+                Current Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-4">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-green-300">{currentStats.openTables}</div>
+                  <div className="text-xs text-gray-400">Open</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-gray-300">{currentStats.closedTables}</div>
+                  <div className="text-xs text-gray-400">Closed</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-6">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Orders processed
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(stats?.totalSales || 0)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Revenue generated
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Average Order</CardTitle>
-                  <Target className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(stats?.averageOrderValue || 0)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Per order value
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Performance</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {stats?.totalOrders && stats.totalOrders > 0 ? 'Active' : 'Idle'}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Current status
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Period Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Period Details
-                </CardTitle>
-                <CardDescription>
-                  Statistics for the selected time period
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Period Start</p>
-                      <p className="font-medium">
-                        {stats?.period?.from ? formatDate(stats.period.from) : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Period End</p>
-                      <p className="font-medium">
-                        {stats?.period?.to ? formatDate(stats.period.to) : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t pt-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Staff Member:</span>
-                      <span className="font-medium">{staff?.name}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm mt-2">
-                      <span className="text-gray-600">Role:</span>
-                      <span className="font-medium">{staff?.role || 'Server'}</span>
-                    </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Payment Methods */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-gray-100 flex items-center">
+                <Euro className="w-5 h-5 mr-2" />
+                Payment Methods - {getPeriodLabel()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <CreditCard className="w-5 h-5 text-blue-400" />
+                  <div>
+                    <div className="font-medium text-gray-100">Card Payments</div>
+                    <div className="text-sm text-gray-400">{currentStats.payments.card.count} transactions</div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Performance Insights */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2" />
-                  Performance Insights
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {stats?.totalOrders === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Users className="w-12 h-12 mx-auto mb-2" />
-                      <p>No orders processed in this period</p>
-                      <p className="text-sm">Start taking orders to see performance data</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-blue-900">Order Volume</h4>
-                        <p className="text-sm text-blue-700 mt-1">
-                          You've processed {stats?.totalOrders} orders in this period
-                        </p>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-green-900">Sales Performance</h4>
-                        <p className="text-sm text-green-700 mt-1">
-                          Generated {formatCurrency(stats?.totalSales || 0)} in revenue
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                <div className="text-right">
+                  <div className="font-bold text-blue-300">{formatCurrency(currentStats.payments.card.amount)}</div>
+                  <div className="text-sm text-gray-400">{getPaymentPercentage(currentStats.payments.card.amount)}%</div>
                 </div>
-              </CardContent>
-            </Card>
-          </>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Banknote className="w-5 h-5 text-green-400" />
+                  <div>
+                    <div className="font-medium text-gray-100">Cash Payments</div>
+                    <div className="text-sm text-gray-400">{currentStats.payments.cash.count} transactions</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-green-300">{formatCurrency(currentStats.payments.cash.amount)}</div>
+                  <div className="text-sm text-gray-400">{getPaymentPercentage(currentStats.payments.cash.amount)}%</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Gift className="w-5 h-5 text-purple-400" />
+                  <div>
+                    <div className="font-medium text-gray-100">Vouchers</div>
+                    <div className="text-sm text-gray-400">{currentStats.payments.voucher.count} transactions</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-purple-300">{formatCurrency(currentStats.payments.voucher.amount)}</div>
+                  <div className="text-sm text-gray-400">{getPaymentPercentage(currentStats.payments.voucher.amount)}%</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Table Status */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-gray-100 flex items-center">
+                <PieChart className="w-5 h-5 mr-2" />
+                Table Status Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <div>
+                    <div className="font-medium text-gray-100">Closed Tables</div>
+                    <div className="text-sm text-gray-400">Completed service</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-green-300">{currentStats.closedTables}</div>
+                  <div className="text-sm text-gray-400">
+                    {((currentStats.closedTables / (currentStats.closedTables + currentStats.openTables)) * 100).toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Clock className="w-5 h-5 text-orange-400" />
+                  <div>
+                    <div className="font-medium text-gray-100">Open Tables</div>
+                    <div className="text-sm text-gray-400">Currently active</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-orange-300">{currentStats.openTables}</div>
+                  <div className="text-sm text-gray-400">
+                    {((currentStats.openTables / (currentStats.closedTables + currentStats.openTables)) * 100).toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-gray-700 rounded-lg">
+                <div className="text-sm text-gray-400 mb-2">Average table turnover</div>
+                <div className="text-lg font-bold text-gray-100">
+                  {(currentStats.tablesServed / (currentStats.closedTables + currentStats.openTables)).toFixed(1)}x
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Hourly Performance (Today only) */}
+        {selectedPeriod === 'today' && (
+          <Card className="bg-gray-800 border-gray-700 mt-6">
+            <CardHeader>
+              <CardTitle className="text-gray-100 flex items-center">
+                <Calendar className="w-5 h-5 mr-2" />
+                Hourly Performance - Today
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                {stats.today.hourlyData.map((hour) => (
+                  <div key={hour.hour} className="text-center p-3 bg-gray-700 rounded-lg">
+                    <div className="text-sm text-gray-400">{hour.hour}</div>
+                    <div className="text-lg font-bold text-gray-100">{hour.orders}</div>
+                    <div className="text-xs text-green-300">{formatCurrency(hour.revenue)}</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
+
+        {/* Quick Actions */}
+        <div className="mt-6 flex justify-center">
+          <Button
+            onClick={() => setLocation('/tables')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Return to Tables
+          </Button>
+        </div>
       </div>
     </div>
   );

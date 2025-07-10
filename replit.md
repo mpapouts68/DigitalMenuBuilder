@@ -169,6 +169,7 @@ The application follows a client-server architecture with:
 - **Footer Removal**: Removed unnecessary "Favorites" tabs and buttons for cleaner, compact interface
 - **Area-based Table Management**: Enhanced area filtering with 5 restaurant sections (Main Dining, Terrace, Bar, Private, Garden)
 - **Ultra-compact Header**: Minimized spacing between control buttons and area selector for maximum screen utilization
+- **Statistics Page**: Added comprehensive statistics page with dummy data for pre-presentation including closed/open tables, payment methods (card, cash, voucher), revenue metrics, and hourly performance tracking
 
 ## VBA Access Migration Plan
 
