@@ -1,0 +1,658 @@
+Database Structure Report
+=========================
+Generated on: 3/13/2025 3:31:15 PM
+
+
+Table: csOrders
+--------------------------------------------------
+Field: CSOrderID
+  Type: Long Integer
+Field: CSORder
+  Type: Text
+Field: Staff_ID
+  Type: Long Integer
+Field: Order_ID
+  Type: Long Integer
+Field: Finished
+  Type: Integer
+
+Table: Extra_Main
+--------------------------------------------------
+Field: ExtraID
+  Type: Long Integer
+Field: ExtraDescription
+  Type: Text
+
+Table: Extras
+--------------------------------------------------
+Field: ExtraID
+  Type: Long Integer
+Field: Description
+  Type: Text
+Field: Price
+  Type: Currency
+Field: Extra_ID_Key
+  Type: Long Integer
+Field: Icon_ID
+  Type: Long Integer
+
+Table: Grouping_Basis
+--------------------------------------------------
+Field: Description
+  Type: Text
+Field: Serving_Row
+  Type: Long Integer
+
+Table: Grouping_ProductGroepn
+--------------------------------------------------
+Field: ProductGroup_ID
+  Type: Long Integer
+Field: Description
+  Type: Text
+Field: Serving_Row
+  Type: Long Integer
+
+Table: Menu_Changes
+--------------------------------------------------
+Field: Change_POS
+  Type: Boolean
+Field: Change_PDA
+  Type: Boolean
+Field: Change_POS_Bill
+  Type: Boolean
+Field: Change_PDA_Bill
+  Type: Boolean
+Field: Play_Sound_POS
+  Type: Boolean
+Field: Play_Sound_PDA
+  Type: Boolean
+
+Table: Menus
+--------------------------------------------------
+Field: Menu_ID
+  Type: Long Integer
+Field: Menu_Desc
+  Type: Text
+Table: Names
+--------------------------------------------------
+Field: Name_ID
+  Type: Long Integer
+Field: Name
+  Type: Text
+Field: Active_Order_ID
+  Type: Long Integer
+Field: Active
+  Type: Boolean
+Field: Staff_ID
+  Type: Long Integer
+
+Table: Order_Extras_Sub
+--------------------------------------------------
+Field: Extra_S_ID
+  Type: Long Integer
+Field: Order_ID_Sub
+  Type: Long Integer
+Field: Quantity
+  Type: Long Integer
+Field: Prefix
+  Type: Text
+Field: Extra_ID
+  Type: Long Integer
+
+
+Table: Orders
+--------------------------------------------------
+Field: Order_ID
+  Type: Double
+Field: Time_Date
+  Type: Date/Time
+Field: Clerk_ID
+  Type: Long Integer
+Field: Order_Type
+  Type: Text
+Field: Order_Total
+  Type: Currency
+Field: Receipt
+  Type: Boolean
+Field: History
+  Type: Boolean
+Field: Served
+  Type: Boolean
+Field: Post_ID
+  Type: Long Integer
+Field: Name_ID
+  Type: Long Integer
+Field: Customer_ID
+  Type: Long Integer
+Field: HasDiscount
+  Type: Boolean
+Field: DiscountPercentage
+  Type: Long Integer
+Field: Closed
+  Type: Boolean
+Field: Closed_Date
+  Type: Date/Time
+Field: Order_Discount_Amount
+  Type: Double
+Field: Order_Total_AfterD
+  Type: Double
+Field: Split_Payment
+  Type: Currency
+Field: Cat_ID_Open
+  Type: Long Integer
+Field: Cat_ID_Close
+  Type: Long Integer
+Field: VAT_High
+  Type: Currency
+Field: VAT_LOw
+  Type: Currency
+Field: Employee_ID
+  Type: Long Integer
+Field: NumberOfPersons
+  Type: Long Integer
+
+
+Table: Orders_Actual
+--------------------------------------------------
+Field: Order_ID_Sub
+  Type: Long Integer
+Field: Order_ID
+  Type: Double
+Field: Product_ID
+  Type: Long Integer
+Field: Unit
+  Type: Text
+Field: Quantity
+  Type: Long Integer
+Field: Post_ID
+  Type: Long Integer
+Field: Name_ID
+  Type: Long Integer
+Field: Post_P2_ID
+  Type: Long Integer
+Field: Price
+  Type: Currency
+Field: DescriptionEx
+  Type: Text
+Field: DescriptionEx_UK
+  Type: Text
+Field: Printer
+  Type: Boolean
+Field: Receipt
+  Type: Boolean
+Field: OrderTime
+  Type: Date/Time
+Field: Staff_ID
+  Type: Text
+Field: Personel_Closed
+  Type: Boolean
+Field: Free
+  Type: Boolean
+Field: Price_free
+  Type: Currency
+Field: Cancelled
+  Type: Boolean
+Field: Order_By
+  Type: Text
+Field: Serving_Row
+  Type: Long Integer
+Field: Has_Extra
+  Type: Boolean
+Field: Served
+  Type: Boolean
+Field: ECR_Void_Line
+  Type: Long Integer
+
+Table: Orders_History
+--------------------------------------------------
+Field: Order_ID_Sub
+  Type: Long Integer
+Field: Order_ID
+  Type: Double
+Field: Product_ID
+  Type: Long Integer
+Field: Unit
+  Type: Text
+Field: Quantity
+  Type: Long Integer
+Field: Post_ID
+  Type: Long Integer
+Field: Price
+  Type: Currency
+Field: DescriptionEx
+  Type: Text
+Field: DescriptionEx_UK
+  Type: Text
+Field: Printer
+  Type: Boolean
+Field: Receipt
+  Type: Boolean
+Field: OrderTime
+  Type: Date/Time
+Field: Staff_ID
+  Type: Text
+Field: Personel_Closed
+  Type: Boolean
+Field: Free
+  Type: Boolean
+Field: Price_free
+  Type: Currency
+Field: Cancelled
+  Type: Boolean
+Field: Order_By
+  Type: Text
+Field: Serving_Row
+  Type: Long Integer
+Field: Date_Closed
+  Type: Date/Time
+
+Table: PoolTafels
+--------------------------------------------------
+Field: Post_ID
+  Type: Long Integer
+Field: Active
+  Type: Boolean
+Field: PricePerUur
+  Type: Currency
+Field: Reserve
+  Type: Boolean
+Field: Name_Reserve
+  Type: Text
+Field: Time
+  Type: Date/Time
+
+Table: Posts_Main
+--------------------------------------------------
+Field: Yper_Main_ID
+  Type: Long Integer
+Field: Post_ID
+  Type: Long Integer
+Field: Description
+  Type: Text
+Field: Post_Number
+  Type: Long Integer
+Field: Active
+  Type: Boolean
+Field: HeeftPool
+  Type: Boolean
+Field: Reserve
+  Type: Boolean
+Field: Name_Reserve
+  Type: Text
+Field: Reserve_ID
+  Type: Long Integer
+Field: Time
+  Type: Date/Time
+Field: CheckIn_Time
+  Type: Date/Time
+Field: Split
+  Type: Boolean
+Field: SortNumber
+  Type: Long Integer
+Field: Top
+  Type: Long Integer
+Field: Left
+  Type: Long Integer
+Field: Clerk_ID
+  Type: Long Integer
+Field: Active_Order_ID
+  Type: Double
+Field: Icon_ID
+  Type: Long Integer
+Field: Icon_ID_Occu
+  Type: Long Integer
+
+
+Table: Posts_Staff
+--------------------------------------------------
+Field: Staff_ID
+  Type: Long Integer
+Field: Post_ID
+  Type: Long Integer
+
+
+Table: Price_Catalogue_Sub
+--------------------------------------------------
+Field: Catalog_ID
+  Type: Long Integer
+Field: Price
+  Type: Currency
+Field: VAT
+  Type: Long Integer
+Field: Product_ID
+  Type: Long Integer
+
+
+Table: Price_Catalogues
+--------------------------------------------------
+Field: Catalog_ID
+  Type: Long Integer
+Field: Catalog_Description
+  Type: Text
+
+Table: Product_Extra_Relation
+--------------------------------------------------
+Field: Product_ID
+  Type: Long Integer
+Field: Extra_ID_Key
+  Type: Long Integer
+
+
+Table: Product_Favorites
+--------------------------------------------------
+Field: Staff_ID
+  Type: Long Integer
+Field: Product_ID
+  Type: Long Integer
+
+
+Table: Product_Languages
+--------------------------------------------------
+Field: Product_ID
+  Type: Long Integer
+Field: Language
+  Type: Text
+Field: Description
+  Type: Text
+
+Table: Product_Options
+--------------------------------------------------
+Field: Option_ID
+  Type: Long Integer
+Field: Description
+  Type: Text
+Field: Display
+  Type: Text
+
+
+Table: Product_Options_Relation
+--------------------------------------------------
+Field: Product_ID
+  Type: Long Integer
+Field: Option_ID
+  Type: Long Integer
+
+
+Table: Product_Portions
+--------------------------------------------------
+Field: Product_ID
+  Type: Long Integer
+Field: Portions
+  Type: Long Integer
+
+
+Table: Product_Supplement_Relation
+--------------------------------------------------
+Field: Product_ID
+  Type: Long Integer
+Field: Supplement_ID_Key
+  Type: Long Integer
+
+
+Table: ProductGroups
+--------------------------------------------------
+Field: ProductGroup_ID
+  Type: Long Integer
+Field: Description
+  Type: Text
+Field: Description2
+  Type: Text
+Field: SortNumber
+  Type: Long Integer
+Field: Printer
+  Type: Text
+Field: View
+  Type: Long Integer
+Field: ViewOrder
+  Type: Long Integer
+Field: Extra_ID
+  Type: Long Integer
+Field: Icon_ID
+  Type: Long Integer
+Field: ISSub
+  Type: Boolean
+Field: Sub_From_GroupID
+  Type: Long Integer
+Field: Has_Sub
+  Type: Boolean
+Field: Options
+  Type: Text
+Field: Row_Print
+  Type: Long Integer
+Field: Import_id
+  Type: Long Integer
+Field: Picture_Path
+  Type: Text
+Field: Quick_Menu
+  Type: Boolean
+
+Table: Products
+--------------------------------------------------
+Field: Product_ID
+  Type: Long Integer
+Field: Description
+  Type: Text
+Field: Description2
+  Type: Text
+Field: Price
+  Type: Currency
+Field: Product_Type
+  Type: Text
+Field: Unit
+  Type: Text
+Field: ProductGroup_ID
+  Type: Long Integer
+Field: PrinterName
+  Type: Text
+Field: VAT
+  Type: Long Integer
+Field: Build
+  Type: Boolean
+Field: Extra_ID
+  Type: Long Integer
+Field: Row_Print
+  Type: Long Integer
+Field: Icon_ID
+  Type: Long Integer
+Field: Auto_Extra
+  Type: Boolean
+Field: Has_Options
+  Type: Boolean
+Field: Extra_ID_Key
+  Type: Long Integer
+Field: Picture_Path
+  Type: Text
+Field: Recipe_ID
+  Type: Long Integer
+Field: Purchased
+  Type: Double
+Field: Sold
+  Type: Double
+Field: Stock
+  Type: Double
+Field: Stock_Correction
+  Type: Double
+Field: Picture
+  Type: Text
+Field: Menu_Number
+  Type: Long Integer
+Field: Options
+  Type: Text
+Field: Include_Group
+  Type: Boolean
+Field: Favorite
+  Type: Boolean
+Field: Combo
+  Type: Boolean
+Field: Part_Of_Combo
+  Type: Boolean
+Field: Drink_Or_Food
+  Type: Text
+Field: CPrinter
+  Type: Text
+Field: Portion_Count
+  Type: Boolean
+Field: Sale_Lock
+  Type: Boolean
+Field: CountPersons
+  Type: Boolean
+
+Table: Reservations
+--------------------------------------------------
+Field: Reservation_ID
+  Type: Long Integer
+Field: Post_ID
+  Type: Long Integer
+Field: Reserve_Name
+  Type: Text
+Field: Telephone
+  Type: Text
+Field: Reservation_Date
+  Type: Date/Time
+Field: Rservation_Time
+  Type: Text
+Field: Persons
+  Type: Long Integer
+Field: Status
+  Type: Text
+Field: Cancellation_Reason
+  Type: Text
+
+Table: Settings
+--------------------------------------------------
+Field: Company_Name
+  Type: Text
+Field: Company_VAT_Number
+  Type: Text
+Field: Address
+  Type: Text
+Field: City
+  Type: Text
+Field: Area
+  Type: Text
+Field: Telephone
+  Type: Text
+Field: Fax
+  Type: Text
+Field: e-mail
+  Type: Text
+Field: App_Expiry_Date
+  Type: Date/Time
+Field: Default_Language
+  Type: Text
+Field: Central_Printer
+  Type: Text
+Field: Company_Logo
+  Type: Text
+Field: Print_Logo_Receipt
+  Type: Boolean
+Field: Interface_Mode
+  Type: Text
+Field: App_Expiry
+  Type: Text
+Field: Stats_Day_From
+  Type: Date/Time
+Field: Stats_Day_To
+  Type: Date/Time
+Field: Cash_Register
+  Type: Text
+Field: Print_Language
+  Type: Text
+Field: Default_Catalogue
+  Type: Long Integer
+Field: Receipt_Language
+  Type: Text
+Field: Change
+  Type: Boolean
+Field: Table_Locks
+  Type: Boolean
+Field: CountPersons
+  Type: Boolean
+
+Table: Staff
+--------------------------------------------------
+Field: Staff_ID
+  Type: Long Integer
+Field: Name
+  Type: Text
+Field: SurName
+  Type: Text
+Field: Password
+  Type: Text
+Field: Menu
+  Type: Text
+Field: PDA_to_Cash
+  Type: Boolean
+Field: Discount
+  Type: Boolean
+Field: Stats
+  Type: Boolean
+Field: Admin
+  Type: Boolean
+Field: Printer
+  Type: Text
+Field: CashRegister_Behaviour
+  Type: Text
+Field: Role
+  Type: Text
+Field: Display_Language
+  Type: Text
+Field: Picture
+  Type: Text
+Field: Free_Drinks
+  Type: Boolean
+Field: Picture2
+  Type: OLE Object
+Field: Price_Cat
+  Type: Long Integer
+Field: PrinterOn
+  Type: Boolean
+Field: Printer_A
+  Type: Text
+Field: Printer_B
+  Type: Text
+Field: Printer_C
+  Type: Text
+Field: Printer_Central
+  Type: Text
+Field: Menu_Card
+  Type: Long Integer
+Field: OrderBy
+  Type: Text
+Field: OrderByMenu
+  Type: Text
+Field: StartUP_Menu
+  Type: Text
+Field: MaxDiscount
+  Type: Long Integer
+Table: Users_Posts
+--------------------------------------------------
+Field: Staff_ID
+  Type: Long Integer
+Field: Post_ID
+  Type: Long Integer
+
+Table: Vat_Categories
+--------------------------------------------------
+Field: VAT_ID
+  Type: Long Integer
+Field: Description
+  Type: Text
+Field: vatPer
+  Type: Long Integer
+Field: REG_PART
+  Type: Long Integer
+Field: Register_ID
+  Type: Long Integer
+
+Table: Yper_Posts
+--------------------------------------------------
+Field: Yper_Main_ID
+  Type: Long Integer
+Field: Yper_Description
+  Type: Text
+Field: Yper_Icon
+  Type: Long Integer
+Field: Floor_plan
+  Type: Text
+

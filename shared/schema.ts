@@ -1,172 +1,214 @@
-import { pgTable, serial, text, timestamp, integer, decimal, boolean, varchar, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, decimal, boolean, varchar, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Enums for status fields
-export const tableStatusEnum = pgEnum("table_status", ["free", "occupied", "reserved"]);
-export const orderStatusEnum = pgEnum("order_status", ["pending", "confirmed", "preparing", "ready", "delivered", "cancelled"]);
-export const paymentMethodEnum = pgEnum("payment_method", ["cash", "card", "combined", "voucher"]);
-export const transactionStatusEnum = pgEnum("transaction_status", ["pending", "completed", "cancelled", "refunded"]);
-
-// Users table for PIN-based authentication
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+// Staff table - matches existing Staff table structure
+export const staff = pgTable("staff", {
+  staffId: serial("staff_id").primaryKey(),
   name: text("name").notNull(),
-  pin: varchar("pin", { length: 6 }).notNull().unique(),
-  role: text("role").notNull().default("server"), // server, manager, admin
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  surName: text("sur_name"),
+  password: text("password").notNull(), // PIN for mobile login
+  menu: text("menu"),
+  pdaToCash: boolean("pda_to_cash").default(false),
+  discount: boolean("discount").default(false),
+  stats: boolean("stats").default(false),
+  admin: boolean("admin").default(false),
+  printer: text("printer"),
+  role: text("role"),
+  displayLanguage: text("display_language"),
+  picture: text("picture"),
+  freeDrinks: boolean("free_drinks").default(false),
+  priceCat: integer("price_cat"),
+  printerOn: boolean("printer_on").default(false),
+  menuCard: integer("menu_card"),
+  orderBy: text("order_by"),
+  orderByMenu: text("order_by_menu"),
+  startUpMenu: text("start_up_menu"),
+  maxDiscount: integer("max_discount"),
 });
 
-// Tables in the restaurant
-export const tables = pgTable("tables", {
-  id: serial("id").primaryKey(),
-  tableNumber: text("table_number").notNull().unique(),
-  capacity: integer("capacity").notNull(),
-  status: tableStatusEnum("status").notNull().default("free"),
-  position: text("position"), // JSON string for layout positioning
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Product groups/categories
-export const groups = pgTable("groups", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+// Posts_Main table - restaurant tables/posts
+export const postsMain = pgTable("posts_main", {
+  yperMainId: serial("yper_main_id").primaryKey(),
+  postId: integer("post_id").notNull().unique(),
   description: text("description"),
-  color: text("color").default("#3B82F6"), // Hex color for UI
-  sortOrder: integer("sort_order").default(0),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  postNumber: integer("post_number"),
+  active: boolean("active").default(true),
+  heeftPool: boolean("heeft_pool").default(false),
+  reserve: boolean("reserve").default(false),
+  nameReserve: text("name_reserve"),
+  reserveId: integer("reserve_id"),
+  time: timestamp("time"),
+  checkInTime: timestamp("check_in_time"),
+  split: boolean("split").default(false),
+  sortNumber: integer("sort_number"),
+  top: integer("top"), // Layout positioning
+  left: integer("left"), // Layout positioning
+  clerkId: integer("clerk_id"),
+  activeOrderId: doublePrecision("active_order_id"),
+  iconId: integer("icon_id"),
+  iconIdOccu: integer("icon_id_occu"),
 });
 
-// Products catalog
+// ProductGroups table
+export const productGroups = pgTable("product_groups", {
+  productGroupId: serial("product_group_id").primaryKey(),
+  description: text("description").notNull(),
+  description2: text("description2"),
+  sortNumber: integer("sort_number").default(0),
+  printer: text("printer"),
+  view: integer("view"),
+  viewOrder: integer("view_order"),
+  extraId: integer("extra_id"),
+  iconId: integer("icon_id"),
+  isSub: boolean("is_sub").default(false),
+  subFromGroupId: integer("sub_from_group_id"),
+  hasSub: boolean("has_sub").default(false),
+  options: text("options"),
+  rowPrint: integer("row_print"),
+  importId: integer("import_id"),
+  picturePath: text("picture_path"),
+  quickMenu: boolean("quick_menu").default(false),
+});
+
+// Products table
 export const products = pgTable("products", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
+  productId: serial("product_id").primaryKey(),
+  description: text("description").notNull(),
+  description2: text("description2"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  groupId: integer("group_id").references(() => groups.id),
-  chineseNumber: text("chinese_number"), // For numeric ordering system
-  hasWeight: boolean("has_weight").default(false),
-  allowsFreePrice: boolean("allows_free_price").default(false),
-  allowsDiscount: boolean("allows_discount").default(true),
-  isActive: boolean("is_active").notNull().default(true),
-  sortOrder: integer("sort_order").default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  productType: text("product_type"),
+  unit: text("unit"),
+  productGroupId: integer("product_group_id").references(() => productGroups.productGroupId),
+  printerName: text("printer_name"),
+  vat: integer("vat"),
+  build: boolean("build").default(false),
+  extraId: integer("extra_id"),
+  rowPrint: integer("row_print"),
+  iconId: integer("icon_id"),
+  autoExtra: boolean("auto_extra").default(false),
+  hasOptions: boolean("has_options").default(false),
+  extraIdKey: integer("extra_id_key"),
+  picturePath: text("picture_path"),
+  recipeId: integer("recipe_id"),
+  purchased: doublePrecision("purchased").default(0),
+  sold: doublePrecision("sold").default(0),
+  stock: doublePrecision("stock").default(0),
+  stockCorrection: doublePrecision("stock_correction").default(0),
+  picture: text("picture"),
+  menuNumber: integer("menu_number"), // For Chinese numeric ordering
+  options: text("options"),
+  includeGroup: boolean("include_group").default(false),
+  favorite: boolean("favorite").default(false),
+  combo: boolean("combo").default(false),
+  partOfCombo: boolean("part_of_combo").default(false),
+  drinkOrFood: text("drink_or_food"),
+  cPrinter: text("c_printer"),
+  portionCount: boolean("portion_count").default(false),
+  saleLock: boolean("sale_lock").default(false),
+  countPersons: boolean("count_persons").default(false),
 });
 
-// Orders
+// Orders table
 export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  orderNumber: text("order_number").notNull().unique(),
-  tableId: integer("table_id").references(() => tables.id),
-  userId: integer("user_id").references(() => users.id),
-  status: orderStatusEnum("status").notNull().default("pending"),
-  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull().default("0.00"),
-  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0.00"),
-  taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).default("0.00"),
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0.00"),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  orderId: doublePrecision("order_id").primaryKey(),
+  timeDate: timestamp("time_date").defaultNow().notNull(),
+  clerkId: integer("clerk_id"),
+  orderType: text("order_type"),
+  orderTotal: decimal("order_total", { precision: 10, scale: 2 }).default("0.00"),
+  receipt: boolean("receipt").default(false),
+  history: boolean("history").default(false),
+  served: boolean("served").default(false),
+  postId: integer("post_id").references(() => postsMain.postId),
+  nameId: integer("name_id"),
+  customerId: integer("customer_id"),
+  hasDiscount: boolean("has_discount").default(false),
+  discountPercentage: integer("discount_percentage"),
+  closed: boolean("closed").default(false),
+  closedDate: timestamp("closed_date"),
+  orderDiscountAmount: doublePrecision("order_discount_amount").default(0),
+  orderTotalAfterD: doublePrecision("order_total_after_d").default(0),
+  splitPayment: decimal("split_payment", { precision: 10, scale: 2 }),
+  catIdOpen: integer("cat_id_open"),
+  catIdClose: integer("cat_id_close"),
+  vatHigh: decimal("vat_high", { precision: 10, scale: 2 }),
+  vatLow: decimal("vat_low", { precision: 10, scale: 2 }),
+  employeeId: integer("employee_id"),
+  numberOfPersons: integer("number_of_persons"),
 });
 
-// Order items
-export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").references(() => orders.id),
-  productId: integer("product_id").references(() => products.id),
-  quantity: integer("quantity").notNull().default(1),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  weight: decimal("weight", { precision: 8, scale: 3 }), // For weight-based products
-  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0.00"),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+// Orders_Actual table - current order items
+export const ordersActual = pgTable("orders_actual", {
+  orderIdSub: serial("order_id_sub").primaryKey(),
+  orderId: doublePrecision("order_id").references(() => orders.orderId),
+  productId: integer("product_id").references(() => products.productId),
+  unit: text("unit"),
+  quantity: integer("quantity").default(1),
+  postId: integer("post_id"),
+  nameId: integer("name_id"),
+  postP2Id: integer("post_p2_id"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  descriptionEx: text("description_ex"),
+  descriptionExUk: text("description_ex_uk"),
+  printer: boolean("printer").default(false),
+  receipt: boolean("receipt").default(false),
+  orderTime: timestamp("order_time").defaultNow().notNull(),
+  staffId: text("staff_id"),
+  personelClosed: boolean("personel_closed").default(false),
+  free: boolean("free").default(false),
+  priceFree: decimal("price_free", { precision: 10, scale: 2 }),
+  cancelled: boolean("cancelled").default(false),
+  orderBy: text("order_by"),
+  servingRow: integer("serving_row"),
+  hasExtra: boolean("has_extra").default(false),
+  served: boolean("served").default(false),
+  ecrVoidLine: integer("ecr_void_line"),
 });
 
-// Transactions/Payments
-export const transactions = pgTable("transactions", {
-  id: serial("id").primaryKey(),
-  transactionNumber: text("transaction_number").notNull().unique(),
-  orderId: integer("order_id").references(() => orders.id),
-  userId: integer("user_id").references(() => users.id),
-  paymentMethod: paymentMethodEnum("payment_method").notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  cashAmount: decimal("cash_amount", { precision: 10, scale: 2 }),
-  cardAmount: decimal("card_amount", { precision: 10, scale: 2 }),
-  voucherAmount: decimal("voucher_amount", { precision: 10, scale: 2 }),
-  voucherCode: text("voucher_code"),
-  changeAmount: decimal("change_amount", { precision: 10, scale: 2 }),
-  status: transactionStatusEnum("status").notNull().default("pending"),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Sessions for authentication
+// Sessions for mobile authentication
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
+  staffId: integer("staff_id").references(() => staff.staffId),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Insert schemas for forms
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertStaffSchema = createInsertSchema(staff).omit({
+  staffId: true,
 });
 
-export const insertTableSchema = createInsertSchema(tables).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertPostsMainSchema = createInsertSchema(postsMain).omit({
+  yperMainId: true,
 });
 
-export const insertGroupSchema = createInsertSchema(groups).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertProductGroupSchema = createInsertSchema(productGroups).omit({
+  productGroupId: true,
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+  productId: true,
 });
 
 export const insertOrderSchema = createInsertSchema(orders).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+  orderId: true,
+  timeDate: true,
 });
 
-export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertTransactionSchema = createInsertSchema(transactions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertOrdersActualSchema = createInsertSchema(ordersActual).omit({
+  orderIdSub: true,
+  orderTime: true,
 });
 
 // Type exports
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Staff = typeof staff.$inferSelect;
+export type InsertStaff = z.infer<typeof insertStaffSchema>;
 
-export type Table = typeof tables.$inferSelect;
-export type InsertTable = z.infer<typeof insertTableSchema>;
+export type PostsMain = typeof postsMain.$inferSelect;
+export type InsertPostsMain = z.infer<typeof insertPostsMainSchema>;
 
-export type Group = typeof groups.$inferSelect;
-export type InsertGroup = z.infer<typeof insertGroupSchema>;
+export type ProductGroup = typeof productGroups.$inferSelect;
+export type InsertProductGroup = z.infer<typeof insertProductGroupSchema>;
 
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
@@ -174,23 +216,35 @@ export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 
-export type OrderItem = typeof orderItems.$inferSelect;
-export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
-
-export type Transaction = typeof transactions.$inferSelect;
-export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+export type OrdersActual = typeof ordersActual.$inferSelect;
+export type InsertOrdersActual = z.infer<typeof insertOrdersActualSchema>;
 
 // Extended types for API responses
 export type OrderWithItems = Order & {
-  items: OrderItem[];
-  table?: Table;
-  user?: User;
+  items: OrdersActual[];
+  table?: PostsMain;
+  staff?: Staff;
 };
 
 export type ProductWithGroup = Product & {
-  group?: Group;
+  group?: ProductGroup;
 };
 
-export type TableWithOrder = Table & {
+export type TableWithOrder = PostsMain & {
   currentOrder?: Order;
+};
+
+// Login response type
+export type LoginResponse = {
+  success: boolean;
+  staff?: Staff;
+  token?: string;
+  message?: string;
+};
+
+// Cache data structure for mobile app
+export type CacheData = {
+  products: ProductWithGroup[];
+  groups: ProductGroup[];
+  tables: TableWithOrder[];
 };
