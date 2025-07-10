@@ -24,6 +24,8 @@ export function TablesPage() {
   const { toast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedArea, setSelectedArea] = useState<string>('');
+  const [areas, setAreas] = useState<any[]>([]);
 
   // Update time every minute
   useEffect(() => {
@@ -32,6 +34,30 @@ export function TablesPage() {
     }, 60000);
     
     return () => clearInterval(timer);
+  }, []);
+
+  // Load areas
+  useEffect(() => {
+    const loadAreas = async () => {
+      try {
+        const response = await fetch('/api/areas');
+        if (response.ok) {
+          const areasData = await response.json();
+          setAreas(areasData);
+        }
+      } catch (error) {
+        console.error('Error loading areas:', error);
+        // Fallback areas if API fails
+        setAreas([
+          { yperMainId: 1, description: 'Main Dining Room' },
+          { yperMainId: 2, description: 'Terrace' },
+          { yperMainId: 3, description: 'Bar Area' },
+          { yperMainId: 4, description: 'Private Room' },
+          { yperMainId: 5, description: 'Garden' }
+        ]);
+      }
+    };
+    loadAreas();
   }, []);
 
   const handleLogout = () => {
@@ -104,7 +130,12 @@ export function TablesPage() {
     }
   };
 
-  const tables = cacheData?.tables || [];
+  const allTables = cacheData?.tables || [];
+  
+  // Filter tables by selected area
+  const tables = selectedArea 
+    ? allTables.filter(table => table.yperMainId === parseInt(selectedArea))
+    : allTables;
   const products = cacheData?.products || [];
   const groups = cacheData?.groups || [];
   
@@ -135,62 +166,75 @@ export function TablesPage() {
       {/* Enhanced Header */}
       <div className="bg-gray-800 dark:bg-gray-900 shadow-sm border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            {/* Left - Logo */}
-            <div className="flex items-center">
-              <img src={logoPath} alt="Logo" className="w-16 h-16" />
-            </div>
-            
-            {/* Center - Area Selector and Time */}
-            <div className="flex items-center space-x-6">
-              <select className="bg-gray-700 text-gray-100 border border-gray-600 rounded px-3 py-1 text-sm">
-                <option value="">All Areas</option>
-                <option value="1">Main Dining Room</option>
-                <option value="2">Terrace</option>
-                <option value="3">Bar Area</option>
-                <option value="4">Private Room</option>
-                <option value="5">Garden</option>
-              </select>
-              
-              <div className="hidden md:block text-center">
-                <div className="text-2xl font-bold text-gray-100">{formatTime(currentTime)}</div>
-                <div className="text-xs text-gray-400">{formatDate(currentTime)}</div>
-              </div>
-            </div>
-            
-            {/* Right - Staff Badge and Controls */}
-            <div className="flex items-center space-x-3">
+          <div className="relative">
+            {/* User Badge - Top Right Corner */}
+            <div className="absolute top-2 right-4 z-10">
               <Badge variant="outline" className="bg-blue-800/20 text-blue-300 border-blue-600 px-3 py-1">
                 {staff?.name}
               </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLocation('/stats')}
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Statistics
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+            </div>
+            
+            <div className="flex justify-between items-center py-4">
+              {/* Left - Logo and Restaurant POS */}
+              <div className="flex items-center space-x-4">
+                <img src={logoPath} alt="Logo" className="w-16 h-16" />
+                <div>
+                  <h1 className="text-xl font-bold text-gray-100">Restaurant POS</h1>
+                </div>
+              </div>
+              
+              {/* Center - Area Selector and Time */}
+              <div className="flex items-center space-x-6">
+                <select 
+                  className="bg-gray-700 text-gray-100 border border-gray-600 rounded px-3 py-1 text-sm"
+                  onChange={(e) => setSelectedArea(e.target.value)}
+                  value={selectedArea}
+                >
+                  <option value="">All Areas</option>
+                  {areas.map((area) => (
+                    <option key={area.yperMainId} value={area.yperMainId}>
+                      {area.description}
+                    </option>
+                  ))}
+                </select>
+                
+                <div className="hidden md:block text-center">
+                  <div className="text-2xl font-bold text-gray-100">{formatTime(currentTime)}</div>
+                  <div className="text-xs text-gray-400">{formatDate(currentTime)}</div>
+                </div>
+              </div>
+              
+              {/* Right - Controls */}
+              <div className="flex items-center space-x-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation('/stats')}
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Statistics
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
             </div>
           </div>
         </div>
