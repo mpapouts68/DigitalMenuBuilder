@@ -311,7 +311,16 @@ export function OrderPage() {
                   {filteredProducts.map((product) => (
                     <Card 
                       key={product.productId}
-                      className="bg-gray-800 border-gray-700 relative"
+                      className="bg-gray-800 border-gray-700 relative cursor-pointer"
+                      onClick={() => {
+                        const checkbox = document.getElementById(`extras-${product.productId}`) as HTMLInputElement;
+                        if (checkbox?.checked) {
+                          openExtrasModal(product);
+                        } else {
+                          // Add directly to order with quantity 1
+                          addToOrder(product, [], []);
+                        }
+                      }}
                     >
                       <CardContent className="p-3">
                         <div className="text-center">
@@ -329,74 +338,81 @@ export function OrderPage() {
                             </Badge>
                           </div>
                           
-                          {/* Checkbox for extras */}
-                          <div className="flex items-center justify-center mb-2">
-                            <input
-                              type="checkbox"
-                              id={`extras-${product.productId}`}
-                              className="mr-1 w-3 h-3"
-                              style={{ accentColor: '#2563eb' }}
-                            />
-                            <label 
-                              htmlFor={`extras-${product.productId}`} 
-                              className="text-xs text-gray-300 cursor-pointer"
-                            >
-                              Extras
-                            </label>
-                          </div>
+                          {/* Layout: Checkbox left, Quantity controls right */}
+                          <div className="flex items-center justify-between">
+                            {/* Left side - Checkbox for extras */}
+                            <div className="flex flex-col items-center">
+                              <input
+                                type="checkbox"
+                                id={`extras-${product.productId}`}
+                                className="w-3 h-3 mb-1"
+                                style={{ accentColor: '#2563eb' }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <label 
+                                htmlFor={`extras-${product.productId}`} 
+                                className="text-xs text-gray-300 cursor-pointer"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Extras
+                              </label>
+                            </div>
 
-                          {/* Quantity Controls */}
-                          <div className="flex items-center justify-center space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const checkbox = document.getElementById(`extras-${product.productId}`) as HTMLInputElement;
-                                if (checkbox?.checked) {
-                                  openExtrasModal(product);
-                                } else {
-                                  // Add directly to order with quantity 1
-                                  addToOrder(product, [], []);
-                                }
-                              }}
-                              style={{
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                border: '1px solid #10b981',
-                                backgroundColor: '#065f46',
-                                color: 'white',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                minWidth: '32px'
-                              }}
-                            >
-                              +
-                            </button>
-                            <span className="text-xs text-gray-300 min-w-[20px] text-center">
-                              {orderItems.find(item => item.productId === product.productId)?.quantity || 0}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const existingItem = orderItems.find(item => item.productId === product.productId);
-                                if (existingItem && existingItem.quantity > 0) {
-                                  updateQuantity(product.productId, existingItem.quantity - 1);
-                                }
-                              }}
-                              style={{
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                border: '1px solid #ef4444',
-                                backgroundColor: '#991b1b',
-                                color: 'white',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                minWidth: '32px'
-                              }}
-                            >
-                              -
-                            </button>
+                            {/* Right side - Quantity Controls */}
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center space-x-1 mb-1">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const checkbox = document.getElementById(`extras-${product.productId}`) as HTMLInputElement;
+                                    if (checkbox?.checked) {
+                                      openExtrasModal(product);
+                                    } else {
+                                      addToOrder(product, [], []);
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '2px 6px',
+                                    borderRadius: '3px',
+                                    border: '1px solid #10b981',
+                                    backgroundColor: '#065f46',
+                                    color: 'white',
+                                    fontSize: '10px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    minWidth: '20px'
+                                  }}
+                                >
+                                  +
+                                </button>
+                                <span className="text-xs text-gray-300 min-w-[16px] text-center">
+                                  {orderItems.find(item => item.productId === product.productId)?.quantity || 0}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const existingItem = orderItems.find(item => item.productId === product.productId);
+                                    if (existingItem && existingItem.quantity > 0) {
+                                      updateQuantity(product.productId, existingItem.quantity - 1);
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '2px 6px',
+                                    borderRadius: '3px',
+                                    border: '1px solid #ef4444',
+                                    backgroundColor: '#991b1b',
+                                    color: 'white',
+                                    fontSize: '10px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    minWidth: '20px'
+                                  }}
+                                >
+                                  -
+                                </button>
+                              </div>
+                              <span className="text-xs text-gray-400">Qty</span>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
