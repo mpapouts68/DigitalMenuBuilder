@@ -59,7 +59,7 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
           className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
             activeCategory === "all"
               ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-              : "bg-white text-gray-900 hover:bg-gray-50 hover:shadow-md border border-gray-400 active:scale-95"
+              : "category-button-inactive"
           }`}
         >
           All Items
@@ -71,7 +71,7 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === category.id
                 ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : "bg-white text-gray-900 hover:bg-gray-50 hover:shadow-md border border-gray-400 active:scale-95"
+                : "category-button-inactive"
             }`}
           >
             {category.name}
@@ -119,7 +119,7 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === "all"
                 ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : "bg-white text-gray-900 hover:bg-gray-50 hover:shadow-md border border-gray-400 active:scale-95"
+                : "category-button-inactive"
             }`}
           >
             All Items
@@ -131,7 +131,7 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
               className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
                 activeCategory === category.id
                   ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                  : "bg-white text-gray-900 hover:bg-gray-50 hover:shadow-md border border-gray-400 active:scale-95"
+                  : "category-button-inactive"
               }`}
             >
               {category.name}

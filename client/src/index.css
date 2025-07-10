@@ -98,6 +98,18 @@ body {
     padding-right: env(safe-area-inset-right);
   }
   
+  /* Force category button text to be dark and visible */
+  .category-button-inactive {
+    background-color: white !important;
+    color: #111827 !important;
+    border: 1px solid #9ca3af !important;
+  }
+  
+  .category-button-inactive:hover {
+    background-color: #f9fafb !important;
+    color: #111827 !important;
+  }
+  
   /* Line clamping utility */
   .line-clamp-2 {
     display: -webkit-box;
