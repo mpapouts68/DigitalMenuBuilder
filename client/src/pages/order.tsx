@@ -334,11 +334,7 @@ export function OrderPage() {
                             <Badge variant="outline" className="text-green-300 border-green-600 text-xs">
                               €{product.price}
                             </Badge>
-                            {product.menuNumber && (
-                              <Badge variant="outline" className="text-gray-400 border-gray-600 text-xs">
-                                #{product.menuNumber}
-                              </Badge>
-                            )}
+
                           </div>
                         </div>
                       </CardContent>
