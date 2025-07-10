@@ -148,12 +148,6 @@ export function ProductExtrasModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-800 border-gray-700">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-gray-100">
-            {product?.description} - Options & Extras
-          </DialogTitle>
-        </DialogHeader>
-
         {product && (
           <div className="space-y-6">
             {/* Product Info with Quantity Controls */}
