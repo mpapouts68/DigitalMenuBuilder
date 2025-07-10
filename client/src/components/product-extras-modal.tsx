@@ -156,11 +156,11 @@ export function ProductExtrasModal({
 
         {product && (
           <div className="space-y-6">
-            {/* Product Info */}
+            {/* Product Info with Quantity Controls */}
             <Card className="bg-gray-900 border-gray-700">
               <CardContent className="p-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 pr-4">
                     <h3 className="text-lg font-semibold text-gray-100">{product.description}</h3>
                     {product.description2 && (
                       <p className="text-sm text-gray-400">{product.description2}</p>
@@ -187,35 +187,39 @@ export function ProductExtrasModal({
                       })()}
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-green-300 border-green-600">
-                    €{product.price}
-                  </Badge>
+                  
+                  {/* Right Side: Price and Quantity */}
+                  <div className="flex flex-col items-end space-y-3">
+                    <Badge variant="outline" className="text-green-300 border-green-600">
+                      €{product.price}
+                    </Badge>
+                    
+                    {/* Compact Quantity Selector */}
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="border-gray-600 text-gray-300 hover:bg-gray-700 w-8 h-8 p-0"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                      <span className="text-lg font-bold text-gray-100 min-w-[2rem] text-center">
+                        {quantity}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="border-gray-600 text-gray-300 hover:bg-gray-700 w-8 h-8 p-0"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Quantity Controls */}
-            <div className="flex items-center justify-center space-x-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                <Minus className="w-4 h-4" />
-              </Button>
-              <span className="text-xl font-bold text-gray-100 min-w-12 text-center">
-                {quantity}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setQuantity(quantity + 1)}
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
 
             {/* Prefixes with Clear Button - Rectangle Container */}
             <div className="border-2 border-gray-600 rounded-lg p-4 bg-gray-900/50">
