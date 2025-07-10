@@ -206,23 +206,26 @@ export function TablesPage() {
                 onClick={() => status !== 'inactive' ? setLocation(`/order/${table.postId}`) : null}
               >
                 <CardContent className="p-3">
-                  <div className="text-center space-y-1">
-                    <div className="flex items-center justify-center space-x-2">
+                  <div className="text-center space-y-2">
+                    <div className="flex justify-center">
                       {getStatusIcon(status)}
-                      <span className="text-sm font-bold text-gray-100 truncate">
-                        {table.description || `Table ${table.postNumber || table.postId}`}
-                      </span>
                     </div>
                     
-                    <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
-                      #{table.postNumber || table.postId}
-                    </Badge>
-                    
-                    {table.currentOrder && (
-                      <div className="text-xs text-green-300">
-                        €{table.currentOrder.orderTotal}
-                      </div>
-                    )}
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-gray-100 truncate block">
+                        {table.description || `Table ${table.postNumber || table.postId}`}
+                      </span>
+                      
+                      <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
+                        #{table.postNumber || table.postId}
+                      </Badge>
+                      
+                      {table.currentOrder && (
+                        <div className="text-xs text-green-300">
+                          €{table.currentOrder.orderTotal}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
