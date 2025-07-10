@@ -221,22 +221,8 @@ export function ProductExtrasModal({
               </CardContent>
             </Card>
 
-            {/* Prefixes with Clear Button - Rectangle Container */}
+            {/* Prefixes - Rectangle Container */}
             <div className="border-2 border-gray-600 rounded-lg p-4 bg-gray-900/50">
-              <div className="flex items-center justify-between mb-3">
-                <div></div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
-                    setPrefixes(prev => prev.map(prefix => ({ ...prefix, selected: false })));
-                  }}
-                  className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-2 py-1 h-6 text-xs"
-                >
-                  Clear All
-                </Button>
-              </div>
               <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
                 {prefixes.map((prefix) => (
                   <Card 
@@ -269,6 +255,22 @@ export function ProductExtrasModal({
                   </Card>
                 ))}
               </div>
+            </div>
+
+            {/* Clear All Button - Outside Prefix Container */}
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setExtras(prev => prev.map(extra => ({ ...extra, selected: false })));
+                  setPrefixes(prev => prev.map(prefix => ({ ...prefix, selected: false })));
+                }}
+                className="bg-red-900/20 border-red-600 text-red-300 hover:bg-red-900/30 hover:text-red-200 px-3 py-1 h-7 text-xs"
+              >
+                <X className="w-3 h-3 mr-1" />
+                Clear All
+              </Button>
             </div>
 
             {/* Extras */}
