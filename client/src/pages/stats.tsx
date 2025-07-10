@@ -132,202 +132,207 @@ export function StatsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-gray-100 flex items-center text-sm">
-                <TrendingUp className="w-4 h-4 mr-2 text-green-400" />
-                Total Revenue
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-300">
-                {formatCurrency(currentStats.totalRevenue)}
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {getPeriodLabel()}
-              </p>
-            </CardContent>
-          </Card>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          
+          {/* Left Column */}
+          <div className="space-y-4">
+            {/* Key Metrics - Left */}
+            <div className="grid grid-cols-2 gap-3">
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-gray-100 flex items-center text-sm">
+                    <TrendingUp className="w-4 h-4 mr-2 text-green-400" />
+                    Revenue
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-xl font-bold text-green-300">
+                    {formatCurrency(currentStats.totalRevenue)}
+                  </div>
+                  <p className="text-xs text-gray-400">{getPeriodLabel()}</p>
+                </CardContent>
+              </Card>
 
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-gray-100 flex items-center text-sm">
-                <BarChart3 className="w-4 h-4 mr-2 text-blue-400" />
-                Total Orders
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-300">
-                {currentStats.totalOrders}
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                Avg: {formatCurrency(currentStats.avgOrderValue)}
-              </p>
-            </CardContent>
-          </Card>
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-gray-100 flex items-center text-sm">
+                    <BarChart3 className="w-4 h-4 mr-2 text-blue-400" />
+                    Orders
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-xl font-bold text-blue-300">
+                    {currentStats.totalOrders}
+                  </div>
+                  <p className="text-xs text-gray-400">Avg: {formatCurrency(currentStats.avgOrderValue)}</p>
+                </CardContent>
+              </Card>
+            </div>
 
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-gray-100 flex items-center text-sm">
-                <Users className="w-4 h-4 mr-2 text-purple-400" />
-                Tables Served
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-300">
-                {currentStats.tablesServed}
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                Total transactions
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-gray-100 flex items-center text-sm">
-                <Activity className="w-4 h-4 mr-2 text-orange-400" />
-                Current Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-4">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-green-300">{currentStats.openTables}</div>
-                  <div className="text-xs text-gray-400">Open</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-300">{currentStats.closedTables}</div>
-                  <div className="text-xs text-gray-400">Closed</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Payment Methods */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100 flex items-center">
-                <Euro className="w-5 h-5 mr-2" />
-                Payment Methods - {getPeriodLabel()}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <CreditCard className="w-5 h-5 text-blue-400" />
-                  <div>
-                    <div className="font-medium text-gray-100">Card Payments</div>
-                    <div className="text-sm text-gray-400">{currentStats.payments.card.count} transactions</div>
+            {/* Payment Methods - Left */}
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-gray-100 flex items-center text-sm">
+                  <Euro className="w-4 h-4 mr-2" />
+                  Payment Methods
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                <div className="flex items-center justify-between p-2 bg-gray-700 rounded">
+                  <div className="flex items-center space-x-2">
+                    <CreditCard className="w-4 h-4 text-blue-400" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-100">Card</div>
+                      <div className="text-xs text-gray-400">{currentStats.payments.card.count} tx</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-blue-300">{formatCurrency(currentStats.payments.card.amount)}</div>
+                    <div className="text-xs text-gray-400">{getPaymentPercentage(currentStats.payments.card.amount)}%</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-blue-300">{formatCurrency(currentStats.payments.card.amount)}</div>
-                  <div className="text-sm text-gray-400">{getPaymentPercentage(currentStats.payments.card.amount)}%</div>
-                </div>
-              </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <Banknote className="w-5 h-5 text-green-400" />
-                  <div>
-                    <div className="font-medium text-gray-100">Cash Payments</div>
-                    <div className="text-sm text-gray-400">{currentStats.payments.cash.count} transactions</div>
+                <div className="flex items-center justify-between p-2 bg-gray-700 rounded">
+                  <div className="flex items-center space-x-2">
+                    <Banknote className="w-4 h-4 text-green-400" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-100">Cash</div>
+                      <div className="text-xs text-gray-400">{currentStats.payments.cash.count} tx</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-green-300">{formatCurrency(currentStats.payments.cash.amount)}</div>
+                    <div className="text-xs text-gray-400">{getPaymentPercentage(currentStats.payments.cash.amount)}%</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-green-300">{formatCurrency(currentStats.payments.cash.amount)}</div>
-                  <div className="text-sm text-gray-400">{getPaymentPercentage(currentStats.payments.cash.amount)}%</div>
-                </div>
-              </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <Gift className="w-5 h-5 text-purple-400" />
-                  <div>
-                    <div className="font-medium text-gray-100">Vouchers</div>
-                    <div className="text-sm text-gray-400">{currentStats.payments.voucher.count} transactions</div>
+                <div className="flex items-center justify-between p-2 bg-gray-700 rounded">
+                  <div className="flex items-center space-x-2">
+                    <Gift className="w-4 h-4 text-purple-400" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-100">Vouchers</div>
+                      <div className="text-xs text-gray-400">{currentStats.payments.voucher.count} tx</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-purple-300">{formatCurrency(currentStats.payments.voucher.amount)}</div>
+                    <div className="text-xs text-gray-400">{getPaymentPercentage(currentStats.payments.voucher.amount)}%</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-purple-300">{formatCurrency(currentStats.payments.voucher.amount)}</div>
-                  <div className="text-sm text-gray-400">{getPaymentPercentage(currentStats.payments.voucher.amount)}%</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Table Status */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-gray-100 flex items-center">
-                <PieChart className="w-5 h-5 mr-2" />
-                Table Status Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                  <div>
-                    <div className="font-medium text-gray-100">Closed Tables</div>
-                    <div className="text-sm text-gray-400">Completed service</div>
+          {/* Right Column */}
+          <div className="space-y-4">
+            {/* Key Metrics - Right */}
+            <div className="grid grid-cols-2 gap-3">
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-gray-100 flex items-center text-sm">
+                    <Users className="w-4 h-4 mr-2 text-purple-400" />
+                    Tables
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-xl font-bold text-purple-300">
+                    {currentStats.tablesServed}
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-green-300">{currentStats.closedTables}</div>
-                  <div className="text-sm text-gray-400">
-                    {((currentStats.closedTables / (currentStats.closedTables + currentStats.openTables)) * 100).toFixed(1)}%
-                  </div>
-                </div>
-              </div>
+                  <p className="text-xs text-gray-400">Served</p>
+                </CardContent>
+              </Card>
 
-              <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <Clock className="w-5 h-5 text-orange-400" />
-                  <div>
-                    <div className="font-medium text-gray-100">Open Tables</div>
-                    <div className="text-sm text-gray-400">Currently active</div>
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-gray-100 flex items-center text-sm">
+                    <Activity className="w-4 h-4 mr-2 text-orange-400" />
+                    Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-green-300">{currentStats.openTables}</div>
+                      <div className="text-xs text-gray-400">Open</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-gray-300">{currentStats.closedTables}</div>
+                      <div className="text-xs text-gray-400">Closed</div>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-orange-300">{currentStats.openTables}</div>
-                  <div className="text-sm text-gray-400">
-                    {((currentStats.openTables / (currentStats.closedTables + currentStats.openTables)) * 100).toFixed(1)}%
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
+            </div>
 
-              <div className="mt-4 p-3 bg-gray-700 rounded-lg">
-                <div className="text-sm text-gray-400 mb-2">Average table turnover</div>
-                <div className="text-lg font-bold text-gray-100">
-                  {(currentStats.tablesServed / (currentStats.closedTables + currentStats.openTables)).toFixed(1)}x
+            {/* Table Status - Right */}
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-gray-100 flex items-center text-sm">
+                  <PieChart className="w-4 h-4 mr-2" />
+                  Table Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                <div className="flex items-center justify-between p-2 bg-gray-700 rounded">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-100">Completed</div>
+                      <div className="text-xs text-gray-400">Service done</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xl font-bold text-green-300">{currentStats.closedTables}</div>
+                    <div className="text-xs text-gray-400">
+                      {((currentStats.closedTables / (currentStats.closedTables + currentStats.openTables)) * 100).toFixed(1)}%
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                <div className="flex items-center justify-between p-2 bg-gray-700 rounded">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="w-4 h-4 text-orange-400" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-100">Active</div>
+                      <div className="text-xs text-gray-400">Currently serving</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xl font-bold text-orange-300">{currentStats.openTables}</div>
+                    <div className="text-xs text-gray-400">
+                      {((currentStats.openTables / (currentStats.closedTables + currentStats.openTables)) * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-2 bg-gray-700 rounded">
+                  <div className="text-xs text-gray-400 mb-1">Avg Turnover</div>
+                  <div className="text-lg font-bold text-gray-100">
+                    {(currentStats.tablesServed / (currentStats.closedTables + currentStats.openTables)).toFixed(1)}x
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Hourly Performance (Today only) */}
         {selectedPeriod === 'today' && (
-          <Card className="bg-gray-800 border-gray-700 mt-6">
-            <CardHeader>
-              <CardTitle className="text-gray-100 flex items-center">
-                <Calendar className="w-5 h-5 mr-2" />
+          <Card className="bg-gray-800 border-gray-700 mt-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-gray-100 flex items-center text-sm">
+                <Calendar className="w-4 h-4 mr-2" />
                 Hourly Performance - Today
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
                 {stats.today.hourlyData.map((hour) => (
-                  <div key={hour.hour} className="text-center p-3 bg-gray-700 rounded-lg">
-                    <div className="text-sm text-gray-400">{hour.hour}</div>
-                    <div className="text-lg font-bold text-gray-100">{hour.orders}</div>
+                  <div key={hour.hour} className="text-center p-2 bg-gray-700 rounded">
+                    <div className="text-xs text-gray-400">{hour.hour}</div>
+                    <div className="text-sm font-bold text-gray-100">{hour.orders}</div>
                     <div className="text-xs text-green-300">{formatCurrency(hour.revenue)}</div>
                   </div>
                 ))}
