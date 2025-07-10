@@ -167,9 +167,9 @@ export function TablesPage() {
       {/* Enhanced Header */}
       <div className="bg-gray-800 dark:bg-gray-900 shadow-sm border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="space-y-1">
+          <div>
             {/* First Row - Logo, Time, and Controls */}
-            <div className="flex items-center py-2">
+            <div className="flex items-center py-1">
               {/* Left - Large Logo spanning to Statistics button */}
               <div className="flex-1 flex items-center">
                 <img src={logoPath} alt="Logo" className="h-32 w-auto" />
@@ -223,7 +223,7 @@ export function TablesPage() {
             </div>
             
             {/* Second Row - Areas and User */}
-            <div className="flex justify-between items-center py-1 border-t border-gray-700">
+            <div className="flex justify-between items-center pb-1 border-t border-gray-700">
               {/* Left - Area Selector */}
               <div className="flex items-center">
                 <select 
