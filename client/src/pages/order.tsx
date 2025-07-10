@@ -238,54 +238,71 @@ export function OrderPage() {
 
               <div className="mt-4">
                 {/* Category Navigation */}
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
                   {parentCategory ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <button
                       onClick={handleBackToParent}
-                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: '2px solid black',
+                        backgroundColor: 'white',
+                        color: 'black',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
                     >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      <ArrowLeft className="w-4 h-4" />
                       Back to Categories
-                    </Button>
+                    </button>
                   ) : (
-                    <Button
-                      variant={selectedCategory === null && parentCategory === null ? "default" : "outline"}
-                      size="sm"
+                    <button
                       onClick={() => {
                         setSelectedCategory(null);
                         setParentCategory(null);
                       }}
-                      className={cn(
-                        "border-gray-600",
-                        (selectedCategory === null && parentCategory === null)
-                          ? "bg-blue-600 text-white" 
-                          : "text-gray-300 hover:bg-gray-700"
-                      )}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: (selectedCategory === null && parentCategory === null) ? 'none' : '2px solid black',
+                        backgroundColor: (selectedCategory === null && parentCategory === null) ? '#2563eb' : 'white',
+                        color: (selectedCategory === null && parentCategory === null) ? 'white' : 'black',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
                     >
                       All Categories
-                    </Button>
+                    </button>
                   )}
                   
                   {visibleCategories.map((group) => (
-                    <Button
+                    <button
                       key={group.productGroupId}
-                      variant={selectedCategory === group.productGroupId ? "default" : "outline"}
-                      size="sm"
                       onClick={() => handleCategoryClick(group.productGroupId)}
-                      className={cn(
-                        "border-gray-600",
-                        selectedCategory === group.productGroupId 
-                          ? "bg-blue-600 text-white" 
-                          : "text-gray-300 hover:bg-gray-700"
-                      )}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: selectedCategory === group.productGroupId ? 'none' : '2px solid black',
+                        backgroundColor: selectedCategory === group.productGroupId ? '#2563eb' : 'white',
+                        color: selectedCategory === group.productGroupId ? 'white' : 'black',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
                     >
                       {group.description}
                       {group.hasSub && !group.isSub && (
-                        <span className="ml-1 text-xs">→</span>
+                        <span style={{ fontSize: '12px' }}>→</span>
                       )}
-                    </Button>
+                    </button>
                   ))}
                 </div>
 
