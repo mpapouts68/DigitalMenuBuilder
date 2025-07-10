@@ -41,10 +41,17 @@ export function TablesPage() {
   useEffect(() => {
     const loadAreas = async () => {
       try {
-        const response = await fetch('/api/areas');
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/areas', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (response.ok) {
           const areasData = await response.json();
           setAreas(areasData);
+        } else {
+          throw new Error('API call failed');
         }
       } catch (error) {
         console.error('Error loading areas:', error);
@@ -58,8 +65,11 @@ export function TablesPage() {
         ]);
       }
     };
-    loadAreas();
-  }, []);
+    
+    if (staff) {
+      loadAreas();
+    }
+  }, [staff]);
 
   const handleLogout = () => {
     logout();

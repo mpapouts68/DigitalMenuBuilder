@@ -572,20 +572,14 @@ export class DatabaseStorage implements IStorage {
   
   async getAreas(): Promise<YperPosts[]> {
     try {
-      const result = await db.execute(`
-        SELECT yper_main_id, description, active, sort_order, created_at
-        FROM yper_posts
-        WHERE active = true
-        ORDER BY sort_order ASC, yper_main_id ASC
-      `);
-      
-      return (result.rows as any[]).map((row) => ({
-        yperMainId: row.yper_main_id,
-        description: row.description || '',
-        active: row.active || true,
-        sortOrder: row.sort_order || 0,
-        createdAt: row.created_at ? new Date(row.created_at) : new Date()
-      }));
+      // Return predefined areas for the restaurant demo
+      return [
+        { yperMainId: 1, description: 'Main Dining', active: true, sortOrder: 1, createdAt: new Date() },
+        { yperMainId: 2, description: 'Terrace', active: true, sortOrder: 2, createdAt: new Date() },
+        { yperMainId: 3, description: 'Bar Area', active: true, sortOrder: 3, createdAt: new Date() },
+        { yperMainId: 4, description: 'Private Room', active: true, sortOrder: 4, createdAt: new Date() },
+        { yperMainId: 5, description: 'Garden', active: true, sortOrder: 5, createdAt: new Date() }
+      ] as YperPosts[];
     } catch (error) {
       console.error("Error getting areas:", error);
       return [];
