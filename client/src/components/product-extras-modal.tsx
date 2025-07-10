@@ -170,7 +170,7 @@ export function ProductExtrasModal({
                       {prefixes.filter(p => p.selected).map(prefix => (
                         <div key={prefix.id} className="ml-4 text-sm text-blue-300 flex items-center">
                           <span className="text-gray-500 mr-2">├─</span>
-                          <span>{prefix.label}</span>
+                          <span>Extra {prefix.label}</span>
                         </div>
                       ))}
                       {extras.filter(e => e.selected).map(extra => (
@@ -257,7 +257,7 @@ export function ProductExtrasModal({
               {loading ? (
                 <div className="text-center py-8 text-gray-400">Loading extras...</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
                   {extras.map((extra) => (
                     <Card 
                       key={extra.productId}
@@ -269,23 +269,15 @@ export function ProductExtrasModal({
                       )}
                       onClick={() => toggleExtra(extra.productId)}
                     >
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
+                      <CardContent className="p-2">
+                        <div className="text-center space-y-1">
+                          <div className="flex justify-center">
                             <Checkbox checked={extra.selected} onChange={() => {}} />
-                            <div>
-                              <p className="text-sm font-medium text-gray-100">
-                                {extra.description}
-                              </p>
-                              <Badge 
-                                variant="outline" 
-                                className={cn("text-xs", getSourceBadgeColor(extra.source))}
-                              >
-                                {extra.source}
-                              </Badge>
-                            </div>
                           </div>
-                          <Badge variant="outline" className="text-green-300 border-green-600">
+                          <h3 className="text-xs font-medium text-gray-100 truncate">
+                            {extra.description}
+                          </h3>
+                          <Badge variant="outline" className="text-green-300 border-green-600 text-xs">
                             {parseFloat(extra.price) === 0 ? 'Free' : `€${extra.price}`}
                           </Badge>
                         </div>
