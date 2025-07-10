@@ -13,7 +13,8 @@ import {
   XCircle,
   Users,
   Timer,
-  BarChart3
+  BarChart3,
+  Settings
 } from 'lucide-react';
 import { TableWithOrder } from '@shared/schema';
 import logoPath from '@assets/logoB_1752121880525.ico';
@@ -168,20 +169,28 @@ export function TablesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="space-y-3">
             {/* First Row - Logo, Time, and Controls */}
-            <div className="flex justify-between items-center py-2">
-              {/* Left - Logo */}
-              <div className="flex items-center">
-                <img src={logoPath} alt="Logo" className="w-16 h-16" />
+            <div className="flex items-center py-2">
+              {/* Left - Large Logo spanning to Statistics button */}
+              <div className="flex-1 flex items-center">
+                <img src={logoPath} alt="Logo" className="h-20 w-auto" />
               </div>
               
               {/* Center - Time */}
-              <div className="hidden md:block text-center">
+              <div className="hidden md:block text-center flex-shrink-0 mx-6">
                 <div className="text-2xl font-bold text-gray-100">{formatTime(currentTime)}</div>
                 <div className="text-xs text-gray-400">{formatDate(currentTime)}</div>
               </div>
               
               {/* Right - Controls */}
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation('/settings')}
+                  className="bg-purple-600/20 border-purple-500 text-purple-300 hover:bg-purple-600/30 hover:text-purple-200 transition-all duration-200 w-10 h-10 p-0"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
