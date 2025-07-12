@@ -17,21 +17,21 @@ let db: ReturnType<typeof drizzle>;
 
 export async function initializeDatabase() {
   try {
-    // Configure pool with better connection handling
     pool = new Pool({ 
       connectionString: process.env.DATABASE_URL,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-      maxUses: 7500,
-      allowExitOnIdle: false
+      // Add production optimizations
+      ...(process.env.NODE_ENV === 'production' && {
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+      })
     });
     
     db = drizzle({ client: pool, schema });
     
-    // Test the connection with a simple query
-    const result = await pool.query('SELECT 1 as test');
-    console.log('Database connection established successfully:', result.rows[0]);
+    // Test the connection
+    await pool.query('SELECT 1');
+    console.log('Database connection established successfully');
     
     return { pool, db };
   } catch (error) {
@@ -40,12 +40,9 @@ export async function initializeDatabase() {
   }
 }
 
-// Export for backward compatibility
-export async function getDatabase() {
-  if (!pool || !db) {
-    await initializeDatabase();
-  }
-  return { pool, db };
-}
+// Initialize database synchronously for backward compatibility
+pool = new Pool({ connectionString: process.env.DATABASE_URL });
+db = drizzle({ client: pool, schema });
 
+// Export for backward compatibility
 export { pool, db };

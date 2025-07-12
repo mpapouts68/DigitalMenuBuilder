@@ -56,17 +56,6 @@ export async function registerRoutes(app: Express) {
   app.get('/api/staff/me', requireAuth, async (req, res) => {
     res.json(req.staff);
   });
-
-  // Get areas
-  app.get('/api/areas', requireAuth, async (req, res) => {
-    try {
-      const areas = await storage.getAreas();
-      res.json(areas);
-    } catch (error) {
-      console.error('Areas error:', error);
-      res.status(500).json({ error: 'Failed to load areas' });
-    }
-  });
   
   // Get staff statistics
   app.get('/api/staff/stats', requireAuth, async (req, res) => {
@@ -306,7 +295,7 @@ export async function registerRoutes(app: Express) {
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      system: 'OlymPOS Mobile API'
+      system: 'POS Mobile API'
     });
   });
   

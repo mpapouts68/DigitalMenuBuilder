@@ -12,52 +12,9 @@ interface CategoryPillsProps {
 
 export function CategoryPills({ categories, activeCategory, onCategoryChange }: CategoryPillsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-
-  // Force text color after render
-  useEffect(() => {
-    const forceTextColor = () => {
-      if (containerRef.current) {
-        const buttons = containerRef.current.querySelectorAll('button');
-        buttons.forEach((button) => {
-          const isActive = button.classList.contains('bg-blue-600');
-          if (!isActive) {
-            // Force all possible style properties
-            button.style.setProperty('background-color', '#ffffff', 'important');
-            button.style.setProperty('color', '#000000', 'important');
-            button.style.setProperty('border', '2px solid #000000', 'important');
-            button.style.setProperty('opacity', '1', 'important');
-            button.style.setProperty('visibility', 'visible', 'important');
-            button.style.setProperty('display', 'inline-block', 'important');
-            button.style.setProperty('font-weight', 'bold', 'important');
-            button.style.setProperty('font-size', '14px', 'important');
-            
-            // Also force text content color
-            const textNodes = button.childNodes;
-            textNodes.forEach(node => {
-              if (node.nodeType === Node.TEXT_NODE && node.parentElement) {
-                node.parentElement.style.setProperty('color', '#000000', 'important');
-              }
-            });
-          }
-        });
-      }
-    };
-    
-    // Run multiple times to ensure it takes
-    const timer1 = setTimeout(forceTextColor, 10);
-    const timer2 = setTimeout(forceTextColor, 100);
-    const timer3 = setTimeout(forceTextColor, 500);
-    
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-    };
-  }, [activeCategory, categories]);
 
   const checkScrollability = () => {
     if (scrollRef.current) {
@@ -96,13 +53,13 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
 
   if (isMobile) {
     return (
-      <div ref={containerRef} className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
         <button
           onClick={() => onCategoryChange("all")}
           className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
             activeCategory === "all"
-              ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-              : ""
+              ? "bg-red-600 text-white shadow-red-200 transform scale-105"
+              : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
           }`}
         >
           All Items
@@ -113,8 +70,8 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             onClick={() => onCategoryChange(category.id)}
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === category.id
-                ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : ""
+                ? "bg-red-600 text-white shadow-red-200 transform scale-105"
+                : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
             }`}
           >
             {category.name}
@@ -156,13 +113,13 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
         className="w-full overflow-x-auto px-8 scrollbar-hide"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        <div ref={containerRef} className="flex space-x-3 pb-3 px-1 min-w-max">
+        <div className="flex space-x-3 pb-3 px-1 min-w-max">
           <button
             onClick={() => onCategoryChange("all")}
             className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === "all"
-                ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                : ""
+                ? "bg-red-600 text-white shadow-red-200 transform scale-105"
+                : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
             }`}
           >
             All Items
@@ -173,8 +130,8 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
               onClick={() => onCategoryChange(category.id)}
               className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
                 activeCategory === category.id
-                  ? "bg-blue-600 text-white shadow-blue-200 transform scale-105"
-                  : ""
+                  ? "bg-red-600 text-white shadow-red-200 transform scale-105"
+                  : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
               }`}
             >
               {category.name}

@@ -7,14 +7,12 @@ import {
   orders, 
   ordersActual,
   sessions,
-  yperPosts,
   type Staff,
   type PostsMain,
   type ProductGroup,
   type Product,
   type Order,
   type OrdersActual,
-  type YperPosts,
   type InsertStaff,
   type InsertPostsMain,
   type InsertProductGroup,
@@ -46,9 +44,6 @@ export interface IStorage {
   getTables(): Promise<TableWithOrder[]>;
   getTable(postId: number): Promise<PostsMain | undefined>;
   updateTableStatus(postId: number, activeOrderId?: number): Promise<boolean>;
-  
-  // Areas operations
-  getAreas(): Promise<YperPosts[]>;
   
   // Product operations
   getProducts(): Promise<ProductWithGroup[]>;
@@ -164,52 +159,23 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getTables(): Promise<TableWithOrder[]> {
-    try {
-      // Use raw query to match the actual table structure
-      const result = await db.execute(`
-        SELECT post_id, post_number, description, active, reserve, name_reserve
-        FROM posts_main
-        ORDER BY post_number ASC
-      `);
-      
-      return (result.rows as any[]).map((row, index) => {
-        // Assign areas based on table numbers for demonstration
-        let areaId = 1; // Default to Main Dining
-        const tableNum = row.post_number || row.post_id;
-        
-        if (tableNum >= 1 && tableNum <= 7) areaId = 1;      // Main Dining
-        else if (tableNum >= 8 && tableNum <= 14) areaId = 2;  // Terrace
-        else if (tableNum >= 15 && tableNum <= 21) areaId = 3; // Bar Area
-        else if (tableNum >= 22 && tableNum <= 28) areaId = 4; // Private Room
-        else if (tableNum >= 29 && tableNum <= 35) areaId = 5; // Garden
-        
-        return {
-          yperMainId: areaId,
-          postId: row.post_id,
-          description: row.description || `Table ${row.post_number}`,
-          postNumber: row.post_number,
-          active: row.active !== false, // Default to true if null
-          heeftPool: false,
-          reserve: row.reserve || false,
-          nameReserve: row.name_reserve,
-          reserveId: null,
-          time: null,
-          checkInTime: null,
-          split: false,
-          sortNumber: row.post_number || row.post_id,
-          top: null,
-          left: null,
-          clerkId: null,
-          activeOrderId: null,
-          iconId: null,
-          iconIdOccu: null,
-          currentOrder: undefined
-        };
-      });
-    } catch (error) {
-      console.error("Error getting tables:", error);
-      return [];
-    }
+    const tables = await db
+      .select({
+        table: postsMain,
+        order: orders
+      })
+      .from(postsMain)
+      .leftJoin(orders, and(
+        eq(postsMain.activeOrderId, orders.orderId),
+        eq(orders.closed, false)
+      ))
+      .where(eq(postsMain.active, true))
+      .orderBy(asc(postsMain.sortNumber));
+    
+    return tables.map(({ table, order }) => ({
+      ...table,
+      currentOrder: order || undefined
+    }));
   }
   
   async getTable(postId: number): Promise<PostsMain | undefined> {
@@ -240,85 +206,40 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getProducts(): Promise<ProductWithGroup[]> {
-    try {
-      // Use raw query for existing products table structure
-      const result = await db.execute(`
-        SELECT p.id, p.name, p.description, p.details, p.price, p.category_id, p.image_url,
-               c.description as category_name
-        FROM products p
-        LEFT JOIN product_groups c ON p.category_id = c.product_group_id
-        ORDER BY p.id
-      `);
-      
-      return (result.rows as any[]).map((row) => ({
-        productId: row.id,
-        description: row.name || row.description || '',
-        description2: row.details,
-        price: row.price?.toString() || '0.00',
-        productType: null,
-        unit: null,
-        productGroupId: row.category_id,
-        printerName: null,
-        vat: null,
-        build: false,
-        extraId: null,
-        rowPrint: null,
-        iconId: null,
-        autoExtra: false,
-        hasOptions: false,
-        extraIdKey: null,
-        picturePath: null,
-        recipeId: null,
-        purchased: 0,
-        sold: 0,
-        stock: 0,
-        stockCorrection: 0,
-        picture: row.image_url,
-        menuNumber: row.id,
-        options: null,
-        favorite: false,
-        saleLock: false,
-        countPersons: false,
-        includeGroup: false,
-        combo: false,
-        partOfCombo: false,
-        drinkOrFood: null,
-        cPrinter: null,
-        portionCount: false,
-        group: row.category_name ? {
-          productGroupId: row.category_id,
-          description: row.category_name,
-          description2: null,
-          sortNumber: 0,
-          printer: null,
-          view: null,
-          viewOrder: null,
-          extraId: null,
-          iconId: null,
-          isSub: false,
-          subFromGroupId: null,
-          hasSub: false,
-          options: null,
-          rowPrint: null,
-          importId: null,
-          picturePath: null,
-          quickMenu: false
-        } : undefined
-      }));
-    } catch (error) {
-      console.error("Error getting products:", error);
-      return [];
-    }
+    const productsData = await db
+      .select({
+        product: products,
+        group: productGroups
+      })
+      .from(products)
+      .leftJoin(productGroups, eq(products.productGroupId, productGroups.productGroupId))
+      .where(eq(products.saleLock, false))
+      .orderBy(asc(products.menuNumber));
+    
+    return productsData.map(({ product, group }) => ({
+      ...product,
+      group: group || undefined
+    }));
   }
   
   async getProductsByGroup(groupId: number): Promise<ProductWithGroup[]> {
-    try {
-      // Return empty array for now while we fix the database schema
-      return [];
-    } catch (error) {
-      console.error("Error getting products by group:", error);
-      return [];
-    }
+    const productsData = await db
+      .select({
+        product: products,
+        group: productGroups
+      })
+      .from(products)
+      .leftJoin(productGroups, eq(products.productGroupId, productGroups.productGroupId))
+      .where(and(
+        eq(products.productGroupId, groupId),
+        eq(products.saleLock, false)
+      ))
+      .orderBy(asc(products.menuNumber));
+    
+    return productsData.map(({ product, group }) => ({
+      ...product,
+      group: group || undefined
+    }));
   }
   
   async getProduct(productId: number): Promise<Product | undefined> {
@@ -332,42 +253,10 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getGroups(): Promise<ProductGroup[]> {
-    try {
-      // Use raw query for existing product_groups table with hierarchical support
-      const result = await db.execute(`
-        SELECT product_group_id, description, sort_order, active, created_at, has_sub, is_sub, sub_from_group_id
-        FROM product_groups
-        WHERE active = true
-        ORDER BY 
-          CASE WHEN is_sub = false THEN sort_order ELSE 999 END ASC,
-          sub_from_group_id ASC,
-          sort_order ASC,
-          product_group_id ASC
-      `);
-      
-      return (result.rows as any[]).map((row) => ({
-        productGroupId: row.product_group_id,
-        description: row.description || '',
-        description2: null,
-        sortNumber: row.sort_order || 0,
-        printer: null,
-        view: null,
-        viewOrder: null,
-        extraId: null,
-        iconId: null,
-        isSub: row.is_sub || false,
-        subFromGroupId: row.sub_from_group_id || null,
-        hasSub: row.has_sub || false,
-        options: null,
-        rowPrint: null,
-        importId: null,
-        picturePath: null,
-        quickMenu: false
-      }));
-    } catch (error) {
-      console.error("Error getting groups:", error);
-      return [];
-    }
+    return await db
+      .select()
+      .from(productGroups)
+      .orderBy(asc(productGroups.sortNumber));
   }
   
   async getGroup(groupId: number): Promise<ProductGroup | undefined> {
@@ -570,22 +459,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getAreas(): Promise<YperPosts[]> {
-    try {
-      // Return predefined areas for the restaurant demo
-      return [
-        { yperMainId: 1, description: 'Main Dining', active: true, sortOrder: 1, createdAt: new Date() },
-        { yperMainId: 2, description: 'Terrace', active: true, sortOrder: 2, createdAt: new Date() },
-        { yperMainId: 3, description: 'Bar Area', active: true, sortOrder: 3, createdAt: new Date() },
-        { yperMainId: 4, description: 'Private Room', active: true, sortOrder: 4, createdAt: new Date() },
-        { yperMainId: 5, description: 'Garden', active: true, sortOrder: 5, createdAt: new Date() }
-      ] as YperPosts[];
-    } catch (error) {
-      console.error("Error getting areas:", error);
-      return [];
-    }
-  }
-
   async getStaffStatistics(staffId: number, dateFrom?: Date, dateTo?: Date): Promise<any> {
     // Basic implementation - can be expanded based on requirements
     const fromDate = dateFrom || new Date(Date.now() - 24 * 60 * 60 * 1000);
