@@ -1,487 +1,195 @@
-import { db } from "./db";
-import { 
-  staff, 
-  postsMain, 
-  productGroups, 
-  products, 
-  orders, 
-  ordersActual,
-  sessions,
-  type Staff,
-  type PostsMain,
-  type ProductGroup,
+import {
+  categories,
+  products,
+  banners,
+  users,
+  type Category,
   type Product,
-  type Order,
-  type OrdersActual,
-  type InsertStaff,
-  type InsertPostsMain,
-  type InsertProductGroup,
+  type Banner,
+  type User,
+  type InsertCategory,
   type InsertProduct,
-  type InsertOrder,
-  type InsertOrdersActual,
-  type LoginResponse,
-  type CacheData,
-  type ProductWithGroup,
-  type TableWithOrder,
-  type OrderWithItems
+  type InsertBanner,
+  type UpsertUser,
 } from "@shared/schema";
-import { eq, and, or, desc, asc } from "drizzle-orm";
-import { nanoid } from "nanoid";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  // Authentication
-  authenticateStaff(password: string): Promise<LoginResponse>;
-  createSession(staffId: number): Promise<string>;
-  validateSession(sessionId: string): Promise<Staff | null>;
-  
-  // Cache data loading
-  getCacheData(): Promise<CacheData>;
-  
-  // Staff operations
-  getStaff(staffId: number): Promise<Staff | undefined>;
-  
-  // Table operations
-  getTables(): Promise<TableWithOrder[]>;
-  getTable(postId: number): Promise<PostsMain | undefined>;
-  updateTableStatus(postId: number, activeOrderId?: number): Promise<boolean>;
-  
-  // Product operations
-  getProducts(): Promise<ProductWithGroup[]>;
-  getProductsByGroup(groupId: number): Promise<ProductWithGroup[]>;
-  getProduct(productId: number): Promise<Product | undefined>;
-  
-  // Group operations
-  getGroups(): Promise<ProductGroup[]>;
-  getGroup(groupId: number): Promise<ProductGroup | undefined>;
-  
-  // Order operations
-  getOrder(orderId: number): Promise<OrderWithItems | undefined>;
-  getOrdersByTable(postId: number): Promise<OrderWithItems[]>;
-  createOrder(order: InsertOrder): Promise<Order>;
-  updateOrder(orderId: number, updates: Partial<InsertOrder>): Promise<Order | undefined>;
-  closeOrder(orderId: number): Promise<boolean>;
-  
-  // Order item operations
-  getOrderItems(orderId: number): Promise<OrdersActual[]>;
-  addOrderItem(item: InsertOrdersActual): Promise<OrdersActual>;
-  updateOrderItem(itemId: number, updates: Partial<InsertOrdersActual>): Promise<OrdersActual | undefined>;
-  removeOrderItem(itemId: number): Promise<boolean>;
-  
-  // Statistics
-  getStaffStatistics(staffId: number, dateFrom?: Date, dateTo?: Date): Promise<any>;
+  // User operations
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+
+  // Categories
+  getCategories(): Promise<Category[]>;
+  getCategory(id: number): Promise<Category | undefined>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category | undefined>;
+  deleteCategory(id: number): Promise<boolean>;
+
+  // Products
+  getProducts(): Promise<Product[]>;
+  getProductsByCategory(categoryId: number): Promise<Product[]>;
+  getProduct(id: number): Promise<Product | undefined>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
+  deleteProduct(id: number): Promise<boolean>;
+
+  // Bulk operations
+  importData(categories: InsertCategory[], products: InsertProduct[]): Promise<void>;
+
+  // Banners
+  getBanners(): Promise<Banner[]>;
+  getBannerByType(type: string): Promise<Banner | undefined>;
+  createBanner(banner: InsertBanner): Promise<Banner>;
+  updateBanner(id: number, banner: Partial<InsertBanner>): Promise<Banner | undefined>;
+  deleteBanner(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async authenticateStaff(password: string): Promise<LoginResponse> {
-    try {
-      const [user] = await db
-        .select()
-        .from(staff)
-        .where(eq(staff.password, password))
-        .limit(1);
-      
-      if (!user) {
-        return { success: false, message: "Invalid PIN" };
-      }
-      
-      const token = await this.createSession(user.staffId);
-      
-      return {
-        success: true,
-        staff: user,
-        token,
-        message: "Login successful"
-      };
-    } catch (error) {
-      console.error("Authentication error:", error);
-      return { success: false, message: "Authentication failed" };
-    }
-  }
-  
-  async createSession(staffId: number): Promise<string> {
-    const sessionId = nanoid();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    
-    await db.insert(sessions).values({
-      id: sessionId,
-      staffId,
-      expiresAt
-    });
-    
-    return sessionId;
-  }
-  
-  async validateSession(sessionId: string): Promise<Staff | null> {
-    try {
-      const [session] = await db
-        .select({
-          staff: staff,
-          expiresAt: sessions.expiresAt
-        })
-        .from(sessions)
-        .innerJoin(staff, eq(sessions.staffId, staff.staffId))
-        .where(eq(sessions.id, sessionId))
-        .limit(1);
-      
-      if (!session || session.expiresAt < new Date()) {
-        return null;
-      }
-      
-      return session.staff;
-    } catch (error) {
-      console.error("Session validation error:", error);
-      return null;
-    }
-  }
-  
-  async getCacheData(): Promise<CacheData> {
-    const [productsData, groupsData, tablesData] = await Promise.all([
-      this.getProducts(),
-      this.getGroups(),
-      this.getTables()
-    ]);
-    
-    return {
-      products: productsData,
-      groups: groupsData,
-      tables: tablesData
-    };
-  }
-  
-  async getStaff(staffId: number): Promise<Staff | undefined> {
-    const [user] = await db
-      .select()
-      .from(staff)
-      .where(eq(staff.staffId, staffId))
-      .limit(1);
-    
+  // User operations
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
-  
-  async getTables(): Promise<TableWithOrder[]> {
-    const tables = await db
-      .select({
-        table: postsMain,
-        order: orders
-      })
-      .from(postsMain)
-      .leftJoin(orders, and(
-        eq(postsMain.activeOrderId, orders.orderId),
-        eq(orders.closed, false)
-      ))
-      .where(eq(postsMain.active, true))
-      .orderBy(asc(postsMain.sortNumber));
-    
-    return tables.map(({ table, order }) => ({
-      ...table,
-      currentOrder: order || undefined
-    }));
-  }
-  
-  async getTable(postId: number): Promise<PostsMain | undefined> {
-    const [table] = await db
-      .select()
-      .from(postsMain)
-      .where(eq(postsMain.postId, postId))
-      .limit(1);
-    
-    return table;
-  }
-  
-  async updateTableStatus(postId: number, activeOrderId?: number): Promise<boolean> {
-    try {
-      await db
-        .update(postsMain)
-        .set({
-          activeOrderId: activeOrderId || null,
-          time: new Date()
-        })
-        .where(eq(postsMain.postId, postId));
-      
-      return true;
-    } catch (error) {
-      console.error("Error updating table status:", error);
-      return false;
-    }
-  }
-  
-  async getProducts(): Promise<ProductWithGroup[]> {
-    const productsData = await db
-      .select({
-        product: products,
-        group: productGroups
-      })
-      .from(products)
-      .leftJoin(productGroups, eq(products.productGroupId, productGroups.productGroupId))
-      .where(eq(products.saleLock, false))
-      .orderBy(asc(products.menuNumber));
-    
-    return productsData.map(({ product, group }) => ({
-      ...product,
-      group: group || undefined
-    }));
-  }
-  
-  async getProductsByGroup(groupId: number): Promise<ProductWithGroup[]> {
-    const productsData = await db
-      .select({
-        product: products,
-        group: productGroups
-      })
-      .from(products)
-      .leftJoin(productGroups, eq(products.productGroupId, productGroups.productGroupId))
-      .where(and(
-        eq(products.productGroupId, groupId),
-        eq(products.saleLock, false)
-      ))
-      .orderBy(asc(products.menuNumber));
-    
-    return productsData.map(({ product, group }) => ({
-      ...product,
-      group: group || undefined
-    }));
-  }
-  
-  async getProduct(productId: number): Promise<Product | undefined> {
-    const [product] = await db
-      .select()
-      .from(products)
-      .where(eq(products.productId, productId))
-      .limit(1);
-    
-    return product;
-  }
-  
-  async getGroups(): Promise<ProductGroup[]> {
-    return await db
-      .select()
-      .from(productGroups)
-      .orderBy(asc(productGroups.sortNumber));
-  }
-  
-  async getGroup(groupId: number): Promise<ProductGroup | undefined> {
-    const [group] = await db
-      .select()
-      .from(productGroups)
-      .where(eq(productGroups.productGroupId, groupId))
-      .limit(1);
-    
-    return group;
-  }
-  
-  async getOrder(orderId: number): Promise<OrderWithItems | undefined> {
-    const [orderData] = await db
-      .select({
-        order: orders,
-        table: postsMain,
-        staff: staff
-      })
-      .from(orders)
-      .leftJoin(postsMain, eq(orders.postId, postsMain.postId))
-      .leftJoin(staff, eq(orders.employeeId, staff.staffId))
-      .where(eq(orders.orderId, orderId))
-      .limit(1);
-    
-    if (!orderData) return undefined;
-    
-    const items = await this.getOrderItems(orderId);
-    
-    return {
-      ...orderData.order,
-      items,
-      table: orderData.table || undefined,
-      staff: orderData.staff || undefined
-    };
-  }
-  
-  async getOrdersByTable(postId: number): Promise<OrderWithItems[]> {
-    const ordersData = await db
-      .select({
-        order: orders,
-        table: postsMain,
-        staff: staff
-      })
-      .from(orders)
-      .leftJoin(postsMain, eq(orders.postId, postsMain.postId))
-      .leftJoin(staff, eq(orders.employeeId, staff.staffId))
-      .where(and(
-        eq(orders.postId, postId),
-        eq(orders.closed, false)
-      ))
-      .orderBy(desc(orders.timeDate));
-    
-    const result: OrderWithItems[] = [];
-    
-    for (const orderData of ordersData) {
-      const items = await this.getOrderItems(orderData.order.orderId);
-      result.push({
-        ...orderData.order,
-        items,
-        table: orderData.table || undefined,
-        staff: orderData.staff || undefined
-      });
-    }
-    
-    return result;
-  }
-  
-  async createOrder(orderData: InsertOrder): Promise<Order> {
-    const orderId = Date.now(); // Use timestamp as order ID
-    
-    const [order] = await db
-      .insert(orders)
-      .values({
-        ...orderData,
-        orderId
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
       })
       .returning();
-    
-    // Update table status
-    if (orderData.postId) {
-      await this.updateTableStatus(orderData.postId, orderId);
-    }
-    
-    return order;
+    return user;
   }
-  
-  async updateOrder(orderId: number, updates: Partial<InsertOrder>): Promise<Order | undefined> {
-    const [order] = await db
-      .update(orders)
-      .set(updates)
-      .where(eq(orders.orderId, orderId))
+
+  async getCategories(): Promise<Category[]> {
+    return await db.query.categories.findMany({
+      orderBy: (categories, { asc }) => [asc(categories.order)]
+    });
+  }
+
+  async getCategory(id: number): Promise<Category | undefined> {
+    return await db.query.categories.findFirst({
+      where: eq(categories.id, id)
+    });
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const [newCategory] = await db
+      .insert(categories)
+      .values(category)
+      .returning();
+    return newCategory;
+  }
+
+  async updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category | undefined> {
+    const [updated] = await db
+      .update(categories)
+      .set(category)
+      .where(eq(categories.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCategory(id: number): Promise<boolean> {
+    // Delete all products in this category first
+    await db.delete(products).where(eq(products.categoryId, id));
+    
+    // Then delete the category
+    const result = await db
+      .delete(categories)
+      .where(eq(categories.id, id))
       .returning();
     
-    return order;
+    return result.length > 0;
   }
-  
-  async closeOrder(orderId: number): Promise<boolean> {
-    try {
-      const [order] = await db
-        .update(orders)
-        .set({
-          closed: true,
-          closedDate: new Date(),
-          history: true
-        })
-        .where(eq(orders.orderId, orderId))
-        .returning();
-      
-      // Free the table
-      if (order?.postId) {
-        await this.updateTableStatus(order.postId);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error closing order:", error);
-      return false;
-    }
+
+  async getProducts(): Promise<Product[]> {
+    return await db.query.products.findMany();
   }
-  
-  async getOrderItems(orderId: number): Promise<OrdersActual[]> {
-    return await db
-      .select()
-      .from(ordersActual)
-      .where(eq(ordersActual.orderId, orderId))
-      .orderBy(asc(ordersActual.servingRow));
+
+  async getProductsByCategory(categoryId: number): Promise<Product[]> {
+    return await db.query.products.findMany({
+      where: eq(products.categoryId, categoryId)
+    });
   }
-  
-  async addOrderItem(item: InsertOrdersActual): Promise<OrdersActual> {
-    const [orderItem] = await db
-      .insert(ordersActual)
-      .values(item)
+
+  async getProduct(id: number): Promise<Product | undefined> {
+    return await db.query.products.findFirst({
+      where: eq(products.id, id)
+    });
+  }
+
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const [newProduct] = await db
+      .insert(products)
+      .values(product)
+      .returning();
+    return newProduct;
+  }
+
+  async updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined> {
+    const [updated] = await db
+      .update(products)
+      .set(product)
+      .where(eq(products.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteProduct(id: number): Promise<boolean> {
+    const result = await db
+      .delete(products)
+      .where(eq(products.id, id))
       .returning();
     
-    // Update order total
-    await this.updateOrderTotal(item.orderId!);
-    
-    return orderItem;
+    return result.length > 0;
   }
-  
-  async updateOrderItem(itemId: number, updates: Partial<InsertOrdersActual>): Promise<OrdersActual | undefined> {
-    const [orderItem] = await db
-      .update(ordersActual)
-      .set(updates)
-      .where(eq(ordersActual.orderIdSub, itemId))
-      .returning();
-    
-    if (orderItem && orderItem.orderId) {
-      await this.updateOrderTotal(orderItem.orderId);
+
+  async importData(categoriesData: InsertCategory[], productsData: InsertProduct[]): Promise<void> {
+    // Clear existing data
+    await db.delete(products);
+    await db.delete(categories);
+
+    // Import categories
+    if (categoriesData.length > 0) {
+      await db.insert(categories).values(categoriesData);
     }
-    
-    return orderItem;
-  }
-  
-  async removeOrderItem(itemId: number): Promise<boolean> {
-    try {
-      const [orderItem] = await db
-        .select()
-        .from(ordersActual)
-        .where(eq(ordersActual.orderIdSub, itemId))
-        .limit(1);
-      
-      if (!orderItem) return false;
-      
-      await db
-        .delete(ordersActual)
-        .where(eq(ordersActual.orderIdSub, itemId));
-      
-      if (orderItem.orderId) {
-        await this.updateOrderTotal(orderItem.orderId);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error removing order item:", error);
-      return false;
+
+    // Import products
+    if (productsData.length > 0) {
+      await db.insert(products).values(productsData);
     }
   }
-  
-  private async updateOrderTotal(orderId: number): Promise<void> {
-    try {
-      // Calculate total from order items
-      const items = await this.getOrderItems(orderId);
-      const total = items.reduce((sum, item) => {
-        const price = parseFloat(item.price?.toString() || '0');
-        const quantity = item.quantity || 1;
-        return sum + (price * quantity);
-      }, 0);
-      
-      await db
-        .update(orders)
-        .set({
-          orderTotal: total.toFixed(2),
-          orderTotalAfterD: total
-        })
-        .where(eq(orders.orderId, orderId));
-    } catch (error) {
-      console.error("Error updating order total:", error);
-    }
+
+  async getBanners(): Promise<Banner[]> {
+    return await db.select().from(banners);
   }
-  
-  async getStaffStatistics(staffId: number, dateFrom?: Date, dateTo?: Date): Promise<any> {
-    // Basic implementation - can be expanded based on requirements
-    const fromDate = dateFrom || new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const toDate = dateTo || new Date();
-    
-    const ordersData = await db
-      .select()
-      .from(orders)
-      .where(and(
-        eq(orders.employeeId, staffId),
-        eq(orders.closed, true)
-      ));
-    
-    const totalSales = ordersData.reduce((sum, order) => {
-      return sum + parseFloat(order.orderTotal?.toString() || '0');
-    }, 0);
-    
-    return {
-      totalOrders: ordersData.length,
-      totalSales,
-      averageOrderValue: ordersData.length > 0 ? totalSales / ordersData.length : 0,
-      period: { from: fromDate, to: toDate }
-    };
+
+  async getBannerByType(type: string): Promise<Banner | undefined> {
+    const result = await db.select().from(banners).where(eq(banners.type, type)).limit(1);
+    return result[0];
+  }
+
+  async createBanner(banner: InsertBanner): Promise<Banner> {
+    const [newBanner] = await db.insert(banners).values(banner).returning();
+    return newBanner;
+  }
+
+  async updateBanner(id: number, banner: Partial<InsertBanner>): Promise<Banner | undefined> {
+    const [updated] = await db.update(banners).set(banner).where(eq(banners.id, id)).returning();
+    return updated;
+  }
+
+  async deleteBanner(id: number): Promise<boolean> {
+    const result = await db.delete(banners).where(eq(banners.id, id)).returning();
+    return result.length > 0;
   }
 }
 

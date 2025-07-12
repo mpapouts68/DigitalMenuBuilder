@@ -1,303 +1,250 @@
-import express, { type Express } from "express";
-import { createServer } from "http";
+import type { Express } from "express";
+import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertOrderSchema, insertOrdersActualSchema } from "@shared/schema";
+import { insertCategorySchema, insertProductSchema, insertBannerSchema } from "@shared/schema";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { z } from "zod";
 
-export async function registerRoutes(app: Express) {
-  const server = createServer(app);
-  
-  // Authentication middleware
-  const requireAuth = async (req: any, res: any, next: any) => {
-    const sessionId = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!sessionId) {
-      return res.status(401).json({ error: 'No session token provided' });
-    }
-    
-    const staff = await storage.validateSession(sessionId);
-    if (!staff) {
-      return res.status(401).json({ error: 'Invalid or expired session' });
-    }
-    
-    req.staff = staff;
-    next();
-  };
-  
-  // Login endpoint
-  app.post('/api/login', async (req, res) => {
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth middleware
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const { pin } = req.body;
-      
-      if (!pin) {
-        return res.status(400).json({ error: 'PIN is required' });
-      }
-      
-      const result = await storage.authenticateStaff(pin);
-      res.json(result);
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
     } catch (error) {
-      console.error('Login error:', error);
-      res.status(500).json({ error: 'Login failed' });
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
     }
   });
-  
-  // Get cache data after login
-  app.get('/api/cache', requireAuth, async (req, res) => {
+
+  // Categories (public read, protected write)
+  app.get("/api/categories", async (req, res) => {
     try {
-      const cacheData = await storage.getCacheData();
-      res.json(cacheData);
+      const categories = await storage.getCategories();
+      res.json(categories);
     } catch (error) {
-      console.error('Cache data error:', error);
-      res.status(500).json({ error: 'Failed to load cache data' });
+      res.status(500).json({ message: "Failed to fetch categories" });
     }
   });
-  
-  // Get current staff info
-  app.get('/api/staff/me', requireAuth, async (req, res) => {
-    res.json(req.staff);
-  });
-  
-  // Get staff statistics
-  app.get('/api/staff/stats', requireAuth, async (req, res) => {
+
+  app.post("/api/categories", async (req, res) => {
     try {
-      const { from, to } = req.query;
-      const fromDate = from ? new Date(from as string) : undefined;
-      const toDate = to ? new Date(to as string) : undefined;
-      
-      const stats = await storage.getStaffStatistics(req.staff.staffId, fromDate, toDate);
-      res.json(stats);
+      const categoryData = insertCategorySchema.parse(req.body);
+      const category = await storage.createCategory(categoryData);
+      res.status(201).json(category);
     } catch (error) {
-      console.error('Stats error:', error);
-      res.status(500).json({ error: 'Failed to load statistics' });
-    }
-  });
-  
-  // Table operations
-  app.get('/api/tables', requireAuth, async (req, res) => {
-    try {
-      const tables = await storage.getTables();
-      res.json(tables);
-    } catch (error) {
-      console.error('Tables error:', error);
-      res.status(500).json({ error: 'Failed to load tables' });
-    }
-  });
-  
-  app.get('/api/tables/:postId', requireAuth, async (req, res) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      const table = await storage.getTable(postId);
-      
-      if (!table) {
-        return res.status(404).json({ error: 'Table not found' });
-      }
-      
-      res.json(table);
-    } catch (error) {
-      console.error('Table error:', error);
-      res.status(500).json({ error: 'Failed to load table' });
-    }
-  });
-  
-  // Product operations
-  app.get('/api/products', requireAuth, async (req, res) => {
-    try {
-      const { groupId } = req.query;
-      
-      let products;
-      if (groupId) {
-        products = await storage.getProductsByGroup(parseInt(groupId as string));
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid category data", errors: error.errors });
       } else {
-        products = await storage.getProducts();
+        res.status(500).json({ message: "Failed to create category" });
       }
-      
+    }
+  });
+
+  app.put("/api/categories/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const categoryData = insertCategorySchema.partial().parse(req.body);
+      const category = await storage.updateCategory(id, categoryData);
+      if (!category) {
+        res.status(404).json({ message: "Category not found" });
+      } else {
+        res.json(category);
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid category data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update category" });
+      }
+    }
+  });
+
+  app.delete("/api/categories/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteCategory(id);
+      if (!deleted) {
+        res.status(404).json({ message: "Category not found" });
+      } else {
+        res.status(204).send();
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+
+  // Products (public read, protected write)
+  app.get("/api/products", async (req, res) => {
+    try {
+      const products = await storage.getProducts();
       res.json(products);
     } catch (error) {
-      console.error('Products error:', error);
-      res.status(500).json({ error: 'Failed to load products' });
+      res.status(500).json({ message: "Failed to fetch products" });
     }
   });
-  
-  app.get('/api/products/:productId', requireAuth, async (req, res) => {
+
+  app.get("/api/products/category/:categoryId", async (req, res) => {
     try {
-      const productId = parseInt(req.params.productId);
-      const product = await storage.getProduct(productId);
-      
+      const categoryId = parseInt(req.params.categoryId);
+      const products = await storage.getProductsByCategory(categoryId);
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  app.post("/api/products", async (req, res) => {
+    try {
+      const productData = insertProductSchema.parse(req.body);
+      const product = await storage.createProduct(productData);
+      res.status(201).json(product);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid product data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create product" });
+      }
+    }
+  });
+
+  app.put("/api/products/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const productData = insertProductSchema.partial().parse(req.body);
+      const product = await storage.updateProduct(id, productData);
       if (!product) {
-        return res.status(404).json({ error: 'Product not found' });
+        res.status(404).json({ message: "Product not found" });
+      } else {
+        res.json(product);
       }
-      
-      res.json(product);
     } catch (error) {
-      console.error('Product error:', error);
-      res.status(500).json({ error: 'Failed to load product' });
-    }
-  });
-  
-  // Group operations
-  app.get('/api/groups', requireAuth, async (req, res) => {
-    try {
-      const groups = await storage.getGroups();
-      res.json(groups);
-    } catch (error) {
-      console.error('Groups error:', error);
-      res.status(500).json({ error: 'Failed to load groups' });
-    }
-  });
-  
-  // Order operations
-  app.get('/api/orders/:orderId', requireAuth, async (req, res) => {
-    try {
-      const orderId = parseInt(req.params.orderId);
-      const order = await storage.getOrder(orderId);
-      
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-      
-      res.json(order);
-    } catch (error) {
-      console.error('Order error:', error);
-      res.status(500).json({ error: 'Failed to load order' });
-    }
-  });
-  
-  app.get('/api/tables/:postId/orders', requireAuth, async (req, res) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      const orders = await storage.getOrdersByTable(postId);
-      res.json(orders);
-    } catch (error) {
-      console.error('Table orders error:', error);
-      res.status(500).json({ error: 'Failed to load table orders' });
-    }
-  });
-  
-  app.post('/api/orders', requireAuth, async (req, res) => {
-    try {
-      const orderData = insertOrderSchema.parse({
-        ...req.body,
-        employeeId: req.staff.staffId,
-        clerkId: req.staff.staffId
-      });
-      
-      const order = await storage.createOrder(orderData);
-      res.json(order);
-    } catch (error) {
-      console.error('Create order error:', error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: 'Invalid order data', details: error.errors });
+        res.status(400).json({ message: "Invalid product data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update product" });
       }
-      res.status(500).json({ error: 'Failed to create order' });
     }
   });
-  
-  app.put('/api/orders/:orderId', requireAuth, async (req, res) => {
+
+  app.delete("/api/products/:id", async (req, res) => {
     try {
-      const orderId = parseInt(req.params.orderId);
-      const updates = req.body;
-      
-      const order = await storage.updateOrder(orderId, updates);
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' });
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteProduct(id);
+      if (!deleted) {
+        res.status(404).json({ message: "Product not found" });
+      } else {
+        res.status(204).send();
       }
-      
-      res.json(order);
     } catch (error) {
-      console.error('Update order error:', error);
-      res.status(500).json({ error: 'Failed to update order' });
+      res.status(500).json({ message: "Failed to delete product" });
     }
   });
-  
-  app.post('/api/orders/:orderId/close', requireAuth, async (req, res) => {
+
+  // Import/Export
+  app.post("/api/import", async (req, res) => {
     try {
-      const orderId = parseInt(req.params.orderId);
-      const success = await storage.closeOrder(orderId);
+      const { categories, products } = req.body;
       
-      if (!success) {
-        return res.status(404).json({ error: 'Order not found or already closed' });
-      }
+      const validatedCategories = categories.map((cat: any) => insertCategorySchema.parse(cat));
+      const validatedProducts = products.map((prod: any) => insertProductSchema.parse(prod));
       
-      res.json({ success: true, message: 'Order closed successfully' });
+      await storage.importData(validatedCategories, validatedProducts);
+      res.json({ message: "Data imported successfully" });
     } catch (error) {
-      console.error('Close order error:', error);
-      res.status(500).json({ error: 'Failed to close order' });
-    }
-  });
-  
-  // Order item operations
-  app.get('/api/orders/:orderId/items', requireAuth, async (req, res) => {
-    try {
-      const orderId = parseInt(req.params.orderId);
-      const items = await storage.getOrderItems(orderId);
-      res.json(items);
-    } catch (error) {
-      console.error('Order items error:', error);
-      res.status(500).json({ error: 'Failed to load order items' });
-    }
-  });
-  
-  app.post('/api/orders/:orderId/items', requireAuth, async (req, res) => {
-    try {
-      const orderId = parseInt(req.params.orderId);
-      const itemData = insertOrdersActualSchema.parse({
-        ...req.body,
-        orderId,
-        staffId: req.staff.staffId.toString()
-      });
-      
-      const item = await storage.addOrderItem(itemData);
-      res.json(item);
-    } catch (error) {
-      console.error('Add order item error:', error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: 'Invalid item data', details: error.errors });
+        res.status(400).json({ message: "Invalid import data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to import data" });
       }
-      res.status(500).json({ error: 'Failed to add order item' });
     }
   });
-  
-  app.put('/api/order-items/:itemId', requireAuth, async (req, res) => {
+
+  app.get("/api/export", async (req, res) => {
     try {
-      const itemId = parseInt(req.params.itemId);
-      const updates = req.body;
-      
-      const item = await storage.updateOrderItem(itemId, updates);
-      if (!item) {
-        return res.status(404).json({ error: 'Order item not found' });
-      }
-      
-      res.json(item);
+      const categories = await storage.getCategories();
+      const products = await storage.getProducts();
+      res.json({ categories, products });
     } catch (error) {
-      console.error('Update order item error:', error);
-      res.status(500).json({ error: 'Failed to update order item' });
+      res.status(500).json({ message: "Failed to export data" });
     }
   });
-  
-  app.delete('/api/order-items/:itemId', requireAuth, async (req, res) => {
+
+  // Banner routes
+  app.get("/api/banners", async (req, res) => {
     try {
-      const itemId = parseInt(req.params.itemId);
-      const success = await storage.removeOrderItem(itemId);
-      
-      if (!success) {
-        return res.status(404).json({ error: 'Order item not found' });
-      }
-      
-      res.json({ success: true, message: 'Order item removed successfully' });
+      const banners = await storage.getBanners();
+      res.json(banners);
     } catch (error) {
-      console.error('Remove order item error:', error);
-      res.status(500).json({ error: 'Failed to remove order item' });
+      res.status(500).json({ message: "Failed to fetch banners" });
     }
   });
-  
-  // Utility endpoints
-  app.get('/api/health', (req, res) => {
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      system: 'POS Mobile API'
-    });
+
+  app.get("/api/banners/type/:type", async (req, res) => {
+    try {
+      const type = req.params.type;
+      const banner = await storage.getBannerByType(type);
+      if (!banner) {
+        res.status(404).json({ message: "Banner not found" });
+      } else {
+        res.json(banner);
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch banner" });
+    }
   });
-  
-  return server;
+
+  app.post("/api/banners", async (req, res) => {
+    try {
+      const bannerData = insertBannerSchema.parse(req.body);
+      const banner = await storage.createBanner(bannerData);
+      res.status(201).json(banner);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid banner data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create banner" });
+      }
+    }
+  });
+
+  app.put("/api/banners/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const bannerData = insertBannerSchema.partial().parse(req.body);
+      const banner = await storage.updateBanner(id, bannerData);
+      if (!banner) {
+        res.status(404).json({ message: "Banner not found" });
+      } else {
+        res.json(banner);
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid banner data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update banner" });
+      }
+    }
+  });
+
+  app.delete("/api/banners/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteBanner(id);
+      if (!deleted) {
+        res.status(404).json({ message: "Banner not found" });
+      } else {
+        res.status(204).send();
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete banner" });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
 }
