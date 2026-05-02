@@ -1,0 +1,36 @@
+# Git and IDE
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+*.md
+!README.md
+
+# Dependencies and build (rebuilt in image)
+node_modules
+dist
+
+# Local env and databases
+.env
+.env.*
+*.db
+*.db-wal
+*.db-shm
+menu.db*
+
+# Logs and OS noise
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Replit / local agent state
+.replit
+.local
+
+# Tests and temp
+coverage
+tmp
+temp
+test-dist

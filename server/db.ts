@@ -1,39 +1,44 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from "@shared/schema";
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import path from 'path';
 
-neonConfig.webSocketConstructor = ws;
+function resolveDatabasePath(): string {
+  const raw = process.env.DATABASE_PATH?.trim();
+  if (raw) {
+    return path.resolve(raw);
+  }
+  return path.resolve(process.cwd(), "menu.db");
+}
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+function resolveMigrationsFolder(): string {
+  const raw = process.env.MIGRATIONS_FOLDER?.trim() || "migrations";
+  return path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
 }
 
 // Database connection with error handling
-let pool: Pool;
+let sqlite: Database.Database;
 let db: ReturnType<typeof drizzle>;
 
 export async function initializeDatabase() {
   try {
-    pool = new Pool({ 
-      connectionString: process.env.DATABASE_URL,
-      // Add production optimizations
-      ...(process.env.NODE_ENV === 'production' && {
-        max: 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 10000,
-      })
-    });
+    const dbPath = resolveDatabasePath();
+    sqlite = new Database(dbPath);
     
-    db = drizzle({ client: pool, schema });
+    // Enable WAL mode for better performance
+    sqlite.pragma('journal_mode = WAL');
     
-    // Test the connection
-    await pool.query('SELECT 1');
-    console.log('Database connection established successfully');
+    // Initialize Drizzle
+    db = drizzle(sqlite, { schema });
     
-    return { pool, db };
+    // Run migrations
+    migrate(db, { migrationsFolder: './migrations' });
+    
+    console.log('SQLite database initialized successfully');
+    console.log(`Database file: ${dbPath}`);
+    
+    return { sqlite, db };
   } catch (error) {
     console.error('Failed to initialize database:', error);
     throw new Error(`Database initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -41,8 +46,10 @@ export async function initializeDatabase() {
 }
 
 // Initialize database synchronously for backward compatibility
-pool = new Pool({ connectionString: process.env.DATABASE_URL });
-db = drizzle({ client: pool, schema });
+const dbPath = resolveDatabasePath();
+sqlite = new Database(dbPath);
+sqlite.pragma('journal_mode = WAL');
+db = drizzle(sqlite, { schema });
 
 // Export for backward compatibility
-export { pool, db };
+export { sqlite, db };
