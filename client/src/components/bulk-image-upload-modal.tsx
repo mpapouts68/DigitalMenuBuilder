@@ -25,7 +25,7 @@ interface ImageAssignment {
   file: File;
   preview: string;
   productId?: number;
-  status: "pending" | "assigned" | "uploaded" | "error";
+  status: "pending" | "assigned" | "uploaded" | "error" | "uploading";
   errorMessage?: string;
 }
 

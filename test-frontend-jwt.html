@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JWT Test</title>
+</head>
+<body>
+    <h1>JWT Authentication Test</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testBannerUpdate()">Test Banner Update</button>
+    <div id="output"></div>
+
+    <script>
+        let token = null;
+
+        async function testLogin() {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+                console.log('Login response:', data);
+                
+                if (data.token) {
+                    token = data.token;
+                    localStorage.setItem('auth_token', data.token);
+                    document.getElementById('output').innerHTML = '<p style="color: green;">✅ Login successful! Token stored.</p>';
+                } else {
+                    document.getElementById('output').innerHTML = '<p style="color: red;">❌ No token received</p>';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                document.getElementById('output').innerHTML = '<p style="color: red;">❌ Login failed: ' + error.message + '</p>';
+            }
+        }
+
+        async function testBannerUpdate() {
+            if (!token) {
+                token = localStorage.getItem('auth_token');
+            }
+
+            if (!token) {
+                document.getElementById('output').innerHTML = '<p style="color: red;">❌ No token available. Please login first.</p>';
+                return;
+            }
+
+            try {
+                console.log('Using token:', token.substring(0, 50) + '...');
+                
+                const response = await fetch('/api/banners/2', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        imageUrl: 'https://example.com/frontend-test-banner.jpg',
+                        altText: 'Frontend Test Banner'
+                    })
+                });
+
+                console.log('Banner response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Banner update successful:', data);
+                    document.getElementById('output').innerHTML = '<p style="color: green;">✅ Banner update successful!</p>';
+                } else {
+                    const error = await response.text();
+                    console.error('Banner update failed:', error);
+                    document.getElementById('output').innerHTML = '<p style="color: red;">❌ Banner update failed: ' + error + '</p>';
+                }
+            } catch (error) {
+                console.error('Banner update error:', error);
+                document.getElementById('output').innerHTML = '<p style="color: red;">❌ Banner update error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

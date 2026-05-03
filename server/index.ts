@@ -7,6 +7,8 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
+// JWT-based authentication - no session middleware needed
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -83,15 +85,10 @@ async function startServer() {
     }
 
     // Production environment check and explicit port configuration
-    // For Replit deployment, maintain port 5000 as the standard
-    const port = process.env.PORT || process.env.REPL_PORT || 5000;
+    const port = Number(process.env.PORT) || 5000;
     const host = "0.0.0.0"; // Always bind to all interfaces for deployment
     
-    server.listen({
-      port,
-      host,
-      reusePort: true,
-    }, () => {
+    server.listen(port, host, () => {
       log(`Server running on ${host}:${port} in ${process.env.NODE_ENV || "development"} mode`);
     });
 

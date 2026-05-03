@@ -1,0 +1,7 @@
+Product_ID,Description,Price,Product_Type,Unit,ProductGroup_ID,Printer,VAT,Drink_Or_Food,Menu_Number
+1,Shisha Simple S,20,Sales Item,portion,1,Bar,1,2,1
+2,Shisha Simple M,25,Sales Item,portion,1,Bar,1,2,2
+3,Shisha Simple L,30,Sales Item,portion,1,Bar,1,2,3
+4,Shisha Premium,35,Sales Item,portion,1,Bar,1,2,4
+5,Shisha Luxury,40,Sales Item,portion,1,Bar,1,2,5
+6,Cannabis Shisha,0,Sales Item,portion,1,Bar,1,2,6

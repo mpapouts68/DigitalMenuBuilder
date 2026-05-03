@@ -1,0 +1,42 @@
+Product_ID,Description,Price,Product_Type,Unit,ProductGroup_ID,Printer,VAT,Drink_Or_Food,Menu_Number
+7,Cherry,0,Sales Item,portion,2,Bar,1,2,7
+8,Strawberry,0,Sales Item,portion,2,Bar,1,2,8
+9,Rose,0,Sales Item,portion,2,Bar,1,2,9
+10,Orange,0,Sales Item,portion,2,Bar,1,2,10
+11,Peach,0,Sales Item,portion,2,Bar,1,2,11
+12,Lemon,0,Sales Item,portion,2,Bar,1,2,12
+13,Grape,0,Sales Item,portion,2,Bar,1,2,13
+14,Blueberry,0,Sales Item,portion,2,Bar,1,2,14
+15,Double Apple,0,Sales Item,portion,2,Bar,1,2,15
+16,Watermelon,0,Sales Item,portion,2,Bar,1,2,16
+17,Melon,0,Sales Item,portion,2,Bar,1,2,17
+18,Pineapple,0,Sales Item,portion,2,Bar,1,2,18
+19,Banana Ice,0,Sales Item,portion,2,Bar,1,2,19
+20,Mint Cream,0,Sales Item,portion,2,Bar,1,2,20
+21,Mint,0,Sales Item,portion,2,Bar,1,2,21
+22,Love 66,10,Sales Item,portion,3,Bar,1,2,22
+23,Lady Killer,10,Sales Item,portion,3,Bar,1,2,23
+24,Ice Cactus,10,Sales Item,portion,3,Bar,1,2,24
+25,Tiramisu,10,Sales Item,portion,3,Bar,1,2,25
+26,Blue Mist,10,Sales Item,portion,3,Bar,1,2,26
+27,Ginger Lime,10,Sales Item,portion,3,Bar,1,2,27
+28,Mi Amor,10,Sales Item,portion,3,Bar,1,2,28
+29,Hawaii,10,Sales Item,portion,3,Bar,1,2,29
+30,Forest Pulp,10,Sales Item,portion,3,Bar,1,2,30
+31,Mango Tango,10,Sales Item,portion,3,Bar,1,2,31
+32,Old Fashion,10,Sales Item,portion,3,Bar,1,2,32
+33,Secret Love,10,Sales Item,portion,3,Bar,1,2,33
+34,Clay Bowl,0,Sales Item,portion,4,Bar,1,2,34
+35,Silicone Bowl,5,Sales Item,portion,4,Bar,1,2,35
+36,Quasar Bowl,10,Sales Item,portion,4,Bar,1,2,36
+37,Amy Deluxe Bowl,5,Sales Item,portion,4,Bar,1,2,37
+38,Fresh Orange B.,15,Sales Item,portion,4,Bar,1,2,38
+39,Fresh Pine. Bowl,25,Sales Item,portion,4,Bar,1,2,39
+40,Ice Pipe,5,Sales Item,portion,5,Bar,1,2,40
+41,More Pipe,5,Sales Item,portion,5,Bar,1,2,41
+42,Extra Charcoals,1,Sales Item,portion,5,Bar,1,2,42
+43,With Vodka,25,Sales Item,portion,5,Bar,1,2,43
+44,With Ice,5,Sales Item,portion,5,Bar,1,2,44
+45,Refill Simple,15,Sales Item,portion,5,Bar,1,2,45
+46,Refill Premium,20,Sales Item,portion,5,Bar,1,2,46
+47,Nicotine Free,0,Sales Item,portion,5,Bar,1,2,47

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JWT Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .output { margin: 20px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .success { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>JWT Authentication Test</h1>
+    <button onclick="testLogin()">1. Test Login</button>
+    <button onclick="testBannerUpdate()">2. Test Banner Update</button>
+    <button onclick="checkToken()">3. Check Token</button>
+    <button onclick="clearToken()">4. Clear Token</button>
+    <div id="output"></div>
+
+    <script>
+        const TOKEN_KEY = 'auth_token';
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = `output ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            output.appendChild(div);
+            console.log(message);
+        }
+
+        function getToken() {
+            return localStorage.getItem(TOKEN_KEY);
+        }
+
+        function setToken(token) {
+            localStorage.setItem(TOKEN_KEY, token);
+        }
+
+        function clearToken() {
+            localStorage.removeItem(TOKEN_KEY);
+            log('Token cleared from localStorage', 'success');
+        }
+
+        function checkToken() {
+            const token = getToken();
+            if (token) {
+                log(`Token found: ${token.substring(0, 50)}...`, 'success');
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const exp = new Date(payload.exp * 1000);
+                    log(`Token expires: ${exp.toLocaleString()}`, 'info');
+                } catch (e) {
+                    log('Token format invalid', 'error');
+                }
+            } else {
+                log('No token found in localStorage', 'error');
+            }
+        }
+
+        async function testLogin() {
+            try {
+                log('Attempting login...', 'info');
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+                log(`Login response: ${response.status} - ${JSON.stringify(data)}`, response.ok ? 'success' : 'error');
+                
+                if (data.token) {
+                    setToken(data.token);
+                    log('Token stored in localStorage', 'success');
+                } else {
+                    log('No token in response', 'error');
+                }
+            } catch (error) {
+                log(`Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBannerUpdate() {
+            const token = getToken();
+            if (!token) {
+                log('No token available. Please login first.', 'error');
+                return;
+            }
+
+            try {
+                log('Attempting banner update...', 'info');
+                const response = await fetch('/api/banners/2', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        imageUrl: 'https://example.com/test-banner.jpg',
+                        altText: 'Test Banner'
+                    })
+                });
+
+                const data = await response.json();
+                log(`Banner update response: ${response.status} - ${JSON.stringify(data)}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Banner update error: ${error.message}`, 'error');
+            }
+        }
+
+        // Check token on page load
+        window.onload = function() {
+            log('Page loaded. Checking for existing token...', 'info');
+            checkToken();
+        };
+    </script>
+</body>
+</html>
+

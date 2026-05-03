@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function Landing() {
   const handleLogin = () => {
-    window.location.href = "/api/login";
+    window.location.href = "/login";
   };
 
   return (
@@ -32,7 +32,7 @@ export default function Landing() {
           </Button>
           
           <div className="text-center text-sm text-gray-500">
-            <p>Secure authentication powered by Replit</p>
+            <p>Secure authentication system</p>
           </div>
         </CardContent>
       </Card>

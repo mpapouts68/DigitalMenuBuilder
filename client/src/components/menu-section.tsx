@@ -10,8 +10,13 @@ interface MenuSectionProps {
   category: Category;
   products: Product[];
   isAdminMode: boolean;
+  isDeleteMode: boolean;
+  cartQuantityForProduct: (productId: number) => number;
   onEditItem: (item: Product) => void;
   onViewProduct: (item: Product) => void;
+  onAddProductToOrder: (item: Product, quantity: number) => void;
+  onDecrementCartForProduct: (productId: number) => void;
+  onEditProductModifiers: (item: Product) => void;
   onAddItem: () => void;
 }
 
@@ -19,8 +24,13 @@ export function MenuSection({
   category, 
   products, 
   isAdminMode, 
+  isDeleteMode,
+  cartQuantityForProduct,
   onEditItem,
-  onViewProduct, 
+  onViewProduct,
+  onAddProductToOrder,
+  onDecrementCartForProduct,
+  onEditProductModifiers,
   onAddItem 
 }: MenuSectionProps) {
   const queryClient = useQueryClient();
@@ -47,15 +57,43 @@ export function MenuSection({
     },
   });
 
+  const updateCategoryMutation = useMutation({
+    mutationFn: async (payload: { id: number; name: string }) => {
+      await apiRequest("PUT", `/api/categories/${payload.id}`, { name: payload.name.trim() });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      toast({
+        title: "Category updated",
+        description: "The category name was updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update category.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDeleteCategory = () => {
     if (confirm("Are you sure you want to delete this category and all its items?")) {
       deleteCategoryMutation.mutate(category.id);
     }
   };
 
+  const handleEditCategory = () => {
+    const nextName = window.prompt("Rename category", category.name)?.trim();
+    if (!nextName || nextName === category.name) {
+      return;
+    }
+    updateCategoryMutation.mutate({ id: category.id, name: nextName });
+  };
+
   return (
     <section className="animate-fade-in">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h2 className="text-xl font-semibold text-slate-800">{category.name}</h2>
         {isAdminMode && (
           <div className="flex space-x-2">
@@ -63,10 +101,8 @@ export function MenuSection({
               variant="ghost"
               size="icon"
               className="text-blue-600 hover:text-blue-800"
-              onClick={() => {
-                // TODO: Implement category editing
-                alert("Category editing feature coming soon!");
-              }}
+              onClick={handleEditCategory}
+              disabled={updateCategoryMutation.isPending}
             >
               <Edit className="h-4 w-4" />
             </Button>
@@ -89,8 +125,13 @@ export function MenuSection({
             key={product.id}
             product={product}
             isAdminMode={isAdminMode}
+            isDeleteMode={isDeleteMode}
+            cartQuantity={cartQuantityForProduct(product.id)}
             onEdit={() => onEditItem(product)}
             onViewDetails={() => onViewProduct(product)}
+            onAddToOrder={(quantity) => onAddProductToOrder(product, quantity)}
+            onDecrementCartForProduct={onDecrementCartForProduct}
+            onEditModifiers={() => onEditProductModifiers(product)}
           />
         ))}
         

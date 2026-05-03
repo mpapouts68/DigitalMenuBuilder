@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MenuHeader } from "@/components/menu-header";
 import { CategoryPills } from "@/components/category-pills";
@@ -9,20 +9,42 @@ import { AddItemModal } from "@/components/add-item-modal";
 import { AddCategoryModal } from "@/components/add-category-modal";
 import { ImportModal } from "@/components/import-modal";
 import { ProductDetailsModal } from "@/components/product-details-modal";
-import { AdminPasscodeModal } from "@/components/admin-passcode-modal";
 import { BulkImageUploadModal } from "@/components/bulk-image-upload-modal";
+import { OrderItemCustomizerModal } from "@/components/order-item-customizer-modal";
+import { OrderCartSheet } from "@/components/order-cart-sheet";
+import { ProductModifiersModal } from "@/components/product-modifiers-modal";
+import { AdminOperationsModal } from "@/components/admin-operations-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, QrCode } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { Search, Plus, ShoppingCart } from "lucide-react";
+import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { auth } from "@/lib/auth";
 import type { Category, Product } from "@shared/schema";
+import type { BrandingSettingsResponse, CartItem, OrderSourceContext } from "@/types/pos";
+import { menuBackdropStyle, menuHeaderBackdropStyle } from "@/lib/menuBackdrop";
+
+interface AuthUser {
+  username: string;
+  role: "admin" | "printer";
+}
 
 export default function Menu() {
-  const [isAdminMode, setIsAdminMode] = useState(false);
-  const [showAdminPasscode, setShowAdminPasscode] = useState(false);
+  const [location] = useLocation();
+  const adminRequested = useMemo(
+    () => new URLSearchParams(window.location.search).get("admin") === "1",
+    [location],
+  );
+  const { data: authUser } = useQuery<AuthUser | null>({
+    queryKey: ["/api/auth/user", "menu-admin"],
+    enabled: adminRequested && auth.isAuthenticated(),
+    retry: false,
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/auth/user");
+      return response.json();
+    },
+  });
+  const isAdminMode = adminRequested && authUser?.role === "admin";
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [showBulkImageModal, setShowBulkImageModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,10 +53,21 @@ export default function Menu() {
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showProductDetails, setShowProductDetails] = useState(false);
+  const [showItemCustomizer, setShowItemCustomizer] = useState(false);
+  const [showCart, setShowCart] = useState(false);
+  const [showModifierModal, setShowModifierModal] = useState(false);
+  const [showAdminOperations, setShowAdminOperations] = useState(false);
   const [editingItem, setEditingItem] = useState<Product | null>(null);
+  const [orderingProduct, setOrderingProduct] = useState<Product | null>(null);
+  const [initialOrderQuantity, setInitialOrderQuantity] = useState(1);
+  const [modifiersProduct, setModifiersProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [selectedCategoryForNewItem, setSelectedCategoryForNewItem] = useState<number | null>(null);
-  const [showQRCode, setShowQRCode] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [orderSourceContext, setOrderSourceContext] = useState<OrderSourceContext>({
+    serviceMode: "pickup",
+    pickupPoint: "bar",
+  });
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
@@ -42,6 +75,10 @@ export default function Menu() {
 
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
+  });
+
+  const { data: branding } = useQuery<BrandingSettingsResponse | null>({
+    queryKey: ["/api/branding"],
   });
 
   // Filter products based on search and category
@@ -69,19 +106,6 @@ export default function Menu() {
     return acc;
   }, {} as Record<number, Product[]>);
 
-  const handleAdminModeChange = (checked: boolean) => {
-    if (checked) {
-      setShowAdminPasscode(true);
-    } else {
-      setIsAdminMode(false);
-      setIsDeleteMode(false);
-    }
-  };
-
-  const handleAdminPasscodeSuccess = () => {
-    setIsAdminMode(true);
-  };
-
   const handleDeleteMode = () => {
     setIsDeleteMode(!isDeleteMode);
   };
@@ -96,6 +120,17 @@ export default function Menu() {
     setShowProductDetails(true);
   };
 
+  const handleOrderProduct = (item: Product, quantity: number) => {
+    setOrderingProduct(item);
+    setInitialOrderQuantity(Math.max(1, quantity));
+    setShowItemCustomizer(true);
+  };
+
+  const handleEditModifiers = (item: Product) => {
+    setModifiersProduct(item);
+    setShowModifierModal(true);
+  };
+
   const handleAddItemToCategory = (categoryId: number) => {
     setSelectedCategoryForNewItem(categoryId);
     setEditingItem(null);
@@ -108,14 +143,93 @@ export default function Menu() {
     setSelectedCategoryForNewItem(null);
   };
 
-  // Set page title
+  // Keep browser tab title aligned with branding header title.
   useEffect(() => {
-    document.title = "Café Restaurant Leiden - Digital Menu";
+    const title = branding?.headerTitle?.trim();
+    document.title = title ? `${title} - Digital Menu` : "Digital Menu";
+  }, [branding?.headerTitle]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const modeParam = params.get("mode");
+    const tableParam = params.get("table");
+    const tableLabelParam = params.get("tableLabel");
+    const pickupPointParam = params.get("point");
+    const tokenParam = params.get("token");
+
+    const resolvedMode: "table" | "pickup" = modeParam === "table" ? "table" : "pickup";
+    const fallbackToTable = !modeParam && !!tableParam;
+    const serviceMode: "table" | "pickup" = fallbackToTable ? "table" : resolvedMode;
+
+    setOrderSourceContext({
+      serviceMode,
+      tableCode: tableParam || undefined,
+      tableLabel: tableLabelParam || undefined,
+      pickupPoint: pickupPointParam || "bar",
+      sourceToken: tokenParam || undefined,
+    });
   }, []);
+
+  useEffect(() => {
+    if (!branding) return;
+    const root = document.documentElement;
+    if (branding.primaryColor) {
+      root.style.setProperty("--primary", branding.primaryColor);
+    }
+    if (branding.secondaryColor) {
+      root.style.setProperty("--secondary", branding.secondaryColor);
+    }
+    if (branding.accentColor) {
+      root.style.setProperty("--accent", branding.accentColor);
+    }
+  }, [branding]);
+
+  const cartCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems]);
+
+  const quantityByProductId = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const line of cartItems) {
+      map.set(line.productId, (map.get(line.productId) ?? 0) + line.quantity);
+    }
+    return map;
+  }, [cartItems]);
+
+  const cartQuantityForProduct = (productId: number) => quantityByProductId.get(productId) ?? 0;
+
+  const handleDecrementCartForProduct = (productId: number) => {
+    setCartItems((prev) => {
+      const next = [...prev];
+      for (let i = next.length - 1; i >= 0; i--) {
+        if (next[i].productId !== productId) continue;
+        const line = next[i];
+        if (line.quantity > 1) {
+          const newQty = line.quantity - 1;
+          const unitTotal = line.lineTotal / line.quantity;
+          next[i] = { ...line, quantity: newQty, lineTotal: unitTotal * newQty };
+        } else {
+          next.splice(i, 1);
+        }
+        break;
+      }
+      return next;
+    });
+  };
+
+  const handleAddToCart = (item: CartItem) => {
+    setCartItems((prev) => [...prev, item]);
+  };
+
+  const handleAddToCartAndCheckout = (item: CartItem) => {
+    setCartItems((prev) => [...prev, item]);
+    setShowCart(true);
+  };
+
+  const backgroundImageUrl = branding?.backgroundImageUrl?.trim() || "/backgrnd.PNG";
+  const menuSurfaceStyle = menuBackdropStyle(backgroundImageUrl);
 
   if (categoriesLoading || productsLoading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div style={menuSurfaceStyle}>
         <div className="max-w-md mx-auto px-4 py-8">
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
@@ -135,8 +249,12 @@ export default function Menu() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <MenuHeader />
+    <div style={menuSurfaceStyle}>
+      <MenuHeader
+        logoUrl={branding?.logoUrl}
+        headerTitle={branding?.headerTitle}
+        headerSubtitle={branding?.headerSubtitle}
+      />
 
       {isAdminMode && (
         <div className="max-w-sm mx-auto px-4 mb-6 sm:max-w-md sm:px-6">
@@ -144,6 +262,7 @@ export default function Menu() {
             onAddCategory={() => setShowAddCategoryModal(true)}
             onImportData={() => setShowImportModal(true)}
             onBulkImageUpload={() => setShowBulkImageModal(true)}
+            onOpenOperations={() => setShowAdminOperations(true)}
             onDeleteMode={handleDeleteMode}
             isDeleteMode={isDeleteMode}
           />
@@ -151,22 +270,52 @@ export default function Menu() {
       )}
 
       <div className="max-w-sm mx-auto px-4 pb-8 sm:max-w-md sm:px-6">
-        {/* Search Section */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
+        {!isAdminMode && (
+          <div className="mb-4 rounded-lg border bg-white p-3 text-sm">
+            {orderSourceContext.serviceMode === "table" && orderSourceContext.tableCode ? (
+              <p>
+                Ordering for table <span className="font-semibold">{orderSourceContext.tableCode}</span>
+              </p>
+            ) : (
+              <p>
+                Pickup mode ({orderSourceContext.pickupPoint || "bar"})
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Search + cart (guest): cart always reachable without scrolling to footer */}
+        <div className="mb-[14px] flex flex-row items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <Input
               type="text"
               placeholder="Search menu items..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 pr-4 py-3 bg-white border-slate-200 focus:border-red-300 focus:ring-red-200 rounded-xl shadow-sm text-base"
+              className="h-12 w-full rounded-xl border-slate-200 bg-white pl-12 pr-4 text-base shadow-sm focus:border-red-300 focus:ring-red-200"
             />
           </div>
+          {!isAdminMode && (
+            <Button
+              type="button"
+              variant="default"
+              aria-label="Open order"
+              onClick={() => setShowCart(true)}
+              className="relative h-12 w-12 shrink-0 rounded-xl border border-emerald-700/30 bg-emerald-600 p-0 text-white shadow-md hover:bg-emerald-700"
+            >
+              <ShoppingCart className="mx-auto h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold tabular-nums leading-none text-white">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
+            </Button>
+          )}
         </div>
 
-        {/* Category Pills */}
-        <div className="mb-6">
+        {/* Category Pills — left-aligned row */}
+        <div className="mb-2 flex w-full justify-start">
           <CategoryPills
             categories={categories}
             activeCategory={activeCategory}
@@ -175,7 +324,7 @@ export default function Menu() {
         </div>
 
         {/* Menu Content */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           {filteredCategories.map(category => (
             <MenuSection
               key={category.id}
@@ -183,8 +332,12 @@ export default function Menu() {
               products={groupedProducts[category.id] || []}
               isAdminMode={isAdminMode}
               isDeleteMode={isDeleteMode}
+              cartQuantityForProduct={cartQuantityForProduct}
               onEditItem={handleEditItem}
               onViewProduct={handleViewProduct}
+              onAddProductToOrder={handleOrderProduct}
+              onDecrementCartForProduct={handleDecrementCartForProduct}
+              onEditProductModifiers={handleEditModifiers}
               onAddItem={() => handleAddItemToCategory(category.id)}
             />
           ))}
@@ -198,67 +351,60 @@ export default function Menu() {
             </div>
           )}
         </div>
+
+        {/* Advertisement Banner - After menu content */}
+        <div className="mt-3 mb-1">
+          <AdvertisementBanner 
+            type="promotional"
+            isAdminMode={isAdminMode}
+            className="h-20 sm:h-24"
+          />
+        </div>
       </div>
 
-      {/* Footer with Controls and Advertisement */}
-      <footer className="bg-white border-t border-slate-200 sticky bottom-0 z-40">
-        <div className="max-w-sm mx-auto px-4 py-3 sm:max-w-md sm:px-6">
-          {/* Advertisement Banner */}
-          <div className="mb-3">
-            <AdvertisementBanner 
-              type="promotional"
-              isAdminMode={isAdminMode}
-            />
-          </div>
-          
-          {/* Controls Section */}
-          <div className="flex items-center justify-between">
+      {/* Footer: same tiled backdrop as page (no solid white bar) */}
+      <footer
+        className="border-t border-slate-900/10 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        style={{
+          ...menuHeaderBackdropStyle(),
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)",
+        }}
+      >
+        <div className="max-w-sm mx-auto px-4 py-2 sm:max-w-md sm:px-6 space-y-2">
+          {!isAdminMode && (
             <Button
-              onClick={() => setShowQRCode(true)}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full border-red-200 text-red-700 hover:bg-red-50"
+              type="button"
+              onClick={() => setShowCart(true)}
+              className="w-full h-11 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
             >
-              <QrCode className="h-3 w-3" />
-              <span className="text-xs font-medium">Share</span>
+              <ShoppingCart className="h-4 w-4" />
+              Order
+              {cartCount > 0 && (
+                <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs tabular-nums">{cartCount}</span>
+              )}
             </Button>
-            
-            <div className="flex items-center gap-2">
-              <Label htmlFor="admin-mode" className="text-xs text-slate-600 font-medium">
-                Admin
-              </Label>
-              <Switch
-                id="admin-mode"
-                checked={isAdminMode}
-                onCheckedChange={handleAdminModeChange}
-                className="data-[state=checked]:bg-red-600 scale-75"
-              />
-            </div>
-          </div>
+          )}
         </div>
-        
-        {/* QR Code Modal */}
-        <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
-          <DialogContent className="sm:max-w-md mx-4">
-            <DialogHeader>
-              <DialogTitle className="text-center">Share Menu</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col items-center p-6">
-              <QRCodeSVG
-                value={window.location.href}
-                size={200}
-                bgColor={"#ffffff"}
-                fgColor={"#000000"}
-                level={"L"}
-                includeMargin={false}
-                className="rounded-lg shadow-sm"
-              />
-              <p className="text-center text-sm text-slate-600 mt-4">
-                Scan to access this menu on your device
-              </p>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {branding?.footerText && (
+          <div
+            className="max-w-sm mx-auto px-4 pb-3 text-center text-xs text-slate-800 sm:max-w-md sm:px-6"
+            style={{
+              textShadow:
+                "0 0 8px rgba(255,255,255,0.95), 0 1px 1px rgba(255,255,255,0.85)",
+            }}
+          >
+            {branding.footerText}
+          </div>
+        )}
+        <div
+          className="max-w-sm mx-auto px-4 pb-3 text-center text-xs text-slate-800 sm:max-w-md sm:px-6"
+          style={{
+            textShadow:
+              "0 0 8px rgba(255,255,255,0.95), 0 1px 1px rgba(255,255,255,0.85)",
+          }}
+        >
+          All rights reserved.
+        </div>
       </footer>
 
       {/* Floating Add Button (Admin Mode) */}
@@ -305,15 +451,38 @@ export default function Menu() {
         onEdit={() => handleEditItem(viewingProduct!)}
       />
 
-      <AdminPasscodeModal
-        open={showAdminPasscode}
-        onOpenChange={setShowAdminPasscode}
-        onSuccess={handleAdminPasscodeSuccess}
-      />
-
       <BulkImageUploadModal
         open={showBulkImageModal}
         onOpenChange={setShowBulkImageModal}
+      />
+
+      <OrderItemCustomizerModal
+        open={showItemCustomizer}
+        onOpenChange={setShowItemCustomizer}
+        product={orderingProduct}
+        initialQuantity={initialOrderQuantity}
+        onAddToCart={handleAddToCart}
+        onAddToCartAndCheckout={handleAddToCartAndCheckout}
+      />
+
+      <OrderCartSheet
+        open={showCart}
+        onOpenChange={setShowCart}
+        cartItems={cartItems}
+        onRemoveItem={(id) => setCartItems((prev) => prev.filter((item) => item.id !== id))}
+        onClear={() => setCartItems([])}
+        sourceContext={orderSourceContext}
+      />
+
+      <ProductModifiersModal
+        open={showModifierModal}
+        onOpenChange={setShowModifierModal}
+        product={modifiersProduct}
+      />
+
+      <AdminOperationsModal
+        open={showAdminOperations}
+        onOpenChange={setShowAdminOperations}
       />
     </div>
   );

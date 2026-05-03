@@ -9,11 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, X, ImageIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertProductSchema } from "@shared/schema";
 import type { Category, Product } from "@shared/schema";
+import type { z } from "zod";
 
 interface AddItemModalProps {
   open: boolean;
@@ -34,22 +36,27 @@ export function AddItemModal({
   const { toast } = useToast();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
+  const [priceInput, setPriceInput] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  type ProductFormValues = z.infer<typeof insertProductSchema>;
 
-  const form = useForm({
+  const form = useForm<ProductFormValues>({
     resolver: zodResolver(insertProductSchema),
     defaultValues: {
       name: editingItem?.name || "",
-      price: editingItem?.price || "",
+      price: editingItem?.price ?? 0,
       description: editingItem?.description || "",
       details: editingItem?.details || "",
       imageUrl: editingItem?.imageUrl || "",
       categoryId: editingItem?.categoryId || selectedCategoryId || categories[0]?.id || 0,
+      isSpecialOffer: editingItem?.isSpecialOffer ?? 0,
+      isTopSelling: editingItem?.isTopSelling ?? 0,
+      specialOfferDiscountPercent: editingItem?.specialOfferDiscountPercent ?? 0,
     },
   });
 
   const createProductMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: ProductFormValues) => {
       await apiRequest("POST", "/api/products", data);
     },
     onSuccess: () => {
@@ -60,6 +67,7 @@ export function AddItemModal({
       });
       onOpenChange(false);
       form.reset();
+      setPriceInput("");
     },
     onError: () => {
       toast({
@@ -71,7 +79,7 @@ export function AddItemModal({
   });
 
   const updateProductMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: ProductFormValues) => {
       await apiRequest("PUT", `/api/products/${editingItem!.id}`, data);
     },
     onSuccess: () => {
@@ -82,6 +90,7 @@ export function AddItemModal({
       });
       onOpenChange(false);
       form.reset();
+      setPriceInput("");
     },
     onError: () => {
       toast({
@@ -92,11 +101,15 @@ export function AddItemModal({
     },
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: ProductFormValues) => {
+    const payload: ProductFormValues = {
+      ...data,
+      imageUrl: imageUrl.trim() || "",
+    };
     if (editingItem) {
-      updateProductMutation.mutate(data);
+      updateProductMutation.mutate(payload);
     } else {
-      createProductMutation.mutate(data);
+      createProductMutation.mutate(payload);
     }
   };
 
@@ -117,7 +130,7 @@ export function AddItemModal({
         const result = e.target?.result as string;
         setImagePreview(result);
         setImageUrl(result);
-        form.setValue("imageUrl", result);
+        form.setValue("imageUrl", result, { shouldDirty: true, shouldValidate: true });
       };
       reader.readAsDataURL(file);
     }
@@ -126,13 +139,13 @@ export function AddItemModal({
   const handleUrlChange = (url: string) => {
     setImageUrl(url);
     setImagePreview(url);
-    form.setValue("imageUrl", url);
+    form.setValue("imageUrl", url, { shouldDirty: true, shouldValidate: true });
   };
 
   const removeImage = () => {
     setImagePreview(null);
     setImageUrl("");
-    form.setValue("imageUrl", "");
+    form.setValue("imageUrl", "", { shouldDirty: true, shouldValidate: true });
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -143,15 +156,24 @@ export function AddItemModal({
     if (open) {
       const values = {
         name: editingItem?.name || "",
-        price: editingItem?.price || "",
+        price: editingItem?.price ?? 0,
         description: editingItem?.description || "",
         details: editingItem?.details || "",
         imageUrl: editingItem?.imageUrl || "",
         categoryId: editingItem?.categoryId || selectedCategoryId || categories[0]?.id || 0,
+        isSpecialOffer: editingItem?.isSpecialOffer ?? 0,
+        isTopSelling: editingItem?.isTopSelling ?? 0,
+        specialOfferDiscountPercent: editingItem?.specialOfferDiscountPercent ?? 0,
       };
       form.reset(values);
       setImagePreview(editingItem?.imageUrl || null);
       setImageUrl(editingItem?.imageUrl || "");
+      form.setValue("imageUrl", editingItem?.imageUrl || "", { shouldValidate: false });
+      setPriceInput(
+        editingItem?.price !== undefined && editingItem?.price !== null
+          ? String(editingItem.price)
+          : "",
+      );
     }
   }, [open, editingItem, selectedCategoryId, categories, form]);
 
@@ -188,10 +210,22 @@ export function AddItemModal({
                   <FormLabel>Price (€)</FormLabel>
                   <FormControl>
                     <Input 
-                      {...field} 
+                      value={priceInput}
                       type="number" 
                       step="0.01" 
                       placeholder="0.00"
+                      onChange={(event) => {
+                        const raw = event.target.value;
+                        setPriceInput(raw);
+                        if (raw === "") {
+                          field.onChange(0);
+                          return;
+                        }
+                        const parsed = Number(raw);
+                        if (!Number.isNaN(parsed)) {
+                          field.onChange(parsed);
+                        }
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -300,7 +334,7 @@ export function AddItemModal({
                     <img
                       src={imagePreview}
                       alt="Product preview"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       onError={() => {
                         setImagePreview(null);
                         toast({
@@ -342,6 +376,69 @@ export function AddItemModal({
                 </FormItem>
               )}
             />
+
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+              <Label className="text-sm font-medium">Item labels on menu card</Label>
+              <FormField
+                control={form.control}
+                name="isSpecialOffer"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between space-y-0">
+                    <FormLabel className="text-sm font-normal">Mark as Special Offer</FormLabel>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value === 1}
+                        onCheckedChange={(checked) => field.onChange(checked === true ? 1 : 0)}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="specialOfferDiscountPercent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-normal">Special offer discount (%)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={field.value ?? 0}
+                        onChange={(event) => {
+                          const raw = Number(event.target.value);
+                          const safe = Number.isFinite(raw) ? Math.max(0, Math.min(100, Math.round(raw))) : 0;
+                          field.onChange(safe);
+                        }}
+                        disabled={form.watch("isSpecialOffer") !== 1}
+                        placeholder="0"
+                      />
+                    </FormControl>
+                    <p className="text-xs text-slate-500">
+                      Shows as a separate badge next to "Special Offer" on the menu card.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="isTopSelling"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between space-y-0">
+                    <FormLabel className="text-sm font-normal">Mark as Top Selling</FormLabel>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value === 1}
+                        onCheckedChange={(checked) => field.onChange(checked === true ? 1 : 0)}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="flex space-x-3 pt-4">
               <Button 

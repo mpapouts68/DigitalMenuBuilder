@@ -62,7 +62,7 @@ export function ProductDetailsModal({
               <img 
                 src={product.imageUrl} 
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             ) : (
               <div className="text-center">
@@ -75,7 +75,7 @@ export function ProductDetailsModal({
           {/* Price */}
           <div className="text-center">
             <span className="text-3xl font-bold text-blue-600">
-              €{parseFloat(product.price).toFixed(2)}
+              €{Number(product.price).toFixed(2)}
             </span>
           </div>
 

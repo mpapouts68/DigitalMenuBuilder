@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { Megaphone, BarChart3, Upload, X, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -157,11 +157,11 @@ export function AdvertisementBanner({ className, type = "advertisement", isAdmin
   // If there's a banner image, display it
   if (banner && banner.imageUrl) {
     return (
-      <div className={cn("banner-space rounded-lg relative overflow-hidden", className)}>
+      <div className={cn("rounded-lg relative overflow-hidden h-32 sm:h-40 bg-transparent", className)}>
         <img
           src={banner.imageUrl}
           alt={banner.altText || text}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
         {isAdminMode && (
           <div className="absolute top-2 right-2 flex gap-1">
@@ -178,6 +178,9 @@ export function AdvertisementBanner({ className, type = "advertisement", isAdmin
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Edit {text}</DialogTitle>
+                  <DialogDescription>
+                    Update the {text.toLowerCase()} image and details.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -197,7 +200,7 @@ export function AdvertisementBanner({ className, type = "advertisement", isAdmin
                       <img
                         src={imageUrl}
                         alt="Preview"
-                        className="w-full h-20 object-cover rounded border"
+                        className="w-full h-20 object-contain rounded border bg-slate-50"
                       />
                     </div>
                   )}
@@ -248,7 +251,7 @@ export function AdvertisementBanner({ className, type = "advertisement", isAdmin
   return (
     <div className={cn(
       "banner-space rounded-lg flex items-center justify-center border-2 border-dashed border-slate-300",
-      "bg-gradient-to-br from-slate-100 to-slate-200 relative",
+      "bg-gradient-to-br from-slate-100 to-slate-200 relative h-32 sm:h-40",
       className
     )}>
       <div className="text-center">
@@ -265,6 +268,9 @@ export function AdvertisementBanner({ className, type = "advertisement", isAdmin
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Upload {text}</DialogTitle>
+                <DialogDescription>
+                  Upload a new {text.toLowerCase()} image and provide details.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -284,7 +290,7 @@ export function AdvertisementBanner({ className, type = "advertisement", isAdmin
                     <img
                       src={imageUrl}
                       alt="Preview"
-                      className="w-full h-20 object-cover rounded border"
+                      className="w-full h-20 object-contain rounded border bg-slate-50"
                     />
                   </div>
                 )}

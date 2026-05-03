@@ -53,10 +53,10 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
 
   if (isMobile) {
     return (
-      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+      <div className="flex justify-start gap-3 overflow-x-auto pb-1 scrollbar-hide">
         <button
           onClick={() => onCategoryChange("all")}
-          className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
+          className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
             activeCategory === "all"
               ? "bg-red-600 text-white shadow-red-200 transform scale-105"
               : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
@@ -68,7 +68,7 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
           <button
             key={category.id}
             onClick={() => onCategoryChange(category.id)}
-            className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
+            className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === category.id
                 ? "bg-red-600 text-white shadow-red-200 transform scale-105"
                 : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
@@ -82,7 +82,7 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
   }
 
   return (
-    <div className="relative w-full">
+    <div className="relative flex w-full min-w-0 justify-start">
       {/* Left scroll button */}
       {canScrollLeft && (
         <Button
@@ -108,15 +108,15 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
       )}
 
       {/* Scrollable categories */}
-      <div 
+      <div
         ref={scrollRef}
-        className="w-full overflow-x-auto px-8 scrollbar-hide"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        className="w-full overflow-x-auto pl-0 pr-2 scrollbar-hide"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        <div className="flex space-x-3 pb-3 px-1 min-w-max">
+        <div className="flex min-w-max justify-start gap-3 pb-1">
           <button
             onClick={() => onCategoryChange("all")}
-            className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
+            className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
               activeCategory === "all"
                 ? "bg-red-600 text-white shadow-red-200 transform scale-105"
                 : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"
@@ -128,7 +128,7 @@ export function CategoryPills({ categories, activeCategory, onCategoryChange }: 
             <button
               key={category.id}
               onClick={() => onCategoryChange(category.id)}
-              className={`px-5 py-3 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
+              className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm ${
                 activeCategory === category.id
                   ? "bg-red-600 text-white shadow-red-200 transform scale-105"
                   : "bg-white text-slate-600 hover:bg-slate-50 hover:shadow-md border border-slate-200 active:scale-95"

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Eye, EyeOff } from "lucide-react";
+import { auth } from "@/lib/auth";
 
 interface AdminPasscodeModalProps {
   open: boolean;
@@ -12,38 +13,50 @@ interface AdminPasscodeModalProps {
   onSuccess: () => void;
 }
 
-// Hardcoded passcode - can be moved to environment variable later
-const ADMIN_PASSCODE = "1234";
-
 export function AdminPasscodeModal({ open, onOpenChange, onSuccess }: AdminPasscodeModalProps) {
   const [passcode, setPasscode] = useState("");
   const [showPasscode, setShowPasscode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simple delay to simulate verification
-    setTimeout(() => {
-      if (passcode === ADMIN_PASSCODE) {
-        onSuccess();
-        onOpenChange(false);
-        setPasscode("");
-        toast({
-          title: "Access granted",
-          description: "Admin mode activated",
-        });
-      } else {
+    try {
+      const response = await fetch("/api/auth/passcode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.token) {
         toast({
           title: "Access denied",
-          description: "Incorrect passcode",
+          description: data.message || "Incorrect passcode",
           variant: "destructive",
         });
+        return;
       }
+
+      auth.setToken(data.token);
+      onSuccess();
+      onOpenChange(false);
+      setPasscode("");
+      toast({
+        title: "Access granted",
+        description: "Admin mode activated",
+      });
+    } catch {
+      toast({
+        title: "Access denied",
+        description: "Failed to verify passcode",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 500);
+    }
   };
 
   const handleClose = () => {

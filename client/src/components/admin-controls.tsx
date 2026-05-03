@@ -1,20 +1,28 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Upload, Download, Images } from "lucide-react";
+import { Plus, Upload, Download, Images, Settings } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { BulkImageUploadModal } from "./bulk-image-upload-modal";
 
 interface AdminControlsProps {
   onAddCategory: () => void;
   onImportData: () => void;
+  onBulkImageUpload: () => void;
+  onOpenOperations: () => void;
+  onDeleteMode: () => void;
+  isDeleteMode: boolean;
 }
 
-export function AdminControls({ onAddCategory, onImportData }: AdminControlsProps) {
+export function AdminControls({
+  onAddCategory,
+  onImportData,
+  onBulkImageUpload,
+  onOpenOperations,
+  onDeleteMode,
+  isDeleteMode,
+}: AdminControlsProps) {
   const { toast } = useToast();
-  const [showBulkImageUpload, setShowBulkImageUpload] = useState(false);
 
   const exportDataMutation = useMutation({
     mutationFn: async () => {
@@ -74,7 +82,7 @@ export function AdminControls({ onAddCategory, onImportData }: AdminControlsProp
               Add Category
             </Button>
             <Button
-              onClick={() => setShowBulkImageUpload(true)}
+              onClick={onBulkImageUpload}
               variant="outline"
               className="border-amber-300 text-amber-700 hover:bg-amber-50 font-semibold py-3 rounded-xl"
             >
@@ -101,13 +109,16 @@ export function AdminControls({ onAddCategory, onImportData }: AdminControlsProp
               Export Data
             </Button>
           </div>
+          <Button
+            onClick={onOpenOperations}
+            variant="outline"
+            className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 font-semibold py-3 rounded-xl"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Operations / Branding
+          </Button>
         </CardContent>
       </Card>
-
-      <BulkImageUploadModal
-        open={showBulkImageUpload}
-        onOpenChange={setShowBulkImageUpload}
-      />
     </div>
   );
 }

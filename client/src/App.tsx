@@ -6,12 +6,18 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Menu from "@/pages/menu";
 import Landing from "@/pages/landing";
+import Login from "@/pages/login";
+import PrinterPage from "@/pages/printer";
+import AdminPage from "@/pages/admin";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Menu} />
       <Route path="/menu" component={Menu} />
+      <Route path="/login" component={Login} />
+      <Route path="/printer" component={PrinterPage} />
+      <Route path="/admin" component={AdminPage} />
       <Route>
         <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
           <div className="text-center">

@@ -100,6 +100,9 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+menu.db
+menu.db-wal
+menu.db-shm
 
 # Backup files
 *.backup
@@ -111,3 +114,6 @@ test-dist/
 
 # Replit specific
 .replit
+
+# Local tool state (Replit agent, etc.) — do not commit
+.local/

@@ -1,0 +1,89 @@
+{
+  "_comment": "PDF 'Katalogos back 2025 for QR code.pdf' has no text layer (scanned). Edit flavour lists to match the printed menu: left column = three flavour tiers. Right column prices = shishaTypeGroup and bowlTypeGroup option priceDelta. Extras = multi-select add-ons.",
+  "categories": [
+    {
+      "name": "Simple flavours",
+      "order": 1,
+      "price": 20,
+      "flavours": [
+        "Double apple",
+        "Mint",
+        "Grape",
+        "Watermelon",
+        "Lemon with mint",
+        "Peach",
+        "Cherry",
+        "Blueberry",
+        "Orange",
+        "Cola",
+        "Vanilla",
+        "Sweet melon",
+        "Strawberry",
+        "Kiwi",
+        "Bubble gum",
+        "Mixed fruit",
+        "Mango",
+        "Energy",
+        "Cinnamon gum",
+        "Pan raas"
+      ]
+    },
+    {
+      "name": "Premium flavours",
+      "order": 2,
+      "price": 30,
+      "flavours": [
+        "Blue mist",
+        "Love 66",
+        "Ice lemon mint",
+        "Blueberry mint",
+        "Citrus mint",
+        "Magic love",
+        "Two apples",
+        "Acai",
+        "Guava",
+        "Lemon pie",
+        "Ice blueberry",
+        "Lady killer",
+        "Absolute zero",
+        "White gummi bear",
+        "Cane mint"
+      ]
+    },
+    {
+      "name": "Cannabis",
+      "order": 3,
+      "price": 40,
+      "flavours": [
+        "(Flavours to be added — edit shisha_catalog.json)"
+      ]
+    }
+  ],
+  "shishaTypeGroup": {
+    "name": "Shisha type",
+    "isRequired": 1,
+    "sortOrder": 0,
+    "options": [
+      { "name": "Standard", "priceDelta": 0 },
+      { "name": "Ice / cooling", "priceDelta": 8 },
+      { "name": "Premium glass", "priceDelta": 12 }
+    ]
+  },
+  "bowlTypeGroup": {
+    "name": "Bowl type",
+    "isRequired": 1,
+    "sortOrder": 1,
+    "options": [
+      { "name": "Standard clay", "priceDelta": 0 },
+      { "name": "Fruit bowl (apple / orange)", "priceDelta": 10 },
+      { "name": "Pineapple / premium fruit", "priceDelta": 15 }
+    ]
+  },
+  "extras": [
+    { "name": "Extra hose", "priceDelta": 5 },
+    { "name": "Fresh juice base", "priceDelta": 4 },
+    { "name": "Extra flavour mix", "priceDelta": 6 },
+    { "name": "Ice in base", "priceDelta": 3 },
+    { "name": "Charcoal refresh", "priceDelta": 2 }
+  ]
+}
