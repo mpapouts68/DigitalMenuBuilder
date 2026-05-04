@@ -52,6 +52,8 @@ export function AddItemModal({
       isSpecialOffer: editingItem?.isSpecialOffer ?? 0,
       isTopSelling: editingItem?.isTopSelling ?? 0,
       specialOfferDiscountPercent: editingItem?.specialOfferDiscountPercent ?? 0,
+      maxFlavourSelections: (editingItem as { maxFlavourSelections?: number })?.maxFlavourSelections ?? 0,
+      maxAddonSelections: (editingItem as { maxAddonSelections?: number })?.maxAddonSelections ?? 0,
     },
   });
 
@@ -164,6 +166,8 @@ export function AddItemModal({
         isSpecialOffer: editingItem?.isSpecialOffer ?? 0,
         isTopSelling: editingItem?.isTopSelling ?? 0,
         specialOfferDiscountPercent: editingItem?.specialOfferDiscountPercent ?? 0,
+        maxFlavourSelections: (editingItem as { maxFlavourSelections?: number })?.maxFlavourSelections ?? 0,
+        maxAddonSelections: (editingItem as { maxAddonSelections?: number })?.maxAddonSelections ?? 0,
       };
       form.reset(values);
       setImagePreview(editingItem?.imageUrl || null);
@@ -376,6 +380,58 @@ export function AddItemModal({
                 </FormItem>
               )}
             />
+
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+              <Label className="text-sm font-medium">Multi-select limits (extras)</Label>
+              <p className="text-xs text-slate-600">
+                Caps how many flavours / add-ons guests can pick (same as in Modifiers).{" "}
+                <strong>0</strong> = no limit. Flavours use extras with sort order below 500; add-ons use 500+.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="maxFlavourSelections"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-normal">Max flavours</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={50}
+                          value={field.value ?? 0}
+                          onChange={(e) =>
+                            field.onChange(Math.max(0, Math.min(50, Number(e.target.value) || 0)))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="maxAddonSelections"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-normal">Max add-ons</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={50}
+                          value={field.value ?? 0}
+                          onChange={(e) =>
+                            field.onChange(Math.max(0, Math.min(50, Number(e.target.value) || 0)))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
             <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
               <Label className="text-sm font-medium">Item labels on menu card</Label>

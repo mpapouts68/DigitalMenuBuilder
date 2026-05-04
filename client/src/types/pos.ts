@@ -8,6 +8,7 @@ export interface ModifierOption {
   sortOrder: number;
   isActive: number;
   isDefault: number;
+  imageUrl?: string | null;
 }
 
 export interface ModifierOptionGroup {
@@ -26,11 +27,14 @@ export interface ModifierExtra {
   priceDelta: number;
   sortOrder: number;
   isActive: number;
+  imageUrl?: string | null;
 }
 
 export interface ProductModifiersResponse {
   optionGroups: ModifierOptionGroup[];
   extras: ModifierExtra[];
+  maxFlavourSelections?: number;
+  maxAddonSelections?: number;
 }
 
 export interface CartSelectionOption {
@@ -110,6 +114,7 @@ export interface EditableModifierOption {
   sortOrder?: number;
   isActive?: number;
   isDefault?: number;
+  imageUrl?: string;
 }
 
 export interface EditableModifierGroup {
@@ -124,11 +129,14 @@ export interface EditableModifierExtra {
   priceDelta: number;
   sortOrder?: number;
   isActive?: number;
+  imageUrl?: string;
 }
 
 export interface EditableProductModifiers {
   optionGroups: EditableModifierGroup[];
   extras: EditableModifierExtra[];
+  maxFlavourSelections?: number;
+  maxAddonSelections?: number;
 }
 
 export interface AdminOrder {

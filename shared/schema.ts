@@ -25,6 +25,10 @@ export const products = sqliteTable("products", {
   isSpecialOffer: integer("is_special_offer").notNull().default(0),
   isTopSelling: integer("is_top_selling").notNull().default(0),
   specialOfferDiscountPercent: integer("special_offer_discount_percent").notNull().default(0),
+  /** 0 = unlimited; caps Flavours section (extras with sortOrder below 500) */
+  maxFlavourSelections: integer("max_flavour_selections").notNull().default(0),
+  /** 0 = unlimited; caps Add-ons section (extras with sortOrder 500+) */
+  maxAddonSelections: integer("max_addon_selections").notNull().default(0),
 });
 
 export const productOptionGroups = sqliteTable("product_option_groups", {
@@ -43,6 +47,7 @@ export const productOptions = sqliteTable("product_options", {
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: integer("is_active").notNull().default(1),
   isDefault: integer("is_default").notNull().default(0),
+  imageUrl: text("image_url"),
 });
 
 export const productExtras = sqliteTable("product_extras", {
@@ -52,6 +57,7 @@ export const productExtras = sqliteTable("product_extras", {
   priceDelta: real("price_delta").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: integer("is_active").notNull().default(1),
+  imageUrl: text("image_url"),
 });
 
 export const orders = sqliteTable("orders", {
@@ -204,6 +210,8 @@ export const insertProductSchema = createInsertSchema(products).omit({
   isSpecialOffer: z.number().min(0).max(1).default(0),
   isTopSelling: z.number().min(0).max(1).default(0),
   specialOfferDiscountPercent: z.number().min(0).max(100).default(0),
+  maxFlavourSelections: z.number().int().min(0).max(50).default(0),
+  maxAddonSelections: z.number().int().min(0).max(50).default(0),
 });
 
 export const insertBannerSchema = createInsertSchema(banners).omit({
@@ -224,12 +232,14 @@ export const insertProductOptionSchema = createInsertSchema(productOptions).omit
 }).extend({
   isActive: z.number().min(0).max(1).default(1),
   isDefault: z.number().min(0).max(1).default(0),
+  imageUrl: z.string().max(12_000_000).optional().or(z.literal("")),
 });
 
 export const insertProductExtraSchema = createInsertSchema(productExtras).omit({
   id: true,
 }).extend({
   isActive: z.number().min(0).max(1).default(1),
+  imageUrl: z.string().max(12_000_000).optional().or(z.literal("")),
 });
 
 export const insertBrandingSettingsSchema = createInsertSchema(brandingSettings).pick({

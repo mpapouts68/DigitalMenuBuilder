@@ -1,11 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { log } from "./logger";
+import { serveStatic } from "./static-serve";
 import { initializeDatabase } from "./db";
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
 // JWT-based authentication - no session middleware needed
 
@@ -75,8 +76,9 @@ async function startServer() {
       }
     });
 
-    // Setup static file serving or Vite middleware
+    // Dev: dynamic import so production Docker image does not need the `vite` package
     if (process.env.NODE_ENV === "development") {
+      const { setupVite } = await import("./vite-dev.js");
       await setupVite(app, server);
       log("Vite development server configured");
     } else {

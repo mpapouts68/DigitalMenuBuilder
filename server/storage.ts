@@ -119,6 +119,7 @@ export interface ModifierOptionInput {
   sortOrder?: number;
   isActive?: number;
   isDefault?: number;
+  imageUrl?: string | null;
 }
 
 export interface ModifierOptionGroupInput {
@@ -133,6 +134,7 @@ export interface ModifierExtraInput {
   priceDelta: number;
   sortOrder?: number;
   isActive?: number;
+  imageUrl?: string | null;
 }
 
 export interface ProductModifierConfig {
@@ -457,31 +459,76 @@ export class DatabaseStorage implements IStorage {
           const fallbackIdx = firstActiveIdx >= 0 ? firstActiveIdx : 0;
           const defaultIdx = explicitDefaultIdx >= 0 ? explicitDefaultIdx : fallbackIdx;
 
-          const optionPayload: InsertProductOption[] = group.options.map((option: ModifierOptionInput, optionIndex: number) => ({
-            groupId: newGroup.id,
-            name: option.name,
-            priceDelta: option.priceDelta ?? 0,
-            sortOrder: option.sortOrder ?? optionIndex,
-            isActive: option.isActive ?? 1,
-            isDefault: optionIndex === defaultIdx ? 1 : 0,
-          }));
+          // Every row must include the same keys so Drizzle batch insert maps columns correctly.
+          const optionPayload: InsertProductOption[] = group.options.map((option: ModifierOptionInput, optionIndex: number) => {
+            const trimmed = option.imageUrl?.trim() ?? "";
+            return {
+              groupId: newGroup.id,
+              name: option.name,
+              priceDelta: option.priceDelta ?? 0,
+              sortOrder: option.sortOrder ?? optionIndex,
+              isActive: option.isActive ?? 1,
+              isDefault: optionIndex === defaultIdx ? 1 : 0,
+              imageUrl: trimmed.length > 0 ? trimmed : "",
+            };
+          });
           await tx.insert(productOptions).values(optionPayload);
         }
       }
 
       if (extras.length > 0) {
-        const extraPayload: InsertProductExtra[] = extras.map((extra, extraIndex) => ({
-          productId,
-          name: extra.name,
-          priceDelta: extra.priceDelta ?? 0,
-          sortOrder: extra.sortOrder ?? extraIndex,
-          isActive: extra.isActive ?? 1,
-        }));
+        const extraPayload: InsertProductExtra[] = extras.map((extra, extraIndex) => {
+          const trimmed = extra.imageUrl?.trim() ?? "";
+          return {
+            productId,
+            name: extra.name,
+            priceDelta: extra.priceDelta ?? 0,
+            sortOrder: extra.sortOrder ?? extraIndex,
+            isActive: extra.isActive ?? 1,
+            imageUrl: trimmed.length > 0 ? trimmed : "",
+          };
+        });
         await tx.insert(productExtras).values(extraPayload);
       }
     });
 
     return this.getProductModifiers(productId);
+  }
+
+  private assertExtraSelectionLimits(
+    selectedProduct: Product,
+    catalog: ProductModifierConfig,
+    selectedExtras: NonNullable<CreateOrderInput["items"][number]["selectedExtras"]>,
+  ) {
+    const extrasDef = catalog.extras;
+    const maxF = Math.max(0, Math.round(Number((selectedProduct as any).maxFlavourSelections ?? 0)));
+    const maxA = Math.max(0, Math.round(Number((selectedProduct as any).maxAddonSelections ?? 0)));
+
+    if (extrasDef.length > 0) {
+      for (const sel of selectedExtras) {
+        if (!extrasDef.some((e) => e.name === sel.name)) {
+          throw new Error(`Unknown extra "${sel.name}" for this product.`);
+        }
+      }
+    }
+
+    if (maxF === 0 && maxA === 0) return;
+
+    let flavours = 0;
+    let addons = 0;
+    for (const sel of selectedExtras) {
+      const q = Math.max(1, sel.quantity ?? 1);
+      const row = extrasDef.find((e) => e.name === sel.name);
+      if (!row) continue;
+      if ((row.sortOrder ?? 999) < 500) flavours += q;
+      else addons += q;
+    }
+    if (maxF > 0 && flavours > maxF) {
+      throw new Error(`Too many flavours selected (maximum ${maxF}).`);
+    }
+    if (maxA > 0 && addons > maxA) {
+      throw new Error(`Too many add-ons selected (maximum ${maxA}).`);
+    }
   }
 
   async createOrder(input: CreateOrderInput): Promise<OrderDetails> {
@@ -549,6 +596,9 @@ export class DatabaseStorage implements IStorage {
         const qty = Math.max(1, orderItemInput.quantity);
         const selectedOptions = orderItemInput.selectedOptions ?? [];
         const selectedExtras = orderItemInput.selectedExtras ?? [];
+
+        const modifiersConfig = await this.getProductModifiers(selectedProduct.id);
+        this.assertExtraSelectionLimits(selectedProduct, modifiersConfig, selectedExtras);
 
         const optionTotal = this.roundMoney(
           selectedOptions.reduce((sum, option) => sum + (option.priceDelta ?? 0), 0) * qty,

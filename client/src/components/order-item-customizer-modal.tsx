@@ -59,6 +59,14 @@ export function OrderItemCustomizerModal({
 
   const optionGroups = data?.optionGroups ?? [];
   const extras = data?.extras ?? [];
+  const maxFlavourSelections = Math.max(
+    0,
+    data?.maxFlavourSelections ?? Number((product as { maxFlavourSelections?: number })?.maxFlavourSelections ?? 0),
+  );
+  const maxAddonSelections = Math.max(
+    0,
+    data?.maxAddonSelections ?? Number((product as { maxAddonSelections?: number })?.maxAddonSelections ?? 0),
+  );
   const flavourExtras = useMemo(
     () => extras.filter((e) => (e.sortOrder ?? 999) < 500),
     [extras],
@@ -133,6 +141,11 @@ export function OrderItemCustomizerModal({
   });
 
   const hasAnyModifiersSelected = selectedOptionRows.length > 0 || selectedExtraRows.length > 0;
+
+  const countFlavoursSelected = () =>
+    flavourExtras.filter((e) => e.isActive && selectedExtras[e.id]).length;
+  const countAddonsSelected = () =>
+    addonExtras.filter((e) => e.isActive && selectedExtras[e.id]).length;
 
   const buildCartItem = (): CartItem | null => {
     if (!product) return null;
@@ -240,11 +253,20 @@ export function OrderItemCustomizerModal({
                         .filter((option) => option.isActive)
                         .map((option) => (
                           <div key={option.id} className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {option.imageUrl?.trim() ? (
+                                <img
+                                  src={option.imageUrl.trim()}
+                                  alt=""
+                                  className="h-9 w-9 rounded-md object-cover shrink-0 border border-slate-200"
+                                />
+                              ) : null}
                               <RadioGroupItem value={option.id.toString()} id={`opt-${option.id}`} />
-                              <Label htmlFor={`opt-${option.id}`}>{option.name}</Label>
+                              <Label htmlFor={`opt-${option.id}`} className="truncate">
+                                {option.name}
+                              </Label>
                             </div>
-                            <span className="text-sm text-slate-600">
+                            <span className="text-sm text-slate-600 shrink-0">
                               {option.priceDelta > 0 ? `+EUR ${option.priceDelta.toFixed(2)}` : "Included"}
                             </span>
                           </div>
@@ -255,26 +277,50 @@ export function OrderItemCustomizerModal({
 
                 {flavourExtras.length > 0 && (
                   <div className="space-y-2 border rounded-lg p-3">
-                    <Label className="font-semibold">Flavours</Label>
-                    <p className="text-xs text-slate-500 mb-2">Select one or more (multi-select).</p>
+                    <div>
+                      <Label className="font-semibold">Flavours</Label>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Select one or more (multi-select).
+                        {maxFlavourSelections > 0 ? (
+                          <span className="font-medium text-slate-700"> Max {maxFlavourSelections}.</span>
+                        ) : null}
+                      </p>
+                    </div>
                     {flavourExtras
                       .filter((extra) => extra.isActive)
                       .map((extra) => (
                         <div key={extra.id} className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {extra.imageUrl?.trim() ? (
+                              <img
+                                src={extra.imageUrl.trim()}
+                                alt=""
+                                className="h-9 w-9 rounded-md object-cover shrink-0 border border-slate-200"
+                              />
+                            ) : null}
                             <Checkbox
                               id={`extra-${extra.id}`}
                               checked={!!selectedExtras[extra.id]}
-                              onCheckedChange={(checked) =>
+                              onCheckedChange={(checked) => {
+                                if (checked === true && maxFlavourSelections > 0 && countFlavoursSelected() >= maxFlavourSelections) {
+                                  toast({
+                                    title: "Limit reached",
+                                    description: `You can select at most ${maxFlavourSelections} flavour(s).`,
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
                                 setSelectedExtras((prev) => ({
                                   ...prev,
                                   [extra.id]: checked === true,
-                                }))
-                              }
+                                }));
+                              }}
                             />
-                            <Label htmlFor={`extra-${extra.id}`}>{extra.name}</Label>
+                            <Label htmlFor={`extra-${extra.id}`} className="truncate">
+                              {extra.name}
+                            </Label>
                           </div>
-                          <span className="text-sm text-slate-600">
+                          <span className="text-sm text-slate-600 shrink-0">
                             {extra.priceDelta > 0 ? `+EUR ${extra.priceDelta.toFixed(2)}` : "Included"}
                           </span>
                         </div>
@@ -284,25 +330,47 @@ export function OrderItemCustomizerModal({
 
                 {addonExtras.length > 0 && (
                   <div className="space-y-2 border rounded-lg p-3">
-                    <Label className="font-semibold">Add-ons</Label>
+                    <div>
+                      <Label className="font-semibold">Add-ons</Label>
+                      {maxAddonSelections > 0 ? (
+                        <p className="text-xs text-slate-500 mt-0.5">Max {maxAddonSelections} add-on(s).</p>
+                      ) : null}
+                    </div>
                     {addonExtras
                       .filter((extra) => extra.isActive)
                       .map((extra) => (
                         <div key={extra.id} className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {extra.imageUrl?.trim() ? (
+                              <img
+                                src={extra.imageUrl.trim()}
+                                alt=""
+                                className="h-9 w-9 rounded-md object-cover shrink-0 border border-slate-200"
+                              />
+                            ) : null}
                             <Checkbox
                               id={`extra-${extra.id}`}
                               checked={!!selectedExtras[extra.id]}
-                              onCheckedChange={(checked) =>
+                              onCheckedChange={(checked) => {
+                                if (checked === true && maxAddonSelections > 0 && countAddonsSelected() >= maxAddonSelections) {
+                                  toast({
+                                    title: "Limit reached",
+                                    description: `You can select at most ${maxAddonSelections} add-on(s).`,
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
                                 setSelectedExtras((prev) => ({
                                   ...prev,
                                   [extra.id]: checked === true,
-                                }))
-                              }
+                                }));
+                              }}
                             />
-                            <Label htmlFor={`extra-${extra.id}`}>{extra.name}</Label>
+                            <Label htmlFor={`extra-${extra.id}`} className="truncate">
+                              {extra.name}
+                            </Label>
                           </div>
-                          <span className="text-sm text-slate-600">
+                          <span className="text-sm text-slate-600 shrink-0">
                             {extra.priceDelta > 0 ? `+EUR ${extra.priceDelta.toFixed(2)}` : "Included"}
                           </span>
                         </div>

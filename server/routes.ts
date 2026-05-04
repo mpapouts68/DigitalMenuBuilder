@@ -8,6 +8,7 @@ import {
   insertCategorySchema,
   insertPrinterSettingsSchema,
   insertProductSchema,
+  type InsertProduct,
 } from "@shared/schema";
 import {
   getCurrentUser,
@@ -529,6 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     sortOrder: z.number().int().optional(),
     isActive: z.number().int().min(0).max(1).optional(),
     isDefault: z.number().int().min(0).max(1).optional(),
+    imageUrl: z.string().max(12_000_000).optional().nullable(),
   });
 
   const modifierGroupSchema = z.object({
@@ -543,11 +545,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     priceDelta: z.number().default(0),
     sortOrder: z.number().int().optional(),
     isActive: z.number().int().min(0).max(1).optional(),
+    imageUrl: z.string().max(12_000_000).optional().nullable(),
   });
 
   const updateModifiersSchema = z.object({
     optionGroups: z.array(modifierGroupSchema).default([]),
     extras: z.array(modifierExtraSchema).default([]),
+    maxFlavourSelections: z.number().int().min(0).max(50).optional(),
+    maxAddonSelections: z.number().int().min(0).max(50).optional(),
   });
 
   const orderItemSchema = z.object({
@@ -726,7 +731,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const productId = parseInt(req.params.productId, 10);
       const modifiers = await storage.getProductModifiers(productId);
-      res.json(modifiers);
+      const product = await storage.getProduct(productId);
+      const maxFlavourSelections = product
+        ? Math.max(0, Math.round(Number((product as any).maxFlavourSelections ?? 0)))
+        : 0;
+      const maxAddonSelections = product
+        ? Math.max(0, Math.round(Number((product as any).maxAddonSelections ?? 0)))
+        : 0;
+      res.json({ ...modifiers, maxFlavourSelections, maxAddonSelections });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch product modifiers" });
     }
@@ -737,7 +749,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const productId = parseInt(req.params.productId, 10);
       const payload = updateModifiersSchema.parse(req.body);
       const modifiers = await storage.replaceProductModifiers(productId, payload.optionGroups, payload.extras);
-      res.json(modifiers);
+      const productPatch: Partial<InsertProduct> = {};
+      if (payload.maxFlavourSelections !== undefined) {
+        productPatch.maxFlavourSelections = payload.maxFlavourSelections;
+      }
+      if (payload.maxAddonSelections !== undefined) {
+        productPatch.maxAddonSelections = payload.maxAddonSelections;
+      }
+      if (Object.keys(productPatch).length > 0) {
+        await storage.updateProduct(productId, productPatch);
+      }
+      const product = await storage.getProduct(productId);
+      const maxFlavourSelections = product
+        ? Math.max(0, Math.round(Number((product as any).maxFlavourSelections ?? 0)))
+        : 0;
+      const maxAddonSelections = product
+        ? Math.max(0, Math.round(Number((product as any).maxAddonSelections ?? 0)))
+        : 0;
+      res.json({ ...modifiers, maxFlavourSelections, maxAddonSelections });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Invalid modifier payload", errors: error.errors });

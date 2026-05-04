@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
 import type { EditableProductModifiers, ProductModifiersResponse } from "@/types/pos";
+import { ModifierChoiceImage } from "@/components/modifier-choice-image";
 
 interface ProductModifiersModalProps {
   open: boolean;
@@ -18,7 +19,12 @@ interface ProductModifiersModalProps {
 export function ProductModifiersModal({ open, onOpenChange, product }: ProductModifiersModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [draft, setDraft] = useState<EditableProductModifiers>({ optionGroups: [], extras: [] });
+  const [draft, setDraft] = useState<EditableProductModifiers>({
+    optionGroups: [],
+    extras: [],
+    maxFlavourSelections: 0,
+    maxAddonSelections: 0,
+  });
 
   const { data } = useQuery<ProductModifiersResponse>({
     queryKey: ["/api/products", product?.id, "modifiers", "admin"],
@@ -42,6 +48,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
           sortOrder: option.sortOrder,
           isActive: option.isActive,
           isDefault: option.isDefault,
+          imageUrl: option.imageUrl ?? "",
         })),
       })),
       extras: data.extras.map((extra) => ({
@@ -49,7 +56,10 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
         priceDelta: extra.priceDelta,
         sortOrder: extra.sortOrder,
         isActive: extra.isActive,
+        imageUrl: extra.imageUrl ?? "",
       })),
+      maxFlavourSelections: data.maxFlavourSelections ?? 0,
+      maxAddonSelections: data.maxAddonSelections ?? 0,
     });
   }, [open, data]);
 
@@ -63,6 +73,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
         description: "Product options and extras have been saved.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/products", product?.id, "modifiers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       onOpenChange(false);
     },
     onError: () => {
@@ -82,6 +93,48 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
         </DialogHeader>
 
         <div className="space-y-6">
+          <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-3 space-y-3">
+            <Label className="text-base font-semibold">Extra selection limits</Label>
+            <p className="text-xs text-slate-600">
+              Applies to multi-select sections: <strong>Flavours</strong> (extras with sort order below 500) and{" "}
+              <strong>Add-ons</strong> (sort order 500 and above). Use <strong>0</strong> for no limit.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="max-flavours">Max flavours</Label>
+                <Input
+                  id="max-flavours"
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={draft.maxFlavourSelections ?? 0}
+                  onChange={(e) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      maxFlavourSelections: Math.max(0, Math.min(50, Number(e.target.value) || 0)),
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="max-addons">Max add-ons</Label>
+                <Input
+                  id="max-addons"
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={draft.maxAddonSelections ?? 0}
+                  onChange={(e) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      maxAddonSelections: Math.max(0, Math.min(50, Number(e.target.value) || 0)),
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-base font-semibold">Option groups (single choice)</Label>
@@ -94,7 +147,11 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                     ...prev,
                     optionGroups: [
                       ...prev.optionGroups,
-                      { name: "", isRequired: 0, options: [{ name: "", priceDelta: 0, isDefault: 1 }] },
+                      {
+                        name: "",
+                        isRequired: 0,
+                        options: [{ name: "", priceDelta: 0, isDefault: 1, imageUrl: "" }],
+                      },
                     ],
                   }))
                 }
@@ -148,8 +205,25 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
 
                 <div className="space-y-2">
                   {group.options.map((option, optionIndex) => (
-                    <div key={`opt-${groupIndex}-${optionIndex}`} className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                    <div
+                      key={`opt-${groupIndex}-${optionIndex}`}
+                      className="flex flex-wrap items-center gap-2 border border-slate-100 rounded-md p-2"
+                    >
+                      <ModifierChoiceImage
+                        idPrefix={`opt-${groupIndex}-${optionIndex}`}
+                        value={option.imageUrl ?? ""}
+                        onChange={(next) =>
+                          setDraft((prev) => {
+                            const groups = [...prev.optionGroups];
+                            const groupOptions = [...groups[groupIndex].options];
+                            groupOptions[optionIndex] = { ...groupOptions[optionIndex], imageUrl: next };
+                            groups[groupIndex] = { ...groups[groupIndex], options: groupOptions };
+                            return { ...prev, optionGroups: groups };
+                          })
+                        }
+                      />
                       <Input
+                        className="flex-1 min-w-[140px]"
                         placeholder="Option label"
                         value={option.name}
                         onChange={(event) =>
@@ -163,6 +237,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                         }
                       />
                       <Input
+                        className="w-[100px]"
                         type="number"
                         step="0.01"
                         placeholder="0.00"
@@ -181,7 +256,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                         }
                       />
                       <select
-                        className="h-10 rounded-md border px-3 text-sm"
+                        className="h-10 rounded-md border px-3 text-sm min-w-[120px]"
                         value={option.isDefault ? "1" : "0"}
                         onChange={(event) =>
                           setDraft((prev) => {
@@ -244,7 +319,12 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                         ...groups[groupIndex],
                         options: [
                           ...groups[groupIndex].options,
-                          { name: "", priceDelta: 0, isDefault: groups[groupIndex].options.length === 0 ? 1 : 0 },
+                          {
+                            name: "",
+                            priceDelta: 0,
+                            isDefault: groups[groupIndex].options.length === 0 ? 1 : 0,
+                            imageUrl: "",
+                          },
                         ],
                       };
                       return { ...prev, optionGroups: groups };
@@ -267,7 +347,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                 onClick={() =>
                   setDraft((prev) => ({
                     ...prev,
-                    extras: [...prev.extras, { name: "", priceDelta: 0, isActive: 1 }],
+                    extras: [...prev.extras, { name: "", priceDelta: 0, isActive: 1, imageUrl: "" }],
                   }))
                 }
               >
@@ -275,8 +355,23 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
               </Button>
             </div>
             {draft.extras.map((extra, extraIndex) => (
-              <div key={`extra-${extraIndex}`} className="grid grid-cols-1 sm:grid-cols-4 gap-2 border rounded-lg p-3">
+              <div
+                key={`extra-${extraIndex}`}
+                className="flex flex-wrap items-center gap-2 border rounded-lg p-3"
+              >
+                <ModifierChoiceImage
+                  idPrefix={`extra-${extraIndex}`}
+                  value={extra.imageUrl ?? ""}
+                  onChange={(next) =>
+                    setDraft((prev) => {
+                      const extras = [...prev.extras];
+                      extras[extraIndex] = { ...extras[extraIndex], imageUrl: next };
+                      return { ...prev, extras };
+                    })
+                  }
+                />
                 <Input
+                  className="flex-1 min-w-[160px]"
                   placeholder="Extra name"
                   value={extra.name}
                   onChange={(event) =>
@@ -288,6 +383,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                   }
                 />
                 <Input
+                  className="w-[100px]"
                   type="number"
                   step="0.01"
                   placeholder="0.00"
@@ -301,7 +397,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                   }
                 />
                 <select
-                  className="h-10 rounded-md border px-3 text-sm"
+                  className="h-10 rounded-md border px-3 text-sm min-w-[100px]"
                   value={extra.isActive ? "1" : "0"}
                   onChange={(event) =>
                     setDraft((prev) => {
@@ -350,12 +446,20 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                         ...group,
                         options: group.options.map((option, index) => ({
                           ...option,
+                          imageUrl: option.imageUrl?.trim() || undefined,
                           isDefault: explicitDefaultIndex >= 0 ? (index === explicitDefaultIndex ? 1 : 0) : index === 0 ? 1 : 0,
                         })),
                       };
                     })
                     .filter((group) => group.name.trim().length > 0),
-                  extras: draft.extras.filter((extra) => extra.name.trim().length > 0),
+                  extras: draft.extras
+                    .filter((extra) => extra.name.trim().length > 0)
+                    .map((extra) => ({
+                      ...extra,
+                      imageUrl: extra.imageUrl?.trim() || undefined,
+                    })),
+                  maxFlavourSelections: draft.maxFlavourSelections ?? 0,
+                  maxAddonSelections: draft.maxAddonSelections ?? 0,
                 })
               }
               disabled={saveMutation.isPending}
