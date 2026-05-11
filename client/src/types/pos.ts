@@ -28,6 +28,8 @@ export interface ModifierExtra {
   sortOrder: number;
   isActive: number;
   imageUrl?: string | null;
+  groupName?: string | null;
+  maxQuantity?: number;
 }
 
 export interface ProductModifiersResponse {
@@ -35,6 +37,10 @@ export interface ProductModifiersResponse {
   extras: ModifierExtra[];
   maxFlavourSelections?: number;
   maxAddonSelections?: number;
+  flavourSectionTitle?: string | null;
+  flavourSectionDescription?: string | null;
+  addonSectionTitle?: string | null;
+  addonSectionDescription?: string | null;
 }
 
 export interface CartSelectionOption {
@@ -47,6 +53,7 @@ export interface CartSelectionExtra {
   name: string;
   priceDelta: number;
   quantity: number;
+  groupName?: string;
 }
 
 export interface CartItem {
@@ -130,13 +137,28 @@ export interface EditableModifierExtra {
   sortOrder?: number;
   isActive?: number;
   imageUrl?: string;
+  /** 1 = checkbox only; higher allows per-line quantity in the menu customizer. */
+  maxQuantity?: number;
+}
+
+/** Named multi-select section (flavours vs add-ons is chosen by parent list). */
+export interface EditableExtraGroup {
+  clientKey: string;
+  /** Empty string = default / no heading on the menu. */
+  name: string;
+  extras: EditableModifierExtra[];
 }
 
 export interface EditableProductModifiers {
   optionGroups: EditableModifierGroup[];
-  extras: EditableModifierExtra[];
+  flavourExtraGroups: EditableExtraGroup[];
+  addonExtraGroups: EditableExtraGroup[];
   maxFlavourSelections?: number;
   maxAddonSelections?: number;
+  flavourSectionTitle?: string;
+  flavourSectionDescription?: string;
+  addonSectionTitle?: string;
+  addonSectionDescription?: string;
 }
 
 export interface AdminOrder {
@@ -220,11 +242,40 @@ export interface PrinterSettingsResponse {
   updatedAt: number;
 }
 
+export interface PaymentSettingsResponse {
+  id: number;
+  cardEnabled: number;
+  updatedAt: number;
+}
+
 export interface PrinterDispatchResponse {
   status: "idle" | "printed" | "error";
   message?: string;
   jobId?: number;
   orderId?: number;
+}
+
+export interface QrGroup {
+  id: number;
+  name: string;
+  baseUrl: string;
+  pickupPoint: string;
+  tablePrefix: string;
+  tableStart: number;
+  tableEnd: number;
+  tableLabelsText: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface QrGroupPayload {
+  name: string;
+  baseUrl: string;
+  pickupPoint: string;
+  tablePrefix: string;
+  tableStart: number;
+  tableEnd: number;
+  tableLabelsText: string;
 }
 
 export interface ProductForOrdering extends Product {

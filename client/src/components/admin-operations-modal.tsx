@@ -15,12 +15,24 @@ import type {
   BrandingUpdatePayload,
   DailyRevenueStats,
   PendingPrintJob,
+  PaymentSettingsResponse,
   PrinterSettingsResponse,
+  QrGroup,
+  QrGroupPayload,
 } from "@/types/pos";
 
 interface AdminOperationsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface QrSheetConfig {
+  baseUrl: string;
+  pickupPoint: string;
+  tablePrefix: string;
+  tableStart: number;
+  tableEnd: number;
+  tableLabelsText: string;
 }
 
 function todayIsoDate() {
@@ -74,7 +86,12 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
   const [tableEnd, setTableEnd] = useState(20);
   const [pickupPoint, setPickupPoint] = useState("bar");
   const [tableLabelsText, setTableLabelsText] = useState("");
+  const [qrGroupName, setQrGroupName] = useState("Default group");
+  const [selectedQrGroupId, setSelectedQrGroupId] = useState<number | null>(null);
   const [showUnpaidCashOnly, setShowUnpaidCashOnly] = useState(false);
+  const [paymentSettingsDraft, setPaymentSettingsDraft] = useState({
+    cardEnabled: 1,
+  });
   const tableCodes = Array.from({ length: Math.max(0, tableEnd - tableStart + 1) }).map((_, idx) =>
     `${tablePrefix}${tableStart + idx}`.trim(),
   );
@@ -93,8 +110,31 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
     }, {});
   const pickupUrl = `${qrBaseUrl}?mode=pickup&point=${encodeURIComponent(pickupPoint || "bar")}`;
 
-  const openPrintableQrSheet = async () => {
+  const openPrintableQrSheet = async (config?: QrSheetConfig) => {
     if (typeof window === "undefined") return;
+    const baseUrl = config?.baseUrl ?? qrBaseUrl;
+    const selectedPickupPoint = config?.pickupPoint ?? pickupPoint;
+    const selectedTablePrefix = config?.tablePrefix ?? tablePrefix;
+    const selectedTableStart = config?.tableStart ?? tableStart;
+    const selectedTableEnd = config?.tableEnd ?? tableEnd;
+    const selectedTableLabelsText = config?.tableLabelsText ?? tableLabelsText;
+    const selectedTableCodes = Array.from({
+      length: Math.max(0, selectedTableEnd - selectedTableStart + 1),
+    }).map((_, idx) => `${selectedTablePrefix}${selectedTableStart + idx}`.trim());
+    const selectedTableLabelMap = selectedTableLabelsText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .reduce<Record<string, string>>((acc, line) => {
+        const [rawCode, ...rest] = line.split("=");
+        if (!rawCode || rest.length === 0) return acc;
+        const code = normalizeTableCode(rawCode);
+        const label = rest.join("=").trim();
+        if (!code || !label) return acc;
+        acc[code] = label;
+        return acc;
+      }, {});
+    const selectedPickupUrl = `${baseUrl}?mode=pickup&point=${encodeURIComponent(selectedPickupPoint || "bar")}`;
 
     const qrImageDataUrl = async (url: string): Promise<string> => {
       const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(url)}`;
@@ -124,7 +164,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
       doc.setFontSize(9);
       doc.text(`Generated: ${new Date().toLocaleString()}`, margin, 17);
 
-      const pickupQr = await qrImageDataUrl(pickupUrl);
+      const pickupQr = await qrImageDataUrl(selectedPickupUrl);
       const pickupTop = 22;
       const pickupHeight = 62;
       const pickupQrSize = 42;
@@ -133,16 +173,16 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
       doc.roundedRect(margin, pickupTop, pageWidth - margin * 2, pickupHeight, 2, 2);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.text(`Pickup (${pickupPoint || "bar"})`, margin + 3, pickupTop + 7);
+      doc.text(`Pickup (${selectedPickupPoint || "bar"})`, margin + 3, pickupTop + 7);
       doc.addImage(pickupQr, "PNG", margin + 3, pickupTop + 10, pickupQrSize, pickupQrSize);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
-      const pickupUrlText = doc.splitTextToSize(pickupUrl, pageWidth - margin * 2 - pickupQrSize - 12);
+      const pickupUrlText = doc.splitTextToSize(selectedPickupUrl, pageWidth - margin * 2 - pickupQrSize - 12);
       doc.text(pickupUrlText, margin + pickupQrSize + 7, pickupTop + 14);
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      doc.text(`Table QRs (${tableCodes.length})`, margin, pickupTop + pickupHeight + 8);
+      doc.text(`Table QRs (${selectedTableCodes.length})`, margin, pickupTop + pickupHeight + 8);
 
       const cols = 3;
       const cellGap = 4;
@@ -151,7 +191,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
       const qrSize = 24;
       let cursorY = pickupTop + pickupHeight + 12;
 
-      for (let idx = 0; idx < tableCodes.length; idx += 1) {
+      for (let idx = 0; idx < selectedTableCodes.length; idx += 1) {
         const col = idx % cols;
         if (col === 0 && idx > 0) {
           cursorY += cellHeight + cellGap;
@@ -161,9 +201,9 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
           cursorY = margin;
         }
 
-        const tableCode = tableCodes[idx];
-        const tableLabel = tableLabelMap[normalizeTableCode(tableCode)];
-        const tableUrl = `${qrBaseUrl}?mode=table&table=${encodeURIComponent(tableCode)}${
+        const tableCode = selectedTableCodes[idx];
+        const tableLabel = selectedTableLabelMap[normalizeTableCode(tableCode)];
+        const tableUrl = `${baseUrl}?mode=table&table=${encodeURIComponent(tableCode)}${
           tableLabel ? `&tableLabel=${encodeURIComponent(tableLabel)}` : ""
         }`;
         const tableQr = await qrImageDataUrl(tableUrl);
@@ -253,6 +293,22 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
     enabled: open,
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/admin/printer-settings");
+      return response.json();
+    },
+  });
+  const { data: qrGroups = [] } = useQuery<QrGroup[]>({
+    queryKey: ["/api/admin/qr-groups"],
+    enabled: open,
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/admin/qr-groups");
+      return response.json();
+    },
+  });
+  const { data: paymentSettings } = useQuery<PaymentSettingsResponse | null>({
+    queryKey: ["/api/admin/payment-settings"],
+    enabled: open,
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/admin/payment-settings");
       return response.json();
     },
   });
@@ -406,6 +462,13 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
       printerRetryCooldownMs: printerSettings.printerRetryCooldownMs ?? 15000,
     });
   }, [printerSettings]);
+
+  useEffect(() => {
+    if (!paymentSettings) return;
+    setPaymentSettingsDraft({
+      cardEnabled: paymentSettings.cardEnabled ?? 1,
+    });
+  }, [paymentSettings]);
 
   const completeJobMutation = useMutation({
     mutationFn: async (jobId: number) => {
@@ -574,6 +637,88 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
         variant: "destructive",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/printer-settings"] });
+    },
+  });
+  const saveQrGroupMutation = useMutation({
+    mutationFn: async () => {
+      const payload: QrGroupPayload = {
+        name: qrGroupName.trim(),
+        baseUrl: qrBaseUrl.trim(),
+        pickupPoint: (pickupPoint || "bar").trim(),
+        tablePrefix: (tablePrefix || "T").trim(),
+        tableStart: Math.max(1, tableStart),
+        tableEnd: Math.max(tableStart, tableEnd),
+        tableLabelsText,
+      };
+      if (selectedQrGroupId) {
+        const response = await apiRequest("PUT", `/api/admin/qr-groups/${selectedQrGroupId}`, payload);
+        return response.json() as Promise<QrGroup>;
+      }
+      const response = await apiRequest("POST", "/api/admin/qr-groups", payload);
+      return response.json() as Promise<QrGroup>;
+    },
+    onSuccess: (savedGroup) => {
+      setSelectedQrGroupId(savedGroup.id);
+      setQrGroupName(savedGroup.name);
+      toast({
+        title: "QR group saved",
+        description: `Saved "${savedGroup.name}" for reuse.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/qr-groups"] });
+    },
+    onError: () => {
+      toast({
+        title: "Save failed",
+        description: "Could not save QR group settings.",
+        variant: "destructive",
+      });
+    },
+  });
+  const savePaymentSettingsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("PUT", "/api/admin/payment-settings", {
+        cardEnabled: paymentSettingsDraft.cardEnabled ? 1 : 0,
+      });
+      return response.json() as Promise<PaymentSettingsResponse>;
+    },
+    onSuccess: (saved) => {
+      setPaymentSettingsDraft({ cardEnabled: saved.cardEnabled });
+      toast({
+        title: "Payment settings updated",
+        description: saved.cardEnabled
+          ? "Card + cash are available."
+          : "Card disabled. Cash is now the only method.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/payment-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payments/provider"] });
+    },
+    onError: () => {
+      toast({
+        title: "Payment settings failed",
+        description: "Could not save payment method configuration.",
+        variant: "destructive",
+      });
+    },
+  });
+  const deleteQrGroupMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedQrGroupId) return;
+      await apiRequest("DELETE", `/api/admin/qr-groups/${selectedQrGroupId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "QR group deleted",
+        description: "Saved QR group removed.",
+      });
+      setSelectedQrGroupId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/qr-groups"] });
+    },
+    onError: () => {
+      toast({
+        title: "Delete failed",
+        description: "Could not delete QR group.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -818,8 +963,39 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
                 Run printer mode at `/printer` using printer credentials to start polling.
               </p>
               <p className="text-xs text-slate-500">
+                On hosted containers (for example Hostman), keep `/printer` open on a local machine to print over LAN.
+              </p>
+              <p className="text-xs text-slate-500">
                 Profile adjusts title formatting/beep defaults per printer family. You can still override beep using
                 `PRINTER_BEEP_MODE`.
+              </p>
+            </div>
+            <div className="rounded-lg border p-3 space-y-3">
+              <h3 className="font-semibold">Payment methods</h3>
+              <div className="space-y-1">
+                <Label>Card payment</Label>
+                <select
+                  className="h-10 rounded-md border px-3 text-sm w-full"
+                  value={paymentSettingsDraft.cardEnabled ? "1" : "0"}
+                  onChange={(event) =>
+                    setPaymentSettingsDraft((prev) => ({
+                      ...prev,
+                      cardEnabled: Number(event.target.value) ? 1 : 0,
+                    }))
+                  }
+                >
+                  <option value="1">Enabled (cash + card)</option>
+                  <option value="0">Disabled (cash only)</option>
+                </select>
+              </div>
+              <Button
+                onClick={() => savePaymentSettingsMutation.mutate()}
+                disabled={savePaymentSettingsMutation.isPending}
+              >
+                {savePaymentSettingsMutation.isPending ? "Saving..." : "Save payment settings"}
+              </Button>
+              <p className="text-xs text-slate-500">
+                Disable card if bank gateway/provider is unavailable; customers will only be able to place cash orders.
               </p>
             </div>
 
@@ -1072,6 +1248,80 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
           </TabsContent>
 
           <TabsContent value="qr" className="space-y-4">
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="font-semibold text-sm">Saved QR groups</p>
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                <select
+                  className="h-10 rounded-md border px-3 text-sm w-full"
+                  value={selectedQrGroupId ?? ""}
+                  onChange={(event) => {
+                    const nextId = Number(event.target.value) || null;
+                    setSelectedQrGroupId(nextId);
+                    const selected = qrGroups.find((group) => group.id === nextId);
+                    if (!selected) return;
+                    setQrGroupName(selected.name);
+                    setQrBaseUrl(selected.baseUrl);
+                    setPickupPoint(selected.pickupPoint);
+                    setTablePrefix(selected.tablePrefix);
+                    setTableStart(selected.tableStart);
+                    setTableEnd(selected.tableEnd);
+                    setTableLabelsText(selected.tableLabelsText || "");
+                  }}
+                >
+                  <option value="">New group</option>
+                  {qrGroups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => saveQrGroupMutation.mutate()}
+                    disabled={saveQrGroupMutation.isPending || !qrGroupName.trim() || !qrBaseUrl.trim()}
+                  >
+                    {saveQrGroupMutation.isPending ? "Saving..." : selectedQrGroupId ? "Update" : "Save"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const selected = qrGroups.find((group) => group.id === selectedQrGroupId);
+                      if (!selected) return;
+                      openPrintableQrSheet({
+                        baseUrl: selected.baseUrl,
+                        pickupPoint: selected.pickupPoint,
+                        tablePrefix: selected.tablePrefix,
+                        tableStart: selected.tableStart,
+                        tableEnd: selected.tableEnd,
+                        tableLabelsText: selected.tableLabelsText || "",
+                      });
+                    }}
+                    disabled={!selectedQrGroupId}
+                  >
+                    Print selected PDF
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => {
+                      if (!selectedQrGroupId) return;
+                      if (window.confirm("Delete this saved QR group?")) {
+                        deleteQrGroupMutation.mutate();
+                      }
+                    }}
+                    disabled={deleteQrGroupMutation.isPending || !selectedQrGroupId}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Group name</Label>
+                <Input value={qrGroupName} onChange={(event) => setQrGroupName(event.target.value)} />
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Base menu URL</Label>
@@ -1132,7 +1382,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
 
             <div className="space-y-2">
               <p className="font-semibold text-sm">Table QRs</p>
-              <Button type="button" variant="outline" onClick={openPrintableQrSheet}>
+              <Button type="button" variant="outline" onClick={() => openPrintableQrSheet()}>
                 Download printable QR PDF
               </Button>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

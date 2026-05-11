@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Sheet,
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ToastAction } from "@/components/ui/toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CreditCard } from "lucide-react";
@@ -55,6 +56,27 @@ export function OrderCartSheet({
   const [tableLabel, setTableLabel] = useState(sourceContext?.tableLabel ?? "");
   const [pickupPoint, setPickupPoint] = useState(sourceContext?.pickupPoint ?? "bar");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
+  const shownCashInfoToastRef = useRef(false);
+
+  useEffect(() => {
+    if (!open) {
+      shownCashInfoToastRef.current = false;
+      return;
+    }
+    if (paymentMethod !== "cash") {
+      shownCashInfoToastRef.current = false;
+      return;
+    }
+    if (shownCashInfoToastRef.current) {
+      return;
+    }
+    shownCashInfoToastRef.current = true;
+    toast({
+      title: "Cash payment notice",
+      description: "Cash order continues only after payment at the Shisha bar is completed.",
+      action: <ToastAction altText="Dismiss cash payment notice">OK</ToastAction>,
+    });
+  }, [open, paymentMethod, toast]);
 
   const runNbgHostedCheckout = async (prepared: {
     nbgSessionId?: string;
@@ -182,6 +204,7 @@ export function OrderCartSheet({
     provider: "simulated" | "nbg";
     configured: boolean;
     mode: "simulation" | "gateway";
+    cardEnabled?: boolean;
   }>({
     queryKey: ["/api/payments/provider"],
     queryFn: async () => {
@@ -189,6 +212,14 @@ export function OrderCartSheet({
       return response.json();
     },
   });
+
+  const cardEnabled = paymentProviderInfo?.cardEnabled !== false;
+
+  useEffect(() => {
+    if (!cardEnabled && paymentMethod === "card") {
+      setPaymentMethod("cash");
+    }
+  }, [cardEnabled, paymentMethod]);
 
   const createOrderMutation = useMutation({
     mutationFn: async () => {
@@ -351,7 +382,14 @@ export function OrderCartSheet({
                 )}
                 {item.selectedExtras.length > 0 && (
                   <p className="text-[11px] text-slate-600 leading-tight">
-                    + {item.selectedExtras.map((ext) => ext.name).join(", ")}
+                    +{" "}
+                    {item.selectedExtras
+                      .map((ext) => {
+                        const label =
+                          ext.quantity > 1 ? `${ext.name} ×${ext.quantity}` : ext.name;
+                        return ext.groupName ? `${ext.groupName}: ${label}` : label;
+                      })
+                      .join(", ")}
                   </p>
                 )}
                 {item.notes && (
@@ -487,7 +525,7 @@ export function OrderCartSheet({
               <CreditCard className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
               <div className="text-[11px] text-slate-600 leading-snug">
                 <p className="font-medium text-slate-800">Payment method</p>
-                <p>Select cash or card during checkout.</p>
+                <p>{cardEnabled ? "Select cash or card during checkout." : "Card is temporarily unavailable. Cash only."}</p>
               </div>
             </div>
             <RadioGroup
@@ -499,11 +537,16 @@ export function OrderCartSheet({
                 <RadioGroupItem value="cash" id="payment-cash" />
                 <span>Cash on counter</span>
               </label>
-              <label className="flex items-center gap-2 rounded border px-2 py-1.5 text-xs cursor-pointer">
-                <RadioGroupItem value="card" id="payment-card" />
-                <span>Card payment</span>
+              <label className={`flex items-center gap-2 rounded border px-2 py-1.5 text-xs ${cardEnabled ? "cursor-pointer" : "opacity-60 cursor-not-allowed"}`}>
+                <RadioGroupItem value="card" id="payment-card" disabled={!cardEnabled} />
+                <span>Card payment {cardEnabled ? "" : "(disabled)"}</span>
               </label>
             </RadioGroup>
+            {!cardEnabled && (
+              <p className="text-[10px] text-slate-500">
+                Card payment is currently disabled by admin.
+              </p>
+            )}
             {paymentMethod === "card" && (
               <p className="text-[10px] text-slate-500">
                 {paymentProviderInfo?.provider === "nbg"
@@ -515,7 +558,7 @@ export function OrderCartSheet({
             )}
             {paymentMethod === "cash" && (
               <p className="text-[10px] text-slate-500">
-                Cash marks payment as not required online.
+                Cash order continues only after payment at the Shisha bar is completed.
               </p>
             )}
           </div>
@@ -552,7 +595,8 @@ export function OrderCartSheet({
               disabled={
                 cartItems.length === 0 ||
                 createOrderMutation.isPending ||
-                (serviceMode === "table" && !tableCode.trim())
+                (serviceMode === "table" && !tableCode.trim()) ||
+                (paymentMethod === "card" && !cardEnabled)
               }
             >
               {createOrderMutation.isPending ? "Submitting..." : "Place order"}

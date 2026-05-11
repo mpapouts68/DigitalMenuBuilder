@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -14,8 +13,10 @@ import type {
   CartItem,
   CartSelectionExtra,
   CartSelectionOption,
+  ModifierExtra,
   ProductModifiersResponse,
 } from "@/types/pos";
+import { groupExtrasForSectionDisplay } from "@/lib/extra-groups";
 
 interface OrderItemCustomizerModalProps {
   open: boolean;
@@ -24,6 +25,10 @@ interface OrderItemCustomizerModalProps {
   initialQuantity?: number;
   onAddToCart: (item: CartItem) => void;
   onAddToCartAndCheckout?: (item: CartItem) => void;
+}
+
+function extraMaxQty(extra: ModifierExtra): number {
+  return Math.max(1, Math.min(99, Number(extra.maxQuantity ?? 1)));
 }
 
 export function OrderItemCustomizerModal({
@@ -38,7 +43,8 @@ export function OrderItemCustomizerModal({
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<Record<number, number>>({});
-  const [selectedExtras, setSelectedExtras] = useState<Record<number, boolean>>({});
+  /** Per-extra line quantity; 0 = not selected */
+  const [selectedExtraQty, setSelectedExtraQty] = useState<Record<number, number>>({});
 
   const { data, isLoading } = useQuery<ProductModifiersResponse>({
     queryKey: ["/api/products", product?.id, "modifiers"],
@@ -54,7 +60,7 @@ export function OrderItemCustomizerModal({
     setQuantity(Math.max(1, initialQuantity));
     setNotes("");
     setSelectedOptions({});
-    setSelectedExtras({});
+    setSelectedExtraQty({});
   }, [initialQuantity, open, product?.id]);
 
   const optionGroups = data?.optionGroups ?? [];
@@ -67,12 +73,22 @@ export function OrderItemCustomizerModal({
     0,
     data?.maxAddonSelections ?? Number((product as { maxAddonSelections?: number })?.maxAddonSelections ?? 0),
   );
-  const flavourExtras = useMemo(
-    () => extras.filter((e) => (e.sortOrder ?? 999) < 500),
+
+  const flavourDisplayGroups = useMemo(() => groupExtrasForSectionDisplay(extras, "flavour"), [extras]);
+  const addonDisplayGroups = useMemo(() => groupExtrasForSectionDisplay(extras, "addon"), [extras]);
+  const flavourSectionTitle = data?.flavourSectionTitle?.trim() || "Flavours";
+  const addonSectionTitle = data?.addonSectionTitle?.trim() || "Add-ons";
+  const flavourSectionDescription = data?.flavourSectionDescription?.trim() || "Select one or more (multi-select).";
+  const addonSectionDescription =
+    data?.addonSectionDescription?.trim() ||
+    (maxAddonSelections > 0 ? `Max ${maxAddonSelections} unit(s).` : "");
+
+  const flavourExtrasFlat = useMemo(
+    () => extras.filter((e) => (e.sortOrder ?? 999) < 500 && e.isActive),
     [extras],
   );
-  const addonExtras = useMemo(
-    () => extras.filter((e) => (e.sortOrder ?? 999) >= 500),
+  const addonExtrasFlat = useMemo(
+    () => extras.filter((e) => (e.sortOrder ?? 999) >= 500 && e.isActive),
     [extras],
   );
 
@@ -106,13 +122,19 @@ export function OrderItemCustomizerModal({
 
   const selectedExtraRows = useMemo(() => {
     return extras
-      .filter((extra) => selectedExtras[extra.id])
-      .map((extra) => ({
-        name: extra.name,
-        priceDelta: extra.priceDelta ?? 0,
-        quantity: 1,
-      })) as CartSelectionExtra[];
-  }, [extras, selectedExtras]);
+      .map((extra) => {
+        const q = selectedExtraQty[extra.id] ?? 0;
+        if (q <= 0 || !extra.isActive) return null;
+        const gn = (extra.groupName ?? "").trim();
+        return {
+          name: extra.name,
+          priceDelta: extra.priceDelta ?? 0,
+          quantity: q,
+          ...(gn ? { groupName: gn } : {}),
+        } as CartSelectionExtra;
+      })
+      .filter(Boolean) as CartSelectionExtra[];
+  }, [extras, selectedExtraQty]);
 
   const effectiveBasePrice = useMemo(() => {
     const rawPrice = Number(product?.price ?? 0);
@@ -142,10 +164,47 @@ export function OrderItemCustomizerModal({
 
   const hasAnyModifiersSelected = selectedOptionRows.length > 0 || selectedExtraRows.length > 0;
 
-  const countFlavoursSelected = () =>
-    flavourExtras.filter((e) => e.isActive && selectedExtras[e.id]).length;
-  const countAddonsSelected = () =>
-    addonExtras.filter((e) => e.isActive && selectedExtras[e.id]).length;
+  const sumFlavourQty = () =>
+    flavourExtrasFlat.reduce((sum, e) => sum + (selectedExtraQty[e.id] ?? 0), 0);
+  const sumAddonQty = () =>
+    addonExtrasFlat.reduce((sum, e) => sum + (selectedExtraQty[e.id] ?? 0), 0);
+
+  const setExtraQty = (extra: ModifierExtra, next: number) => {
+    const cap = extraMaxQty(extra);
+    const clamped = Math.max(0, Math.min(cap, next));
+    setSelectedExtraQty((prev) => {
+      if (clamped === 0) {
+        const { [extra.id]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [extra.id]: clamped };
+    });
+  };
+
+  const trySelectExtra = (extra: ModifierExtra, wantOn: boolean) => {
+    if (!wantOn) {
+      setExtraQty(extra, 0);
+      return;
+    }
+    const isFlavour = (extra.sortOrder ?? 999) < 500;
+    if (isFlavour && maxFlavourSelections > 0 && sumFlavourQty() >= maxFlavourSelections) {
+      toast({
+        title: "Limit reached",
+        description: `You can select at most ${maxFlavourSelections} flavour unit(s).`,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!isFlavour && maxAddonSelections > 0 && sumAddonQty() >= maxAddonSelections) {
+      toast({
+        title: "Limit reached",
+        description: `You can select at most ${maxAddonSelections} add-on unit(s).`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setExtraQty(extra, 1);
+  };
 
   const buildCartItem = (): CartItem | null => {
     if (!product) return null;
@@ -200,6 +259,86 @@ export function OrderItemCustomizerModal({
     onOpenChange(false);
   };
 
+  const renderExtraRow = (extra: ModifierExtra) => {
+    const q = selectedExtraQty[extra.id] ?? 0;
+    const maxQ = extraMaxQty(extra);
+    const isFlavour = (extra.sortOrder ?? 999) < 500;
+
+    return (
+      <div key={extra.id} className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {extra.imageUrl?.trim() ? (
+            <img
+              src={extra.imageUrl.trim()}
+              alt=""
+              className="h-9 w-9 rounded-md object-cover shrink-0 border border-slate-200"
+            />
+          ) : null}
+          <Checkbox
+            id={`extra-${extra.id}`}
+            checked={q > 0}
+            onCheckedChange={(checked) => trySelectExtra(extra, checked === true)}
+          />
+          <Label htmlFor={`extra-${extra.id}`} className="truncate">
+            {extra.name}
+          </Label>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-sm text-slate-600">
+            {extra.priceDelta > 0 ? `+EUR ${extra.priceDelta.toFixed(2)}` : "Included"}
+          </span>
+          {maxQ > 1 && q > 0 ? (
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                aria-label="Decrease extra quantity"
+                onClick={() => {
+                  if (q <= 1) setExtraQty(extra, 0);
+                  else setExtraQty(extra, q - 1);
+                }}
+              >
+                −
+              </Button>
+              <span className="tabular-nums w-6 text-center text-sm font-medium">{q}</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                aria-label="Increase extra quantity"
+                onClick={() => {
+                  if (isFlavour && maxFlavourSelections > 0 && sumFlavourQty() >= maxFlavourSelections) {
+                    toast({
+                      title: "Limit reached",
+                      description: `You can select at most ${maxFlavourSelections} flavour unit(s).`,
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  if (!isFlavour && maxAddonSelections > 0 && sumAddonQty() >= maxAddonSelections) {
+                    toast({
+                      title: "Limit reached",
+                      description: `You can select at most ${maxAddonSelections} add-on unit(s).`,
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  setExtraQty(extra, q + 1);
+                }}
+                disabled={q >= maxQ}
+              >
+                +
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -219,16 +358,6 @@ export function OrderItemCustomizerModal({
                     {Math.max(0, Math.min(100, Math.round(Number(product.specialOfferDiscountPercent ?? 0))))}%
                   </p>
                 )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Quantity</Label>
-              <Input
-                type="number"
-                min={1}
-                value={quantity}
-                onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))}
-              />
             </div>
 
             {isLoading ? (
@@ -275,110 +404,74 @@ export function OrderItemCustomizerModal({
                   </div>
                 ))}
 
-                {flavourExtras.length > 0 && (
-                  <div className="space-y-2 border rounded-lg p-3">
+                {flavourDisplayGroups.length > 0 && (
+                  <div className="space-y-3 border rounded-lg p-3">
                     <div>
-                      <Label className="font-semibold">Flavours</Label>
+                      <Label className="font-semibold">{flavourSectionTitle}</Label>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Select one or more (multi-select).
+                        {flavourSectionDescription}
                         {maxFlavourSelections > 0 ? (
-                          <span className="font-medium text-slate-700"> Max {maxFlavourSelections}.</span>
+                          <span className="font-medium text-slate-700"> Max {maxFlavourSelections} unit(s).</span>
                         ) : null}
                       </p>
                     </div>
-                    {flavourExtras
-                      .filter((extra) => extra.isActive)
-                      .map((extra) => (
-                        <div key={extra.id} className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {extra.imageUrl?.trim() ? (
-                              <img
-                                src={extra.imageUrl.trim()}
-                                alt=""
-                                className="h-9 w-9 rounded-md object-cover shrink-0 border border-slate-200"
-                              />
-                            ) : null}
-                            <Checkbox
-                              id={`extra-${extra.id}`}
-                              checked={!!selectedExtras[extra.id]}
-                              onCheckedChange={(checked) => {
-                                if (checked === true && maxFlavourSelections > 0 && countFlavoursSelected() >= maxFlavourSelections) {
-                                  toast({
-                                    title: "Limit reached",
-                                    description: `You can select at most ${maxFlavourSelections} flavour(s).`,
-                                    variant: "destructive",
-                                  });
-                                  return;
-                                }
-                                setSelectedExtras((prev) => ({
-                                  ...prev,
-                                  [extra.id]: checked === true,
-                                }));
-                              }}
-                            />
-                            <Label htmlFor={`extra-${extra.id}`} className="truncate">
-                              {extra.name}
-                            </Label>
-                          </div>
-                          <span className="text-sm text-slate-600 shrink-0">
-                            {extra.priceDelta > 0 ? `+EUR ${extra.priceDelta.toFixed(2)}` : "Included"}
-                          </span>
-                        </div>
-                      ))}
+                    {flavourDisplayGroups.map((g) => (
+                      <div key={g.key} className="space-y-2">
+                        {g.title ? <p className="text-sm font-medium text-slate-800">{g.title}</p> : null}
+                        <div className="space-y-2 pl-0">{g.extras.filter((e) => e.isActive).map(renderExtraRow)}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                {addonExtras.length > 0 && (
-                  <div className="space-y-2 border rounded-lg p-3">
+                {addonDisplayGroups.length > 0 && (
+                  <div className="space-y-3 border rounded-lg p-3">
                     <div>
-                      <Label className="font-semibold">Add-ons</Label>
-                      {maxAddonSelections > 0 ? (
-                        <p className="text-xs text-slate-500 mt-0.5">Max {maxAddonSelections} add-on(s).</p>
+                      <Label className="font-semibold">{addonSectionTitle}</Label>
+                      {addonSectionDescription ? (
+                        <p className="text-xs text-slate-500 mt-0.5">{addonSectionDescription}</p>
                       ) : null}
                     </div>
-                    {addonExtras
-                      .filter((extra) => extra.isActive)
-                      .map((extra) => (
-                        <div key={extra.id} className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {extra.imageUrl?.trim() ? (
-                              <img
-                                src={extra.imageUrl.trim()}
-                                alt=""
-                                className="h-9 w-9 rounded-md object-cover shrink-0 border border-slate-200"
-                              />
-                            ) : null}
-                            <Checkbox
-                              id={`extra-${extra.id}`}
-                              checked={!!selectedExtras[extra.id]}
-                              onCheckedChange={(checked) => {
-                                if (checked === true && maxAddonSelections > 0 && countAddonsSelected() >= maxAddonSelections) {
-                                  toast({
-                                    title: "Limit reached",
-                                    description: `You can select at most ${maxAddonSelections} add-on(s).`,
-                                    variant: "destructive",
-                                  });
-                                  return;
-                                }
-                                setSelectedExtras((prev) => ({
-                                  ...prev,
-                                  [extra.id]: checked === true,
-                                }));
-                              }}
-                            />
-                            <Label htmlFor={`extra-${extra.id}`} className="truncate">
-                              {extra.name}
-                            </Label>
-                          </div>
-                          <span className="text-sm text-slate-600 shrink-0">
-                            {extra.priceDelta > 0 ? `+EUR ${extra.priceDelta.toFixed(2)}` : "Included"}
-                          </span>
-                        </div>
-                      ))}
+                    {addonDisplayGroups.map((g) => (
+                      <div key={g.key} className="space-y-2">
+                        {g.title ? <p className="text-sm font-medium text-slate-800">{g.title}</p> : null}
+                        <div className="space-y-2 pl-0">{g.extras.filter((e) => e.isActive).map(renderExtraRow)}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </>
             )}
+
+            <div className="flex items-center justify-between gap-3 rounded-lg border p-3 bg-slate-50">
+              <div>
+                <Label className="font-semibold">Quantity</Label>
+                <p className="text-xs text-slate-500 mt-0.5">Usually 1 — use + only when you need more identical lines.</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="Decrease quantity"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                >
+                  −
+                </Button>
+                <span className="tabular-nums min-w-[2rem] text-center font-semibold">{quantity}</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="Increase quantity"
+                  onClick={() => setQuantity((q) => Math.min(99, q + 1))}
+                >
+                  +
+                </Button>
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label>Notes (optional)</Label>

@@ -6,8 +6,10 @@ import {
   insertBannerSchema,
   insertBrandingSettingsSchema,
   insertCategorySchema,
+  insertPaymentSettingsSchema,
   insertPrinterSettingsSchema,
   insertProductSchema,
+  insertQrGroupSchema,
   type InsertProduct,
 } from "@shared/schema";
 import {
@@ -24,6 +26,9 @@ import {
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const embeddedPrinterEnabled =
+    process.env.EMBEDDED_PRINTER_ENABLED === "1" ||
+    (process.env.EMBEDDED_PRINTER_ENABLED !== "0" && process.env.NODE_ENV !== "production");
   const nbgPayments = new Map<
     string,
     {
@@ -35,6 +40,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   >();
 
   const cardProvider = (process.env.CARD_PROVIDER || "simulated").trim().toLowerCase();
+  const isCardPaymentEnabled = async () => {
+    const settings = await storage.getPaymentSettings();
+    return Number(settings?.cardEnabled ?? 1) === 1;
+  };
   const nbgConfig = {
     baseUrl: process.env.NBG_BASE_URL || "https://test.ibanke-commerce.nbg.gr",
     apiVersion: process.env.NBG_API_VERSION || "85",
@@ -312,6 +321,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `Total: EUR ${Number(o.total || 0).toFixed(2)}`,
         "",
         "AWAITING PAYMENT",
+        "Order continues after payment",
+        "at the Shisha bar.",
         "Press PAID to release order print.",
         "",
       ];
@@ -366,7 +377,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const modifier of modifiers) {
         const modifierPrice = Number(modifier.priceDelta || 0);
         const modifierSuffix = modifierPrice > 0 ? ` (+${modifierPrice.toFixed(2)})` : "";
-        itemBlockLines.push(`${gsSizeTall}  - ${modifier.modifierName}${modifierSuffix}`);
+        const mq = Math.max(1, Math.round(Number((modifier as { quantity?: number }).quantity ?? 1)));
+        const qtyPrefix = mq > 1 ? `${mq}x ` : "";
+        const groupPrefix =
+          (modifier as { modifierType?: string }).modifierType === "extra" &&
+          (modifier as { modifierGroupName?: string | null }).modifierGroupName
+            ? `[${String((modifier as { modifierGroupName?: string | null }).modifierGroupName)}] `
+            : "";
+        itemBlockLines.push(
+          `${gsSizeTall}  - ${groupPrefix}${qtyPrefix}${modifier.modifierName}${modifierSuffix}`,
+        );
       }
       if (item.notes) itemBlockLines.push(`${gsSizeTall}  Note: ${item.notes}`);
       itemBlockLines.push(`${gsSizeTall}  Line: EUR ${Number(item.lineTotal || 0).toFixed(2)}`);
@@ -434,6 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const EMBEDDED_PRINTER_LOCK_TOKEN = "embedded-printer-worker";
   let embeddedPrinterBusy = false;
   const triggerEmbeddedPrinterTick = () => {
+    if (!embeddedPrinterEnabled) return;
     // Fire-and-forget kick to reduce print latency right after queueing jobs.
     setTimeout(() => {
       runEmbeddedPrinterTick().catch((error) => {
@@ -516,13 +537,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
 
-  // Fallback worker: progress queue even when /printer page is closed.
-  setInterval(() => {
-    runEmbeddedPrinterTick().catch((error) => {
-      const message = error instanceof Error ? error.message : "Unknown embedded printer error";
-      console.error("Embedded printer interval tick failed:", message);
-    });
-  }, 3000);
+  if (embeddedPrinterEnabled) {
+    // Fallback worker: progress queue even when /printer page is closed.
+    setInterval(() => {
+      runEmbeddedPrinterTick().catch((error) => {
+        const message = error instanceof Error ? error.message : "Unknown embedded printer error";
+        console.error("Embedded printer interval tick failed:", message);
+      });
+    }, 3000);
+  }
 
   const modifierOptionSchema = z.object({
     name: z.string().min(1),
@@ -546,6 +569,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     sortOrder: z.number().int().optional(),
     isActive: z.number().int().min(0).max(1).optional(),
     imageUrl: z.string().max(12_000_000).optional().nullable(),
+    groupName: z.string().max(120).optional().nullable(),
+    maxQuantity: z.number().int().min(1).max(99).optional(),
   });
 
   const updateModifiersSchema = z.object({
@@ -553,6 +578,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     extras: z.array(modifierExtraSchema).default([]),
     maxFlavourSelections: z.number().int().min(0).max(50).optional(),
     maxAddonSelections: z.number().int().min(0).max(50).optional(),
+    flavourSectionTitle: z.string().max(80).optional(),
+    flavourSectionDescription: z.string().max(240).optional(),
+    addonSectionTitle: z.string().max(80).optional(),
+    addonSectionDescription: z.string().max(240).optional(),
   });
 
   const orderItemSchema = z.object({
@@ -568,6 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       name: z.string().min(1),
       priceDelta: z.number().optional(),
       quantity: z.number().int().positive().optional(),
+      groupName: z.string().max(120).optional(),
     })).optional(),
   });
 
@@ -625,6 +655,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const updateAdminPasscodeSchema = z.object({
     currentPasscode: z.string().min(1),
     newPasscode: z.string().min(4),
+  });
+  const updateQrGroupSchema = insertQrGroupSchema.partial().superRefine((value, ctx) => {
+    if (value.tableStart !== undefined && value.tableEnd !== undefined && value.tableEnd < value.tableStart) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["tableEnd"],
+        message: "tableEnd must be greater than or equal to tableStart",
+      });
+    }
   });
 
   // Auth routes
@@ -738,7 +777,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const maxAddonSelections = product
         ? Math.max(0, Math.round(Number((product as any).maxAddonSelections ?? 0)))
         : 0;
-      res.json({ ...modifiers, maxFlavourSelections, maxAddonSelections });
+      res.json({
+        ...modifiers,
+        maxFlavourSelections,
+        maxAddonSelections,
+        flavourSectionTitle: (product as any)?.flavourSectionTitle ?? null,
+        flavourSectionDescription: (product as any)?.flavourSectionDescription ?? null,
+        addonSectionTitle: (product as any)?.addonSectionTitle ?? null,
+        addonSectionDescription: (product as any)?.addonSectionDescription ?? null,
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch product modifiers" });
     }
@@ -756,6 +803,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (payload.maxAddonSelections !== undefined) {
         productPatch.maxAddonSelections = payload.maxAddonSelections;
       }
+      if (payload.flavourSectionTitle !== undefined) {
+        productPatch.flavourSectionTitle = payload.flavourSectionTitle.trim() || undefined;
+      }
+      if (payload.flavourSectionDescription !== undefined) {
+        productPatch.flavourSectionDescription = payload.flavourSectionDescription.trim() || undefined;
+      }
+      if (payload.addonSectionTitle !== undefined) {
+        productPatch.addonSectionTitle = payload.addonSectionTitle.trim() || undefined;
+      }
+      if (payload.addonSectionDescription !== undefined) {
+        productPatch.addonSectionDescription = payload.addonSectionDescription.trim() || undefined;
+      }
       if (Object.keys(productPatch).length > 0) {
         await storage.updateProduct(productId, productPatch);
       }
@@ -766,7 +825,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const maxAddonSelections = product
         ? Math.max(0, Math.round(Number((product as any).maxAddonSelections ?? 0)))
         : 0;
-      res.json({ ...modifiers, maxFlavourSelections, maxAddonSelections });
+      res.json({
+        ...modifiers,
+        maxFlavourSelections,
+        maxAddonSelections,
+        flavourSectionTitle: (product as any)?.flavourSectionTitle ?? null,
+        flavourSectionDescription: (product as any)?.flavourSectionDescription ?? null,
+        addonSectionTitle: (product as any)?.addonSectionTitle ?? null,
+        addonSectionDescription: (product as any)?.addonSectionDescription ?? null,
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Invalid modifier payload", errors: error.errors });
@@ -856,6 +923,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", async (req, res) => {
     try {
       const orderInput = createOrderSchema.parse(req.body);
+      if ((orderInput.payment?.method ?? "cash") === "card" && !(await isCardPaymentEnabled())) {
+        return res.status(403).json({ message: "Card payment is currently disabled by admin." });
+      }
       const order = await storage.createOrder(orderInput);
       triggerEmbeddedPrinterTick();
       res.status(201).json(order);
@@ -870,15 +940,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/payments/provider", async (_req, res) => {
     const provider = cardProvider === "nbg" ? "nbg" : "simulated";
+    const cardEnabled = await isCardPaymentEnabled();
     res.json({
       provider,
       configured: provider === "simulated" ? true : hasNbgCredentials(),
       mode: provider === "simulated" ? "simulation" : "gateway",
+      cardEnabled,
     });
   });
 
   app.post("/api/payments/prepare", async (req, res) => {
     try {
+      if (!(await isCardPaymentEnabled())) {
+        return res.status(403).json({ message: "Card payment is currently disabled by admin." });
+      }
       const body = z
         .object({
           amount: z.number().positive(),
@@ -946,6 +1021,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/payments/confirm", async (req, res) => {
     try {
+      if (!(await isCardPaymentEnabled())) {
+        return res.status(403).json({ message: "Card payment is currently disabled by admin." });
+      }
       const body = z
         .object({
           paymentIntentId: z.string().min(6),
@@ -1314,6 +1392,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Failed to update printer settings" });
       }
+    }
+  });
+
+  app.get("/api/admin/payment-settings", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const settings = await storage.getPaymentSettings();
+      return res.json(settings ?? { id: 1, cardEnabled: 1, updatedAt: Date.now() });
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to fetch payment settings" });
+    }
+  });
+
+  app.put("/api/admin/payment-settings", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const payload = insertPaymentSettingsSchema.parse(req.body);
+      const updated = await storage.upsertPaymentSettings(payload);
+      return res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid payment settings payload", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Failed to update payment settings" });
+    }
+  });
+
+  app.get("/api/admin/qr-groups", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const groups = await storage.getQrGroups();
+      return res.json(groups);
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to fetch QR groups" });
+    }
+  });
+
+  app.post("/api/admin/qr-groups", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const payload = insertQrGroupSchema
+        .superRefine((value, ctx) => {
+          if (value.tableEnd < value.tableStart) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["tableEnd"],
+              message: "tableEnd must be greater than or equal to tableStart",
+            });
+          }
+        })
+        .parse(req.body);
+      const created = await storage.createQrGroup(payload);
+      return res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid QR group payload", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Failed to create QR group" });
+    }
+  });
+
+  app.put("/api/admin/qr-groups/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const payload = updateQrGroupSchema.parse(req.body);
+      const updated = await storage.updateQrGroup(id, payload);
+      if (!updated) {
+        return res.status(404).json({ message: "QR group not found" });
+      }
+      return res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid QR group payload", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Failed to update QR group" });
+    }
+  });
+
+  app.delete("/api/admin/qr-groups/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const deleted = await storage.deleteQrGroup(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "QR group not found" });
+      }
+      return res.status(204).send();
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to delete QR group" });
     }
   });
 

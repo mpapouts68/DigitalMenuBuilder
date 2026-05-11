@@ -12,6 +12,8 @@ import {
   dailyClosures,
   brandingSettings,
   printerSettings,
+  paymentSettings,
+  qrGroups,
   users,
   type Category,
   type Product,
@@ -26,7 +28,9 @@ import {
   type DailyClosure,
   type BrandingSettings,
   type PrinterSettings,
+  type PaymentSettings,
   type User,
+  type QrGroup,
   type InsertCategory,
   type InsertProduct,
   type InsertBanner,
@@ -35,6 +39,8 @@ import {
   type InsertProductExtra,
   type InsertBrandingSettings,
   type InsertPrinterSettings,
+  type InsertPaymentSettings,
+  type InsertQrGroup,
   type UpsertUser,
 } from "@shared/schema";
 import { db, sqlite } from "./db";
@@ -111,6 +117,15 @@ export interface IStorage {
   renewPrinterLock(lockToken: string, leaseMs: number): Promise<boolean>;
   releasePrinterLock(lockToken: string): Promise<boolean>;
   hasValidPrinterLock(lockToken: string): Promise<boolean>;
+  getPaymentSettings(): Promise<PaymentSettings | undefined>;
+  upsertPaymentSettings(settings: InsertPaymentSettings): Promise<PaymentSettings>;
+
+  // QR groups
+  getQrGroups(): Promise<QrGroup[]>;
+  getQrGroup(id: number): Promise<QrGroup | undefined>;
+  createQrGroup(group: InsertQrGroup): Promise<QrGroup>;
+  updateQrGroup(id: number, group: Partial<InsertQrGroup>): Promise<QrGroup | undefined>;
+  deleteQrGroup(id: number): Promise<boolean>;
 }
 
 export interface ModifierOptionInput {
@@ -135,6 +150,8 @@ export interface ModifierExtraInput {
   sortOrder?: number;
   isActive?: number;
   imageUrl?: string | null;
+  groupName?: string | null;
+  maxQuantity?: number;
 }
 
 export interface ProductModifierConfig {
@@ -162,7 +179,7 @@ export interface CreateOrderInput {
     quantity: number;
     notes?: string;
     selectedOptions?: Array<{ groupName?: string; name: string; priceDelta?: number }>;
-    selectedExtras?: Array<{ name: string; priceDelta?: number; quantity?: number }>;
+    selectedExtras?: Array<{ name: string; priceDelta?: number; quantity?: number; groupName?: string }>;
   }>;
 }
 
@@ -479,6 +496,7 @@ export class DatabaseStorage implements IStorage {
       if (extras.length > 0) {
         const extraPayload: InsertProductExtra[] = extras.map((extra, extraIndex) => {
           const trimmed = extra.imageUrl?.trim() ?? "";
+          const gn = extra.groupName?.trim();
           return {
             productId,
             name: extra.name,
@@ -486,6 +504,8 @@ export class DatabaseStorage implements IStorage {
             sortOrder: extra.sortOrder ?? extraIndex,
             isActive: extra.isActive ?? 1,
             imageUrl: trimmed.length > 0 ? trimmed : "",
+            groupName: gn && gn.length > 0 ? gn : null,
+            maxQuantity: Math.max(1, Math.min(99, Math.round(Number(extra.maxQuantity ?? 1)))),
           };
         });
         await tx.insert(productExtras).values(extraPayload);
@@ -520,6 +540,10 @@ export class DatabaseStorage implements IStorage {
       const q = Math.max(1, sel.quantity ?? 1);
       const row = extrasDef.find((e) => e.name === sel.name);
       if (!row) continue;
+      const maxPerExtra = Math.max(1, Math.min(99, Math.round(Number((row as { maxQuantity?: number }).maxQuantity ?? 1))));
+      if (q > maxPerExtra) {
+        throw new Error(`"${sel.name}" allows at most ${maxPerExtra} per item.`);
+      }
       if ((row.sortOrder ?? 999) < 500) flavours += q;
       else addons += q;
     }
@@ -645,7 +669,7 @@ export class DatabaseStorage implements IStorage {
           ...selectedExtras.map((extra) => ({
             orderItemId: createdItem.id,
             modifierType: "extra",
-            modifierGroupName: null,
+            modifierGroupName: extra.groupName?.trim() ? extra.groupName.trim() : null,
             modifierName: extra.name,
             priceDelta: extra.priceDelta ?? 0,
             quantity: extra.quantity ?? 1,
@@ -1218,6 +1242,81 @@ export class DatabaseStorage implements IStorage {
     const [current] = await db.select().from(printerSettings).where(eq(printerSettings.id, 1)).limit(1);
     if (!current?.lockToken || !current.lockExpiresAt) return false;
     return current.lockToken === lockToken && current.lockExpiresAt >= now;
+  }
+
+  async getPaymentSettings(): Promise<PaymentSettings | undefined> {
+    const [settings] = await db.select().from(paymentSettings).where(eq(paymentSettings.id, 1)).limit(1);
+    return settings;
+  }
+
+  async upsertPaymentSettings(settings: InsertPaymentSettings): Promise<PaymentSettings> {
+    const [updated] = await db
+      .insert(paymentSettings)
+      .values({
+        id: 1,
+        cardEnabled: settings.cardEnabled ?? 1,
+        updatedAt: Date.now(),
+      })
+      .onConflictDoUpdate({
+        target: paymentSettings.id,
+        set: {
+          cardEnabled: settings.cardEnabled ?? 1,
+          updatedAt: Date.now(),
+        },
+      })
+      .returning();
+    return updated;
+  }
+
+  async getQrGroups(): Promise<QrGroup[]> {
+    return db.select().from(qrGroups).orderBy(desc(qrGroups.updatedAt), desc(qrGroups.id));
+  }
+
+  async getQrGroup(id: number): Promise<QrGroup | undefined> {
+    const [group] = await db.select().from(qrGroups).where(eq(qrGroups.id, id)).limit(1);
+    return group;
+  }
+
+  async createQrGroup(group: InsertQrGroup): Promise<QrGroup> {
+    const now = Date.now();
+    const [created] = await db
+      .insert(qrGroups)
+      .values({
+        name: group.name.trim(),
+        baseUrl: group.baseUrl.trim(),
+        pickupPoint: (group.pickupPoint || "bar").trim(),
+        tablePrefix: (group.tablePrefix || "T").trim(),
+        tableStart: Math.max(1, group.tableStart ?? 1),
+        tableEnd: Math.max(group.tableStart ?? 1, group.tableEnd ?? 20),
+        tableLabelsText: group.tableLabelsText ?? "",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .returning();
+    return created;
+  }
+
+  async updateQrGroup(id: number, group: Partial<InsertQrGroup>): Promise<QrGroup | undefined> {
+    const patch: Partial<InsertQrGroup> & { updatedAt: number } = {
+      ...group,
+      updatedAt: Date.now(),
+    };
+    if (typeof patch.name === "string") patch.name = patch.name.trim();
+    if (typeof patch.baseUrl === "string") patch.baseUrl = patch.baseUrl.trim();
+    if (typeof patch.pickupPoint === "string") patch.pickupPoint = patch.pickupPoint.trim();
+    if (typeof patch.tablePrefix === "string") patch.tablePrefix = patch.tablePrefix.trim();
+
+    const [updated] = await db
+      .update(qrGroups)
+      .set(patch as any)
+      .where(eq(qrGroups.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteQrGroup(id: number): Promise<boolean> {
+    const deleted = await db.delete(qrGroups).where(eq(qrGroups.id, id)).returning();
+    return deleted.length > 0;
   }
 }
 

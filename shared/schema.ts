@@ -29,6 +29,10 @@ export const products = sqliteTable("products", {
   maxFlavourSelections: integer("max_flavour_selections").notNull().default(0),
   /** 0 = unlimited; caps Add-ons section (extras with sortOrder 500+) */
   maxAddonSelections: integer("max_addon_selections").notNull().default(0),
+  flavourSectionTitle: text("flavour_section_title"),
+  flavourSectionDescription: text("flavour_section_description"),
+  addonSectionTitle: text("addon_section_title"),
+  addonSectionDescription: text("addon_section_description"),
 });
 
 export const productOptionGroups = sqliteTable("product_option_groups", {
@@ -58,6 +62,10 @@ export const productExtras = sqliteTable("product_extras", {
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: integer("is_active").notNull().default(1),
   imageUrl: text("image_url"),
+  /** Optional heading for multi-select extras (same product + section share one trimmed name). */
+  groupName: text("group_name"),
+  /** Max units per line item for this extra (1 = checkbox only). */
+  maxQuantity: integer("max_quantity").notNull().default(1),
 });
 
 export const orders = sqliteTable("orders", {
@@ -162,12 +170,45 @@ export const printerSettings = sqliteTable("printer_settings", {
   updatedAt: integer("updated_at").notNull().default(Date.now()),
 });
 
+export const paymentSettings = sqliteTable("payment_settings", {
+  id: integer("id").primaryKey(),
+  cardEnabled: integer("card_enabled").notNull().default(1),
+  updatedAt: integer("updated_at").notNull().default(Date.now()),
+});
+
 export const banners = sqliteTable("banners", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   type: text("type").notNull(), // 'advertisement' or 'promotional'
   imageUrl: text("image_url").notNull(),
   altText: text("alt_text"),
   isActive: integer("is_active").notNull().default(1), // 1 for active, 0 for inactive
+});
+
+export const qrGroups = sqliteTable("qr_groups", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  baseUrl: text("base_url").notNull(),
+  pickupPoint: text("pickup_point").notNull().default("bar"),
+  tablePrefix: text("table_prefix").notNull().default("T"),
+  tableStart: integer("table_start").notNull().default(1),
+  tableEnd: integer("table_end").notNull().default(20),
+  tableLabelsText: text("table_labels_text").notNull().default(""),
+  createdAt: integer("created_at").notNull().default(Date.now()),
+  updatedAt: integer("updated_at").notNull().default(Date.now()),
+});
+
+export const insertQrGroupSchema = createInsertSchema(qrGroups).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  name: z.string().trim().min(1).max(100),
+  baseUrl: z.string().trim().min(1).max(2048),
+  pickupPoint: z.string().trim().min(1).max(80).default("bar"),
+  tablePrefix: z.string().trim().min(1).max(20).default("T"),
+  tableStart: z.number().int().min(1).max(999).default(1),
+  tableEnd: z.number().int().min(1).max(999).default(20),
+  tableLabelsText: z.string().max(20000).default(""),
 });
 
 // Session storage table.
@@ -212,6 +253,10 @@ export const insertProductSchema = createInsertSchema(products).omit({
   specialOfferDiscountPercent: z.number().min(0).max(100).default(0),
   maxFlavourSelections: z.number().int().min(0).max(50).default(0),
   maxAddonSelections: z.number().int().min(0).max(50).default(0),
+  flavourSectionTitle: z.string().max(80).optional().or(z.literal("")),
+  flavourSectionDescription: z.string().max(240).optional().or(z.literal("")),
+  addonSectionTitle: z.string().max(80).optional().or(z.literal("")),
+  addonSectionDescription: z.string().max(240).optional().or(z.literal("")),
 });
 
 export const insertBannerSchema = createInsertSchema(banners).omit({
@@ -240,6 +285,8 @@ export const insertProductExtraSchema = createInsertSchema(productExtras).omit({
 }).extend({
   isActive: z.number().min(0).max(1).default(1),
   imageUrl: z.string().max(12_000_000).optional().or(z.literal("")),
+  groupName: z.string().max(120).optional().nullable(),
+  maxQuantity: z.number().int().min(1).max(99).default(1),
 });
 
 export const insertBrandingSettingsSchema = createInsertSchema(brandingSettings).pick({
@@ -283,6 +330,12 @@ export const insertPrinterSettingsSchema = createInsertSchema(printerSettings).p
   printerRetryCooldownMs: z.number().min(1000).max(300000).optional(),
 });
 
+export const insertPaymentSettingsSchema = createInsertSchema(paymentSettings).pick({
+  cardEnabled: true,
+}).extend({
+  cardEnabled: z.number().min(0).max(1),
+});
+
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
@@ -299,6 +352,10 @@ export type InsertBrandingSettings = z.infer<typeof insertBrandingSettingsSchema
 export type BrandingSettings = typeof brandingSettings.$inferSelect;
 export type InsertPrinterSettings = z.infer<typeof insertPrinterSettingsSchema>;
 export type PrinterSettings = typeof printerSettings.$inferSelect;
+export type InsertPaymentSettings = z.infer<typeof insertPaymentSettingsSchema>;
+export type PaymentSettings = typeof paymentSettings.$inferSelect;
+export type InsertQrGroup = z.infer<typeof insertQrGroupSchema>;
+export type QrGroup = typeof qrGroups.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;
