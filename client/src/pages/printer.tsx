@@ -13,7 +13,7 @@ import { auth } from "@/lib/auth";
 import type {
   BrandingSettingsResponse,
   PendingPrintJob,
-  PrinterDispatchResponse,
+  PrinterClaimResponse,
   PrinterSettingsResponse,
 } from "@/types/pos";
 
@@ -69,6 +69,9 @@ export default function PrinterPage() {
   );
   const [lastStatus, setLastStatus] = useState<string>("Idle");
   const [logs, setLogs] = useState<string[]>([]);
+  const [localBridgeUrl, setLocalBridgeUrl] = useState(
+    () => localStorage.getItem("printer_local_bridge_url") || "http://127.0.0.1:17354/print-raw",
+  );
   const pollTimerRef = useRef<number | null>(null);
   const pollActiveRef = useRef(false);
   const lockTokenRef = useRef<string>("");
@@ -89,6 +92,22 @@ export default function PrinterPage() {
   const appendLog = (entry: string) => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs((prev) => [`[${timestamp}] ${entry}`, ...prev].slice(0, 50));
+  };
+
+  const printViaLocalBridge = async (payload: { printerIp: string; printerPort: number; receipt: string }) => {
+    const response = await fetch(localBridgeUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        host: payload.printerIp,
+        port: payload.printerPort,
+        content: payload.receipt,
+      }),
+    });
+    const body = await response.json().catch(() => ({} as { message?: string }));
+    if (!response.ok) {
+      throw new Error(body?.message || `Local bridge failed (${response.status})`);
+    }
   };
 
   const { data: user, refetch: refetchUser } = useQuery<AuthUser | null>({
@@ -287,22 +306,42 @@ export default function PrinterPage() {
     }
     pollTimerRef.current = window.setTimeout(async () => {
       try {
-        const response = await apiRequest("POST", "/api/printer/dispatch-next", {
+        const response = await apiRequest("POST", "/api/printer/claim-next", {
           lockToken: lockTokenRef.current,
         });
-        const data = (await response.json()) as PrinterDispatchResponse;
-        if (data.status === "printed") {
-          setLastStatus(`Printed job #${data.jobId}`);
-          appendLog(`Printed order ${data.orderId} (job ${data.jobId}).`);
-          await sendHeartbeat("printed");
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/print-jobs/pending"] });
+        const data = (await response.json()) as PrinterClaimResponse;
+        if (data.status === "job" && data.job) {
+          try {
+            await printViaLocalBridge({
+              printerIp: data.job.printerIp,
+              printerPort: data.job.printerPort,
+              receipt: data.job.receipt,
+            });
+            await apiRequest("POST", `/api/printer/jobs/${data.job.id}/complete`, {
+              lockToken: lockTokenRef.current,
+            });
+            setLastStatus(`Printed job #${data.job.id}`);
+            appendLog(`Printed order ${data.job.orderId} (job ${data.job.id}) via local bridge.`);
+            await sendHeartbeat("printed");
+            queryClient.invalidateQueries({ queryKey: ["/api/admin/print-jobs/pending"] });
+          } catch (printError) {
+            const message = printError instanceof Error ? printError.message : "Local print bridge error";
+            await apiRequest("POST", `/api/printer/jobs/${data.job.id}/fail`, {
+              lockToken: lockTokenRef.current,
+              errorMessage: message,
+            });
+            setLastStatus(`Error: ${message}`);
+            appendLog(`Local print failed for job ${data.job.id}: ${message}`);
+            await sendHeartbeat("error", message);
+          }
         } else if (data.status === "idle") {
           setLastStatus("Waiting for jobs...");
           await sendHeartbeat("idle");
         } else {
-          setLastStatus(`Error: ${data.message ?? "Unknown error"}`);
-          appendLog(`Dispatch error: ${data.message ?? "Unknown error"}`);
-          await sendHeartbeat("error", data.message ?? "Unknown error");
+          const message = data.message ?? "Unknown claim response";
+          setLastStatus(`Error: ${message}`);
+          appendLog(`Claim error: ${message}`);
+          await sendHeartbeat("error", message);
         }
       } catch (pollError) {
         const message = pollError instanceof Error ? pollError.message : "Network error";
@@ -354,6 +393,10 @@ export default function PrinterPage() {
   useEffect(() => {
     localStorage.setItem(AUTOSTART_KEY, autoStartPolling ? "1" : "0");
   }, [autoStartPolling]);
+
+  useEffect(() => {
+    localStorage.setItem("printer_local_bridge_url", localBridgeUrl);
+  }, [localBridgeUrl]);
 
   useEffect(() => {
     if (!user || !settings) return;
@@ -622,6 +665,14 @@ export default function PrinterPage() {
                 <p className="text-xs text-slate-500">Interval</p>
                 <p className="font-medium">{settings?.pollIntervalMs ?? 3000} ms</p>
               </div>
+              <div className="border rounded-lg p-3 sm:col-span-3">
+                <p className="text-xs text-slate-500 mb-1">Local print bridge URL</p>
+                <Input
+                  value={localBridgeUrl}
+                  onChange={(event) => setLocalBridgeUrl(event.target.value)}
+                  placeholder="http://127.0.0.1:17354/print-raw"
+                />
+              </div>
               <div className="border rounded-lg p-3">
                 <p className="text-xs text-slate-500">Last worker heartbeat</p>
                 <p className="font-medium">
@@ -643,7 +694,7 @@ export default function PrinterPage() {
             <Alert>
               <AlertDescription>
                 {settings?.enabled
-                  ? `Printer enabled. Status: ${lastStatus}`
+                  ? `Printer enabled. Status: ${lastStatus}. Printing runs locally through the bridge service.`
                   : "Printer is disabled in Admin settings. Enable it before polling."}
               </AlertDescription>
             </Alert>

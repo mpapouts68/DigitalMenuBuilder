@@ -255,6 +255,18 @@ export interface PrinterDispatchResponse {
   orderId?: number;
 }
 
+export interface PrinterClaimResponse {
+  status: "idle" | "job";
+  message?: string;
+  job?: {
+    id: number;
+    orderId: number;
+    printerIp: string;
+    printerPort: number;
+    receipt: string;
+  };
+}
+
 export interface QrGroup {
   id: number;
   name: string;

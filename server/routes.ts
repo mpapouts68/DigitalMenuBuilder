@@ -649,6 +649,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const printerDispatchSchema = z.object({
     lockToken: z.string().min(8),
   });
+  const printerJobActionSchema = z.object({
+    lockToken: z.string().min(8),
+    errorMessage: z.string().min(1).optional(),
+  });
   const updateOrderStatusSchema = z.object({
     status: z.enum(["preparing", "ready", "served"]),
   });
@@ -1696,6 +1700,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       return res.status(500).json({ message: "Failed to dispatch print job" });
+    }
+  });
+
+  app.post("/api/printer/claim-next", isAuthenticated, isPrinterOrAdmin, async (req, res) => {
+    try {
+      const dispatchPayload = printerDispatchSchema.parse(req.body);
+      const hasLock = await storage.hasValidPrinterLock(dispatchPayload.lockToken);
+      if (!hasLock) {
+        return res.status(409).json({ status: "error", message: "Printer lock missing or expired" });
+      }
+      await storage.renewPrinterLock(dispatchPayload.lockToken, 15000);
+
+      const settings = await storage.getPrinterSettings();
+      if (!settings || !settings.enabled || !settings.printerIp) {
+        return res.status(400).json({ message: "Printer is not configured/enabled" });
+      }
+
+      const [nextJob] = await storage.getDispatchablePrintJobs(1);
+      if (!nextJob) {
+        await storage.updatePrinterHeartbeat("idle");
+        return res.json({ status: "idle", message: "No pending jobs" });
+      }
+
+      let parsedPayload: any = {};
+      try {
+        parsedPayload = JSON.parse(nextJob.payload);
+      } catch {
+        await storage.failPrintJob(nextJob.id, "Invalid print payload JSON");
+        return res.status(500).json({ status: "error", message: "Invalid print payload" });
+      }
+
+      const receipt = formatReceipt(
+        parsedPayload,
+        settings.printerProfile ?? "generic_escpos",
+        settings.printerBeepMode ?? "auto",
+        settings.printerBeepCount ?? 4,
+        settings.printerBeepTiming ?? 3,
+      );
+      if (!receipt) {
+        await storage.failPrintJob(nextJob.id, "Missing order payload");
+        return res.status(500).json({ status: "error", message: "Missing order payload" });
+      }
+
+      return res.json({
+        status: "job",
+        job: {
+          id: nextJob.id,
+          orderId: nextJob.orderId,
+          printerIp: settings.printerIp,
+          printerPort: settings.printerPort,
+          receipt,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to claim print job" });
+    }
+  });
+
+  app.post("/api/printer/jobs/:id/complete", isAuthenticated, isPrinterOrAdmin, async (req, res) => {
+    try {
+      const payload = printerJobActionSchema.parse(req.body);
+      const hasLock = await storage.hasValidPrinterLock(payload.lockToken);
+      if (!hasLock) {
+        return res.status(409).json({ status: "error", message: "Printer lock missing or expired" });
+      }
+      await storage.renewPrinterLock(payload.lockToken, 15000);
+
+      const jobId = parseInt(req.params.id, 10);
+      const job = await storage.completePrintJob(jobId);
+      if (!job) {
+        return res.status(404).json({ message: "Print job not found" });
+      }
+      await storage.updatePrinterHeartbeat("printed");
+      return res.json({ status: "printed", jobId: job.id, orderId: job.orderId });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid complete payload", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Failed to complete print job" });
+    }
+  });
+
+  app.post("/api/printer/jobs/:id/fail", isAuthenticated, isPrinterOrAdmin, async (req, res) => {
+    try {
+      const payload = printerJobActionSchema.parse(req.body);
+      const hasLock = await storage.hasValidPrinterLock(payload.lockToken);
+      if (!hasLock) {
+        return res.status(409).json({ status: "error", message: "Printer lock missing or expired" });
+      }
+      await storage.renewPrinterLock(payload.lockToken, 15000);
+
+      const jobId = parseInt(req.params.id, 10);
+      const failed = await storage.failPrintJob(jobId, payload.errorMessage || "Local print bridge error");
+      if (!failed) {
+        return res.status(404).json({ message: "Print job not found" });
+      }
+      await storage.updatePrinterHeartbeat("error", payload.errorMessage || "Local print bridge error");
+      return res.json({ status: "failed", jobId: failed.id, orderId: failed.orderId });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid fail payload", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Failed to fail print job" });
     }
   });
 
