@@ -644,7 +644,10 @@ export default function PrinterPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Printer Client</CardTitle>
-              <CardDescription>In-app polling and dispatch to network POS printer.</CardDescription>
+              <CardDescription>
+                Browser-based polling and dispatch to the network POS printer. For hosted plain-HTTP installs, use the
+                local printer worker batch script instead.
+              </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant={isPolling ? "default" : "secondary"}>{isPolling ? "Polling" : "Stopped"}</Badge>
@@ -694,7 +697,7 @@ export default function PrinterPage() {
             <Alert>
               <AlertDescription>
                 {settings?.enabled
-                  ? `Printer enabled. Status: ${lastStatus}. Printing runs locally through the bridge service.`
+                  ? `Printer enabled. Status: ${lastStatus}. This browser page relies on the local bridge; for hosted plain-HTTP installs, prefer scripts/start-local-printer-worker.bat on the printer PC.`
                   : "Printer is disabled in Admin settings. Enable it before polling."}
               </AlertDescription>
             </Alert>

@@ -9,6 +9,7 @@
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "printer:bridge": "node scripts/local-printer-bridge.mjs",
+    "printer:worker": "node scripts/local-printer-worker.mjs",
     "local-print-service": "node scripts/local-printer-bridge.mjs",
     "db:push": "drizzle-kit push",
     "seed": "tsx scripts/seed-data.ts",

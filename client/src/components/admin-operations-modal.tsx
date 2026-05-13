@@ -1039,7 +1039,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
                 </div>
               </div>
               <div className="space-y-1">
-                <Label>Local print bridge URL</Label>
+                <Label>Local print bridge URL (browser diagnostics)</Label>
                 <Input
                   value={localBridgeUrl}
                   onChange={(event) => setLocalBridgeUrl(event.target.value)}
@@ -1047,8 +1047,8 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
                 />
               </div>
               <p className="text-xs text-slate-500">
-                Use the bridge test when this admin page is open on the printer PC. It sends the test ticket from this
-                browser to the local bridge instead of from Hostman.
+                Browser bridge testing is only useful on localhost/secure browser setups. For hosted plain-HTTP installs,
+                use the local printer worker on the printer PC instead.
               </p>
               <Button
                 variant="outline"
@@ -1072,10 +1072,11 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
                 {testBeepMutation.isPending ? "Sending beep..." : "Test beep only"}
               </Button>
               <p className="text-xs text-slate-500">
-                Run printer mode at `/printer` using printer credentials to start polling.
+                Recommended for hosted HTTP installs: run `scripts\start-local-printer-worker.bat` on the printer PC.
               </p>
               <p className="text-xs text-slate-500">
-                On hosted containers (for example Hostman), keep `/printer` open on a local machine to print over LAN.
+                The worker logs into Hostman directly, polls `/api/printer/claim-next`, and prints over LAN without the
+                browser-to-localhost restriction.
               </p>
               <p className="text-xs text-slate-500">
                 Profile adjusts title formatting/beep defaults per printer family. You can still override beep using
@@ -1112,8 +1113,8 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
             </div>
 
             <div className="rounded-lg border p-3 bg-slate-50 text-sm">
-              Hosted printer mode uses `POST /api/printer/claim-next` and the local bridge to print over LAN from the
-              machine running `/printer`.
+              Hosted printing on plain HTTP should use `scripts\start-local-printer-worker.bat` on the printer PC. The
+              browser `/printer` page is best kept for secure-context diagnostics.
             </div>
             <div className="space-y-2">
               <h3 className="font-semibold">Pending jobs ({pendingJobs.length})</h3>
