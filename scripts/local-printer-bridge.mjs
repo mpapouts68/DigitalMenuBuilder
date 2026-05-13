@@ -5,10 +5,15 @@ const app = express();
 app.use(express.json({ limit: "2mb" }));
 
 app.use((req, res, next) => {
+  const requestOrigin = req.headers.origin;
   const requestedHeaders = req.headers["access-control-request-headers"];
   const requestedPrivateNetwork = req.headers["access-control-request-private-network"];
 
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  if (typeof requestOrigin === "string" && requestOrigin.length > 0) {
+    res.setHeader("Access-Control-Allow-Origin", requestOrigin);
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", requestedHeaders || "Content-Type");
   res.setHeader(
