@@ -57,11 +57,12 @@ export function OrderItemCustomizerModal({
 
   useEffect(() => {
     if (!open) return;
-    setQuantity(Math.max(1, initialQuantity));
+    const locked = Number((product as { disableQuantityControl?: number })?.disableQuantityControl ?? 0) === 1;
+    setQuantity(locked ? 1 : Math.max(1, initialQuantity));
     setNotes("");
     setSelectedOptions({});
     setSelectedExtraQty({});
-  }, [initialQuantity, open, product?.id]);
+  }, [initialQuantity, open, product?.id, (product as { disableQuantityControl?: number } | null)?.disableQuantityControl]);
 
   const optionGroups = data?.optionGroups ?? [];
   const extras = data?.extras ?? [];
@@ -98,11 +99,15 @@ export function OrderItemCustomizerModal({
     for (const group of optionGroups) {
       const activeOptions = group.options.filter((option) => option.isActive);
       if (activeOptions.length === 0) continue;
-      const picked = activeOptions.find((option) => option.isDefault) ?? activeOptions[0];
-      defaults[group.id] = picked.id;
+      const picked = activeOptions.find((option) => Number(option.isDefault ?? 0) === 1);
+      if (picked) {
+        defaults[group.id] = picked.id;
+      }
     }
     setSelectedOptions(defaults);
   }, [open, optionGroups]);
+
+  const qtyLocked = Number((product as { disableQuantityControl?: number } | null)?.disableQuantityControl ?? 0) === 1;
 
   const selectedOptionRows = useMemo(() => {
     const rows: CartSelectionOption[] = [];
@@ -145,20 +150,22 @@ export function OrderItemCustomizerModal({
     return Math.round(discounted * 100) / 100;
   }, [product?.price, product?.isSpecialOffer, product?.specialOfferDiscountPercent]);
 
+  const effectiveLineQty = qtyLocked ? 1 : quantity;
+
   const totals = useMemo(() => {
-    const base = effectiveBasePrice * quantity;
-    const optionsTotal = selectedOptionRows.reduce((sum, row) => sum + row.priceDelta, 0) * quantity;
-    const extrasTotal = selectedExtraRows.reduce((sum, row) => sum + row.priceDelta * row.quantity, 0) * quantity;
+    const base = effectiveBasePrice * effectiveLineQty;
+    const optionsTotal = selectedOptionRows.reduce((sum, row) => sum + row.priceDelta, 0) * effectiveLineQty;
+    const extrasTotal = selectedExtraRows.reduce((sum, row) => sum + row.priceDelta * row.quantity, 0) * effectiveLineQty;
     return {
       base,
       optionsTotal,
       extrasTotal,
       total: base + optionsTotal + extrasTotal,
     };
-  }, [effectiveBasePrice, quantity, selectedOptionRows, selectedExtraRows]);
+  }, [effectiveBasePrice, effectiveLineQty, selectedOptionRows, selectedExtraRows]);
 
   const requiredGroupMissing = optionGroups.some((group) => {
-    if (!group.isRequired) return false;
+    if (!Number(group.isRequired)) return false;
     return !selectedOptions[group.id];
   });
 
@@ -208,16 +215,23 @@ export function OrderItemCustomizerModal({
 
   const buildCartItem = (): CartItem | null => {
     if (!product) return null;
+    const lineQty = qtyLocked ? 1 : quantity;
+    const base = effectiveBasePrice * lineQty;
+    const optionsTotal = selectedOptionRows.reduce((sum, row) => sum + row.priceDelta, 0) * lineQty;
+    const extrasTotal = selectedExtraRows.reduce((sum, row) => sum + row.priceDelta * row.quantity, 0) * lineQty;
+    const lineTotal = Math.round((base + optionsTotal + extrasTotal) * 100) / 100;
     return {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       productId: product.id,
       productName: product.name,
       basePrice: effectiveBasePrice,
-      quantity,
+      quantity: lineQty,
       notes: notes.trim() || undefined,
       selectedOptions: selectedOptionRows,
       selectedExtras: selectedExtraRows,
-      lineTotal: totals.total,
+      lineTotal,
+      preventRemoveFromCart: Number((product as { preventRemoveFromCart?: number }).preventRemoveFromCart ?? 0),
+      disableQuantityControl: Number((product as { disableQuantityControl?: number }).disableQuantityControl ?? 0),
     };
   };
 
@@ -364,20 +378,50 @@ export function OrderItemCustomizerModal({
               <p className="text-sm text-slate-500">Loading options...</p>
             ) : (
               <>
-                {optionGroups.map((group) => (
+                {optionGroups.map((group) => {
+                  const activeInGroup = group.options.filter((o) => o.isActive);
+                  return (
                   <div key={group.id} className="space-y-2 border rounded-lg p-3">
                     <Label className="font-semibold">
-                      {group.name} {group.isRequired ? "*" : ""}
+                      {group.name} {Number(group.isRequired) ? "*" : ""}
                     </Label>
+                    {!Number(group.isRequired) && activeInGroup.length > 0 ? (
+                      <p className="text-xs text-slate-500">Optional — choose one option, or leave empty.</p>
+                    ) : null}
                     <RadioGroup
-                      value={selectedOptions[group.id]?.toString() ?? ""}
-                      onValueChange={(value) =>
+                      value={
+                        selectedOptions[group.id] !== undefined
+                          ? String(selectedOptions[group.id])
+                          : !Number(group.isRequired)
+                            ? `__skip_${group.id}`
+                            : ""
+                      }
+                      onValueChange={(value) => {
+                        if (value.startsWith("__skip_")) {
+                          setSelectedOptions((prev) => {
+                            const next = { ...prev };
+                            delete next[group.id];
+                            return next;
+                          });
+                          return;
+                        }
                         setSelectedOptions((prev) => ({
                           ...prev,
                           [group.id]: Number(value),
-                        }))
-                      }
+                        }));
+                      }}
                     >
+                      {!Number(group.isRequired) && activeInGroup.length > 0 ? (
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <RadioGroupItem value={`__skip_${group.id}`} id={`opt-skip-${group.id}`} />
+                            <Label htmlFor={`opt-skip-${group.id}`} className="truncate text-slate-600">
+                              No selection
+                            </Label>
+                          </div>
+                          <span className="text-sm text-slate-500 shrink-0">—</span>
+                        </div>
+                      ) : null}
                       {group.options
                         .filter((option) => option.isActive)
                         .map((option) => (
@@ -402,7 +446,8 @@ export function OrderItemCustomizerModal({
                         ))}
                     </RadioGroup>
                   </div>
-                ))}
+                );
+                })}
 
                 {flavourDisplayGroups.length > 0 && (
                   <div className="space-y-3 border rounded-lg p-3">
@@ -443,6 +488,7 @@ export function OrderItemCustomizerModal({
               </>
             )}
 
+            {!qtyLocked ? (
             <div className="flex items-center justify-between gap-3 rounded-lg border p-3 bg-slate-50">
               <div>
                 <Label className="font-semibold">Quantity</Label>
@@ -472,6 +518,11 @@ export function OrderItemCustomizerModal({
                 </Button>
               </div>
             </div>
+            ) : (
+              <div className="rounded-lg border p-3 bg-slate-50 text-sm text-slate-600">
+                Quantity is fixed at <span className="font-semibold">1</span> for this item.
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Notes (optional)</Label>
@@ -502,7 +553,7 @@ export function OrderItemCustomizerModal({
               </div>
             </div>
 
-            {quantity > 1 && hasAnyModifiersSelected && (
+            {effectiveLineQty > 1 && hasAnyModifiersSelected && (
               <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 Selected options and extras will be applied to every item in this quantity.
               </div>

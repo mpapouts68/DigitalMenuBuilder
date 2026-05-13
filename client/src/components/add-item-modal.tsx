@@ -54,6 +54,8 @@ export function AddItemModal({
       specialOfferDiscountPercent: editingItem?.specialOfferDiscountPercent ?? 0,
       maxFlavourSelections: (editingItem as { maxFlavourSelections?: number })?.maxFlavourSelections ?? 0,
       maxAddonSelections: (editingItem as { maxAddonSelections?: number })?.maxAddonSelections ?? 0,
+      preventRemoveFromCart: (editingItem as { preventRemoveFromCart?: number })?.preventRemoveFromCart ?? 0,
+      disableQuantityControl: (editingItem as { disableQuantityControl?: number })?.disableQuantityControl ?? 0,
     },
   });
 
@@ -168,6 +170,8 @@ export function AddItemModal({
         specialOfferDiscountPercent: editingItem?.specialOfferDiscountPercent ?? 0,
         maxFlavourSelections: (editingItem as { maxFlavourSelections?: number })?.maxFlavourSelections ?? 0,
         maxAddonSelections: (editingItem as { maxAddonSelections?: number })?.maxAddonSelections ?? 0,
+        preventRemoveFromCart: (editingItem as { preventRemoveFromCart?: number })?.preventRemoveFromCart ?? 0,
+        disableQuantityControl: (editingItem as { disableQuantityControl?: number })?.disableQuantityControl ?? 0,
       };
       form.reset(values);
       setImagePreview(editingItem?.imageUrl || null);
@@ -431,6 +435,44 @@ export function AddItemModal({
                   )}
                 />
               </div>
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+              <Label className="text-sm font-medium">Cart &amp; customization</Label>
+              <p className="text-xs text-slate-600">
+                Lock quantity to 1 and hide +/- in the guest customizer. Optionally hide the Remove line button for
+                this product in the cart (Clear still removes other lines).
+              </p>
+              <FormField
+                control={form.control}
+                name="disableQuantityControl"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between space-y-0">
+                    <FormLabel className="text-sm font-normal">Disable quantity control (always 1)</FormLabel>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value === 1}
+                        onCheckedChange={(checked) => field.onChange(checked === true ? 1 : 0)}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="preventRemoveFromCart"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between space-y-0">
+                    <FormLabel className="text-sm font-normal">Prevent remove from cart</FormLabel>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value === 1}
+                        onCheckedChange={(checked) => field.onChange(checked === true ? 1 : 0)}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">

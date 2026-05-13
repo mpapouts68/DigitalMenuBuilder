@@ -10,8 +10,6 @@ interface AdminControlsProps {
   onImportData: () => void;
   onBulkImageUpload: () => void;
   onOpenOperations: () => void;
-  onDeleteMode: () => void;
-  isDeleteMode: boolean;
 }
 
 export function AdminControls({
@@ -19,8 +17,6 @@ export function AdminControls({
   onImportData,
   onBulkImageUpload,
   onOpenOperations,
-  onDeleteMode,
-  isDeleteMode,
 }: AdminControlsProps) {
   const { toast } = useToast();
 

@@ -45,7 +45,6 @@ export default function Menu() {
     },
   });
   const isAdminMode = adminRequested && authUser?.role === "admin";
-  const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [showBulkImageModal, setShowBulkImageModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState<number | "all">("all");
@@ -82,9 +81,11 @@ export default function Menu() {
   });
 
   // Filter products based on search and category
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProducts = products.filter((product) => {
+    const q = searchTerm.toLowerCase();
+    const name = (product.name ?? "").toLowerCase();
+    const desc = (product.description ?? "").toLowerCase();
+    const matchesSearch = name.includes(q) || desc.includes(q);
     const matchesCategory = activeCategory === "all" || product.categoryId === activeCategory;
     return matchesSearch && matchesCategory;
   });
@@ -105,10 +106,6 @@ export default function Menu() {
     acc[category.id] = filteredProducts.filter(product => product.categoryId === category.id);
     return acc;
   }, {} as Record<number, Product[]>);
-
-  const handleDeleteMode = () => {
-    setIsDeleteMode(!isDeleteMode);
-  };
 
   const handleEditItem = (item: Product) => {
     setEditingItem(item);
@@ -202,6 +199,7 @@ export default function Menu() {
       for (let i = next.length - 1; i >= 0; i--) {
         if (next[i].productId !== productId) continue;
         const line = next[i];
+        if (Number(line.preventRemoveFromCart ?? 0) === 1) continue;
         if (line.quantity > 1) {
           const newQty = line.quantity - 1;
           const unitTotal = line.lineTotal / line.quantity;
@@ -263,8 +261,6 @@ export default function Menu() {
             onImportData={() => setShowImportModal(true)}
             onBulkImageUpload={() => setShowBulkImageModal(true)}
             onOpenOperations={() => setShowAdminOperations(true)}
-            onDeleteMode={handleDeleteMode}
-            isDeleteMode={isDeleteMode}
           />
         </div>
       )}
@@ -331,7 +327,6 @@ export default function Menu() {
               category={category}
               products={groupedProducts[category.id] || []}
               isAdminMode={isAdminMode}
-              isDeleteMode={isDeleteMode}
               cartQuantityForProduct={cartQuantityForProduct}
               onEditItem={handleEditItem}
               onViewProduct={handleViewProduct}
@@ -469,8 +464,16 @@ export default function Menu() {
         open={showCart}
         onOpenChange={setShowCart}
         cartItems={cartItems}
-        onRemoveItem={(id) => setCartItems((prev) => prev.filter((item) => item.id !== id))}
-        onClear={() => setCartItems([])}
+        onRemoveItem={(id) =>
+          setCartItems((prev) => {
+            const target = prev.find((i) => i.id === id);
+            if (target && Number(target.preventRemoveFromCart ?? 0) === 1) return prev;
+            return prev.filter((item) => item.id !== id);
+          })
+        }
+        onClear={() =>
+          setCartItems((prev) => prev.filter((item) => Number(item.preventRemoveFromCart ?? 0) === 1))
+        }
         sourceContext={orderSourceContext}
       />
 

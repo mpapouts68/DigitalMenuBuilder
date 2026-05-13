@@ -468,13 +468,11 @@ export class DatabaseStorage implements IStorage {
         const [newGroup] = await tx.insert(productOptionGroups).values(groupPayload).returning();
 
         if (group.options.length > 0) {
-          // Keep exactly one default per group; fallback to first active option.
+          // Default only when admin explicitly marks one active option as default.
           const explicitDefaultIdx = group.options.findIndex(
             (option) => (option.isDefault ?? 0) === 1 && (option.isActive ?? 1) === 1,
           );
-          const firstActiveIdx = group.options.findIndex((option) => (option.isActive ?? 1) === 1);
-          const fallbackIdx = firstActiveIdx >= 0 ? firstActiveIdx : 0;
-          const defaultIdx = explicitDefaultIdx >= 0 ? explicitDefaultIdx : fallbackIdx;
+          const defaultIdx = explicitDefaultIdx >= 0 ? explicitDefaultIdx : -1;
 
           // Every row must include the same keys so Drizzle batch insert maps columns correctly.
           const optionPayload: InsertProductOption[] = group.options.map((option: ModifierOptionInput, optionIndex: number) => {
@@ -485,7 +483,7 @@ export class DatabaseStorage implements IStorage {
               priceDelta: option.priceDelta ?? 0,
               sortOrder: option.sortOrder ?? optionIndex,
               isActive: option.isActive ?? 1,
-              isDefault: optionIndex === defaultIdx ? 1 : 0,
+              isDefault: defaultIdx >= 0 && optionIndex === defaultIdx ? 1 : 0,
               imageUrl: trimmed.length > 0 ? trimmed : "",
             };
           });
@@ -513,6 +511,51 @@ export class DatabaseStorage implements IStorage {
     });
 
     return this.getProductModifiers(productId);
+  }
+
+  private assertOptionSelections(
+    catalog: ProductModifierConfig,
+    selectedOptions: NonNullable<CreateOrderInput["items"][number]["selectedOptions"]>,
+  ) {
+    const groupsByName = new Map(
+      catalog.optionGroups.map((g) => [g.name.trim(), g] as const),
+    );
+    const pickedByGroup = new Map<string, (typeof selectedOptions)[number]>();
+    for (const sel of selectedOptions) {
+      const key = (sel.groupName ?? "").trim();
+      if (!key) {
+        throw new Error("Each selected option must include its group name.");
+      }
+      if (pickedByGroup.has(key)) {
+        throw new Error(`Multiple selections for option group "${key}".`);
+      }
+      pickedByGroup.set(key, sel);
+    }
+
+    for (const group of catalog.optionGroups) {
+      const gname = group.name.trim();
+      if (Number(group.isRequired) === 1 && !pickedByGroup.has(gname)) {
+        throw new Error(`Required option group not selected: "${group.name}".`);
+      }
+    }
+
+    for (const [gname, sel] of Array.from(pickedByGroup.entries())) {
+      const group = groupsByName.get(gname);
+      if (!group) {
+        throw new Error(`Unknown option group "${gname}".`);
+      }
+      const opt = group.options.find(
+        (o) => o.name === sel.name && Number(o.isActive ?? 1) === 1,
+      );
+      if (!opt) {
+        throw new Error(`Invalid option "${sel.name}" for group "${gname}".`);
+      }
+      const expectedDelta = Number(opt.priceDelta ?? 0);
+      const sentDelta = Number(sel.priceDelta ?? 0);
+      if (Math.abs(expectedDelta - sentDelta) > 0.001) {
+        throw new Error(`Option price mismatch for "${sel.name}" in group "${gname}".`);
+      }
+    }
   }
 
   private assertExtraSelectionLimits(
@@ -617,12 +660,15 @@ export class DatabaseStorage implements IStorage {
           throw new Error(`Product not found: ${orderItemInput.productId}`);
         }
 
-        const qty = Math.max(1, orderItemInput.quantity);
         const selectedOptions = orderItemInput.selectedOptions ?? [];
         const selectedExtras = orderItemInput.selectedExtras ?? [];
 
         const modifiersConfig = await this.getProductModifiers(selectedProduct.id);
+        this.assertOptionSelections(modifiersConfig, selectedOptions);
         this.assertExtraSelectionLimits(selectedProduct, modifiersConfig, selectedExtras);
+
+        const qtyLocked = Number((selectedProduct as { disableQuantityControl?: number }).disableQuantityControl ?? 0) === 1;
+        const qty = qtyLocked ? 1 : Math.max(1, orderItemInput.quantity);
 
         const optionTotal = this.roundMoney(
           selectedOptions.reduce((sum, option) => sum + (option.priceDelta ?? 0), 0) * qty,

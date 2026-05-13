@@ -33,6 +33,10 @@ export const products = sqliteTable("products", {
   flavourSectionDescription: text("flavour_section_description"),
   addonSectionTitle: text("addon_section_title"),
   addonSectionDescription: text("addon_section_description"),
+  /** 1 = line cannot be removed from cart before checkout */
+  preventRemoveFromCart: integer("prevent_remove_from_cart").notNull().default(0),
+  /** 1 = quantity stays 1; no +/- in customizer */
+  disableQuantityControl: integer("disable_quantity_control").notNull().default(0),
 });
 
 export const productOptionGroups = sqliteTable("product_option_groups", {
@@ -257,6 +261,8 @@ export const insertProductSchema = createInsertSchema(products).omit({
   flavourSectionDescription: z.string().max(240).optional().or(z.literal("")),
   addonSectionTitle: z.string().max(80).optional().or(z.literal("")),
   addonSectionDescription: z.string().max(240).optional().or(z.literal("")),
+  preventRemoveFromCart: z.number().min(0).max(1).default(0),
+  disableQuantityControl: z.number().min(0).max(1).default(0),
 });
 
 export const insertBannerSchema = createInsertSchema(banners).omit({

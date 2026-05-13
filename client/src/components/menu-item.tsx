@@ -10,7 +10,6 @@ import type { Product } from "@shared/schema";
 interface MenuItemProps {
   product: Product;
   isAdminMode: boolean;
-  isDeleteMode: boolean;
   /** Sum of cart line quantities for this product (0 = not in order). */
   cartQuantity: number;
   onEdit: () => void;
@@ -24,7 +23,6 @@ interface MenuItemProps {
 export function MenuItem({
   product,
   isAdminMode,
-  isDeleteMode,
   cartQuantity,
   onEdit,
   onViewDetails,
@@ -146,18 +144,16 @@ export function MenuItem({
             
             {isAdminMode ? (
               <div className="flex gap-2 pt-2 border-t border-slate-100 flex-wrap">
-                {isDeleteMode && (
-                  <Button
-                    onClick={handleDeleteProduct}
-                    variant="destructive"
-                    size="sm"
-                    className="h-9 px-3 rounded-lg"
-                    disabled={deleteProductMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
-                )}
+                <Button
+                  onClick={handleDeleteProduct}
+                  variant="destructive"
+                  size="sm"
+                  className="h-9 px-3 rounded-lg"
+                  disabled={deleteProductMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete
+                </Button>
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -210,6 +206,12 @@ export function MenuItem({
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
+                  ) : Number((product as { disableQuantityControl?: number }).disableQuantityControl ?? 0) === 1 ? (
+                    <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1">
+                      <div className="min-w-[2rem] h-8 px-2 flex items-center justify-center rounded-md bg-blue-600 text-white text-sm font-semibold">
+                        {cartQuantity}
+                      </div>
+                    </div>
                   ) : (
                     <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 p-1">
                       <Button

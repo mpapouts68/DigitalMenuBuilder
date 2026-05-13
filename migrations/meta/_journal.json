@@ -232,6 +232,13 @@
       "when": 1778520000000,
       "tag": "0032_payment_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1778530000000,
+      "tag": "0033_products_cart_behavior_flags",
+      "breakpoints": true
     }
   ]
 }

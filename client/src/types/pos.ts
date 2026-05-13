@@ -66,6 +66,10 @@ export interface CartItem {
   selectedOptions: CartSelectionOption[];
   selectedExtras: CartSelectionExtra[];
   lineTotal: number;
+  /** 1 = hide Remove in cart (server also enforces qty 1 when disableQuantityControl). */
+  preventRemoveFromCart?: number;
+  /** 1 = quantity locked at 1 in customizer. */
+  disableQuantityControl?: number;
 }
 
 export interface OrderCreatePayload {

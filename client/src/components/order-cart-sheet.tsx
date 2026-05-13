@@ -200,6 +200,11 @@ export function OrderCartSheet({
     };
   }, [cartItems]);
 
+  const hasClearableCartLines = useMemo(
+    () => cartItems.some((item) => Number(item.preventRemoveFromCart ?? 0) !== 1),
+    [cartItems],
+  );
+
   const { data: paymentProviderInfo } = useQuery<{
     provider: "simulated" | "nbg";
     configured: boolean;
@@ -400,6 +405,7 @@ export function OrderCartSheet({
                   size="sm"
                   className="h-7 mt-1 px-2 text-[11px] text-red-600 hover:text-red-700"
                   onClick={() => onRemoveItem(item.id)}
+                  disabled={Number(item.preventRemoveFromCart ?? 0) === 1}
                 >
                   Remove
                 </Button>
@@ -586,7 +592,13 @@ export function OrderCartSheet({
           </div>
 
           <div className="flex gap-2 pb-1">
-            <Button variant="outline" size="sm" className="h-9" onClick={onClear} disabled={cartItems.length === 0}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
+              onClick={onClear}
+              disabled={cartItems.length === 0 || !hasClearableCartLines}
+            >
               Clear
             </Button>
             <Button

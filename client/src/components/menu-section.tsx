@@ -10,7 +10,6 @@ interface MenuSectionProps {
   category: Category;
   products: Product[];
   isAdminMode: boolean;
-  isDeleteMode: boolean;
   cartQuantityForProduct: (productId: number) => number;
   onEditItem: (item: Product) => void;
   onViewProduct: (item: Product) => void;
@@ -23,8 +22,7 @@ interface MenuSectionProps {
 export function MenuSection({ 
   category, 
   products, 
-  isAdminMode, 
-  isDeleteMode,
+  isAdminMode,
   cartQuantityForProduct,
   onEditItem,
   onViewProduct,
@@ -125,7 +123,6 @@ export function MenuSection({
             key={product.id}
             product={product}
             isAdminMode={isAdminMode}
-            isDeleteMode={isDeleteMode}
             cartQuantity={cartQuantityForProduct(product.id)}
             onEdit={() => onEditItem(product)}
             onViewDetails={() => onViewProduct(product)}

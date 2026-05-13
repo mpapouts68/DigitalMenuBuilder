@@ -575,15 +575,6 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                               ...groups[groupIndex],
                               options: groups[groupIndex].options.filter((_, idx) => idx !== optionIndex),
                             };
-                            if (
-                              groups[groupIndex].options.length > 0 &&
-                              !groups[groupIndex].options.some((opt) => opt.isDefault)
-                            ) {
-                              groups[groupIndex].options[0] = {
-                                ...groups[groupIndex].options[0],
-                                isDefault: 1,
-                              };
-                            }
                             return { ...prev, optionGroups: groups };
                           })
                         }
@@ -608,7 +599,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                           {
                             name: "",
                             priceDelta: 0,
-                            isDefault: groups[groupIndex].options.length === 0 ? 1 : 0,
+                            isDefault: 0,
                             imageUrl: "",
                           },
                         ],
