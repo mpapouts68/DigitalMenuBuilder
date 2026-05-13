@@ -271,6 +271,22 @@ export interface PrinterClaimResponse {
   };
 }
 
+export interface PrinterTestPayloadResponse {
+  status: "ok" | "invalid_settings" | "error";
+  message?: string;
+  printerIp?: string;
+  printerPort?: number;
+  receipt?: string;
+  checks?: {
+    hasSettings: boolean;
+    enabled: boolean;
+    hasPrinterIp: boolean;
+    hasValidPort: boolean;
+    profile: string;
+  };
+  errors?: string[];
+}
+
 export interface QrGroup {
   id: number;
   name: string;

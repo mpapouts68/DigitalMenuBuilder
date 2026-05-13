@@ -1222,6 +1222,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/print-jobs/:id/retry", isAuthenticated, isPrinterOrAdmin, async (req, res) => {
+    try {
+      const jobId = parseInt(req.params.id, 10);
+      const job = await storage.retryPrintJob(jobId);
+      if (!job) {
+        return res.status(404).json({ message: "Failed print job not found" });
+      }
+      triggerEmbeddedPrinterTick();
+      return res.json(job);
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to retry print job" });
+    }
+  });
+
   app.post("/api/admin/print-jobs/:id/complete", isAuthenticated, isPrinterOrAdmin, async (req, res) => {
     try {
       const jobId = parseInt(req.params.id, 10);
@@ -1483,45 +1497,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/printer/test", isAuthenticated, isAdmin, async (req, res) => {
-    try {
-      const settings = await storage.getPrinterSettings();
-      const profile = settings?.printerProfile ?? "generic_escpos";
-      const checks = {
-        hasSettings: Boolean(settings),
-        enabled: Boolean(settings?.enabled),
-        hasPrinterIp: Boolean(settings?.printerIp),
-        hasValidPort: Boolean(settings?.printerPort && settings.printerPort > 0 && settings.printerPort <= 65535),
-        profile,
-      };
-      const checkErrors: string[] = [];
-      if (!checks.hasSettings) checkErrors.push("Printer settings are missing.");
-      if (!checks.enabled) checkErrors.push("Printer is disabled.");
-      if (!checks.hasPrinterIp) checkErrors.push("Printer IP is not configured.");
-      if (!checks.hasValidPort) checkErrors.push("Printer port is invalid.");
+  const buildPrinterTestPayload = async () => {
+    const settings = await storage.getPrinterSettings();
+    const profile = settings?.printerProfile ?? "generic_escpos";
+    const checks = {
+      hasSettings: Boolean(settings),
+      enabled: Boolean(settings?.enabled),
+      hasPrinterIp: Boolean(settings?.printerIp),
+      hasValidPort: Boolean(settings?.printerPort && settings.printerPort > 0 && settings.printerPort <= 65535),
+      profile,
+    };
+    const errors: string[] = [];
+    if (!checks.hasSettings) errors.push("Printer settings are missing.");
+    if (!checks.enabled) errors.push("Printer is disabled.");
+    if (!checks.hasPrinterIp) errors.push("Printer IP is not configured.");
+    if (!checks.hasValidPort) errors.push("Printer port is invalid.");
 
-      if (checkErrors.length > 0 || !settings || !settings.printerIp) {
+    if (errors.length > 0 || !settings || !settings.printerIp) {
+      return {
+        ok: false as const,
+        settings,
+        checks,
+        errors,
+      };
+    }
+
+    const receipt = formatReceipt(
+      { type: "printer_test" },
+      profile,
+      settings.printerBeepMode ?? "auto",
+      settings.printerBeepCount ?? 4,
+      settings.printerBeepTiming ?? 3,
+    );
+
+    return {
+      ok: true as const,
+      settings,
+      checks,
+      receipt,
+    };
+  };
+
+  app.post("/api/admin/printer/test-payload", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const payload = await buildPrinterTestPayload();
+      if (!payload.ok) {
         return res.status(400).json({
           status: "invalid_settings",
           message: "Printer settings check failed.",
-          checks,
-          errors: checkErrors,
+          checks: payload.checks,
+          errors: payload.errors,
         });
       }
 
-      const testTicket = formatReceipt(
-        { type: "printer_test" },
-        profile,
-        settings.printerBeepMode ?? "auto",
-        settings.printerBeepCount ?? 4,
-        settings.printerBeepTiming ?? 3,
-      );
-      await sendToNetworkPrinter(settings.printerIp, settings.printerPort, testTicket);
+      return res.json({
+        status: "ok",
+        printerIp: payload.settings.printerIp!,
+        printerPort: payload.settings.printerPort,
+        receipt: payload.receipt,
+        checks: payload.checks,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Printer test payload failed";
+      return res.status(500).json({ status: "error", message });
+    }
+  });
+
+  app.post("/api/admin/printer/test", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const payload = await buildPrinterTestPayload();
+      if (!payload.ok) {
+        return res.status(400).json({
+          status: "invalid_settings",
+          message: "Printer settings check failed.",
+          checks: payload.checks,
+          errors: payload.errors,
+        });
+      }
+
+      await sendToNetworkPrinter(payload.settings.printerIp!, payload.settings.printerPort, payload.receipt);
       await storage.updatePrinterHeartbeat("test-ok");
       res.json({
         status: "ok",
         message: "Test ticket sent successfully using current printer settings/profile.",
-        checks,
+        checks: payload.checks,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Printer test failed";

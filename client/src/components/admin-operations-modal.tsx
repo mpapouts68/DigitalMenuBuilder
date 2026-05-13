@@ -16,6 +16,7 @@ import type {
   DailyRevenueStats,
   PendingPrintJob,
   PaymentSettingsResponse,
+  PrinterTestPayloadResponse,
   PrinterSettingsResponse,
   QrGroup,
   QrGroupPayload,
@@ -89,6 +90,9 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
   const [qrGroupName, setQrGroupName] = useState("Default group");
   const [selectedQrGroupId, setSelectedQrGroupId] = useState<number | null>(null);
   const [showUnpaidCashOnly, setShowUnpaidCashOnly] = useState(false);
+  const [localBridgeUrl, setLocalBridgeUrl] = useState(
+    () => localStorage.getItem("printer_local_bridge_url") || "http://127.0.0.1:17354/print-raw",
+  );
   const [paymentSettingsDraft, setPaymentSettingsDraft] = useState({
     cardEnabled: 1,
   });
@@ -252,6 +256,15 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
     refetchInterval: 5000,
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/admin/print-jobs/pending");
+      return response.json();
+    },
+  });
+  const { data: failedJobs = [] } = useQuery<PendingPrintJob[]>({
+    queryKey: ["/api/admin/print-jobs/failed"],
+    enabled: open,
+    refetchInterval: 5000,
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/admin/print-jobs/failed?limit=20");
       return response.json();
     },
   });
@@ -470,13 +483,62 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
     });
   }, [paymentSettings]);
 
+  useEffect(() => {
+    localStorage.setItem("printer_local_bridge_url", localBridgeUrl);
+  }, [localBridgeUrl]);
+
+  const printViaLocalBridge = async (payload: { printerIp: string; printerPort: number; receipt: string }) => {
+    const response = await fetch(localBridgeUrl.trim(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        host: payload.printerIp,
+        port: payload.printerPort,
+        content: payload.receipt,
+      }),
+    });
+    const body = await response.json().catch(() => ({} as { message?: string }));
+    if (!response.ok) {
+      throw new Error(body?.message || `Local bridge failed (${response.status})`);
+    }
+  };
+
   const completeJobMutation = useMutation({
     mutationFn: async (jobId: number) => {
       await apiRequest("POST", `/api/admin/print-jobs/${jobId}/complete`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/print-jobs/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/print-jobs/failed"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+    },
+  });
+
+  const retryFailedJobsMutation = useMutation({
+    mutationFn: async (jobIds: number[]) => {
+      for (const jobId of jobIds) {
+        await apiRequest("POST", `/api/admin/print-jobs/${jobId}/retry`);
+      }
+    },
+    onSuccess: (_data, jobIds) => {
+      toast({
+        title: jobIds.length > 1 ? "Failed jobs requeued" : "Failed job requeued",
+        description:
+          jobIds.length > 1
+            ? `${jobIds.length} failed print jobs were moved back to pending.`
+            : "The failed print job was moved back to pending.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/print-jobs/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/print-jobs/failed"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Could not retry failed print jobs.";
+      toast({
+        title: "Retry failed",
+        description: message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -613,6 +675,37 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
         variant: "destructive",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/printer-settings"] });
+    },
+  });
+
+  const testPrinterViaBridgeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/printer/test-payload");
+      const payload = (await response.json()) as PrinterTestPayloadResponse;
+      if (!payload.printerIp || !payload.printerPort || !payload.receipt) {
+        throw new Error(payload.message || "Printer test payload is incomplete.");
+      }
+      await printViaLocalBridge({
+        printerIp: payload.printerIp,
+        printerPort: payload.printerPort,
+        receipt: payload.receipt,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Bridge test sent",
+        description: "A test ticket was sent through the local print bridge on this machine.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/printer-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/printer/settings"] });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Could not reach the local print bridge.";
+      toast({
+        title: "Bridge test failed",
+        description: message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -945,12 +1038,31 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
                   </p>
                 </div>
               </div>
+              <div className="space-y-1">
+                <Label>Local print bridge URL</Label>
+                <Input
+                  value={localBridgeUrl}
+                  onChange={(event) => setLocalBridgeUrl(event.target.value)}
+                  placeholder="http://127.0.0.1:17354/print-raw"
+                />
+              </div>
+              <p className="text-xs text-slate-500">
+                Use the bridge test when this admin page is open on the printer PC. It sends the test ticket from this
+                browser to the local bridge instead of from Hostman.
+              </p>
               <Button
                 variant="outline"
                 onClick={() => testPrinterMutation.mutate()}
                 disabled={testPrinterMutation.isPending || !printerSettingsDraft.printerIp}
               >
-                {testPrinterMutation.isPending ? "Testing..." : "Test printer connection"}
+                {testPrinterMutation.isPending ? "Testing..." : "Test from server"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => testPrinterViaBridgeMutation.mutate()}
+                disabled={testPrinterViaBridgeMutation.isPending || !printerSettingsDraft.printerIp || !localBridgeUrl.trim()}
+              >
+                {testPrinterViaBridgeMutation.isPending ? "Testing bridge..." : "Test via local bridge"}
               </Button>
               <Button
                 variant="outline"
@@ -1000,7 +1112,8 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
             </div>
 
             <div className="rounded-lg border p-3 bg-slate-50 text-sm">
-              Built-in printer client uses `POST /api/printer/dispatch-next` to poll queue and print directly to the configured network printer.
+              Hosted printer mode uses `POST /api/printer/claim-next` and the local bridge to print over LAN from the
+              machine running `/printer`.
             </div>
             <div className="space-y-2">
               <h3 className="font-semibold">Pending jobs ({pendingJobs.length})</h3>
@@ -1017,6 +1130,37 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
                     disabled={completeJobMutation.isPending}
                   >
                     Mark printed
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-semibold">Failed jobs ({failedJobs.length})</h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => retryFailedJobsMutation.mutate(failedJobs.map((job) => job.id))}
+                  disabled={retryFailedJobsMutation.isPending || failedJobs.length === 0}
+                >
+                  {retryFailedJobsMutation.isPending ? "Retrying..." : "Retry all failed"}
+                </Button>
+              </div>
+              {failedJobs.length === 0 && <p className="text-sm text-slate-500">No failed print jobs.</p>}
+              {failedJobs.map((job) => (
+                <div key={job.id} className="border rounded-lg p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">Job #{job.id} / Order #{job.orderId}</p>
+                    <p className="text-xs text-slate-500">Attempts: {job.attempts}</p>
+                    {job.lastError ? <p className="text-xs text-red-600 truncate">Error: {job.lastError}</p> : null}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => retryFailedJobsMutation.mutate([job.id])}
+                    disabled={retryFailedJobsMutation.isPending}
+                  >
+                    Retry
                   </Button>
                 </div>
               ))}

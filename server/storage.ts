@@ -102,6 +102,7 @@ export interface IStorage {
   getFailedPrintJobs(limit?: number): Promise<PrintJob[]>;
   completePrintJob(jobId: number): Promise<PrintJob | undefined>;
   failPrintJob(jobId: number, errorMessage: string): Promise<PrintJob | undefined>;
+  retryPrintJob(jobId: number): Promise<PrintJob | undefined>;
 
   // Revenue / close day
   getDailyRevenueStats(businessDate: string): Promise<DailyRevenueStats>;
@@ -989,6 +990,24 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     await db.update(orders).set({ printStatus: "failed" }).where(eq(orders.id, existing.orderId));
+    return updated;
+  }
+
+  async retryPrintJob(jobId: number): Promise<PrintJob | undefined> {
+    const [existing] = await db.select().from(printJobs).where(eq(printJobs.id, jobId)).limit(1);
+    if (!existing || existing.status !== "failed") return undefined;
+
+    const [updated] = await db
+      .update(printJobs)
+      .set({
+        status: "pending",
+        lastError: null,
+        processedAt: null,
+      })
+      .where(eq(printJobs.id, jobId))
+      .returning();
+
+    await db.update(orders).set({ printStatus: "queued" }).where(eq(orders.id, existing.orderId));
     return updated;
   }
 

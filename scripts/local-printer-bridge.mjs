@@ -5,9 +5,20 @@ const app = express();
 app.use(express.json({ limit: "2mb" }));
 
 app.use((req, res, next) => {
+  const requestedHeaders = req.headers["access-control-request-headers"];
+  const requestedPrivateNetwork = req.headers["access-control-request-private-network"];
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", requestedHeaders || "Content-Type");
+  res.setHeader(
+    "Vary",
+    "Origin, Access-Control-Request-Method, Access-Control-Request-Headers, Access-Control-Request-Private-Network",
+  );
+  // Chrome/Edge may require this when a public HTTPS page talks to localhost.
+  if (requestedPrivateNetwork === "true") {
+    res.setHeader("Access-Control-Allow-Private-Network", "true");
+  }
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
   }
