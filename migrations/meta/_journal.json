@@ -239,6 +239,13 @@
       "when": 1778530000000,
       "tag": "0033_products_cart_behavior_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1778540000000,
+      "tag": "0034_pending_checkouts",
+      "breakpoints": true
     }
   ]
 }

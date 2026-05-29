@@ -17,6 +17,26 @@ function resolveMigrationsFolder(): string {
   return path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
 }
 
+/** Safety net if a SQL file was deployed before it was added to the Drizzle journal. */
+function ensurePendingCheckoutsTable(database: Database.Database) {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS pending_checkouts (
+      id text PRIMARY KEY NOT NULL,
+      viva_order_code text,
+      amount_cents integer NOT NULL,
+      cart_json text NOT NULL,
+      status text NOT NULL DEFAULT 'pending',
+      order_id integer,
+      transaction_id text,
+      failure_event_id integer,
+      created_at integer NOT NULL,
+      expires_at integer NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS pending_checkouts_viva_order_code_idx ON pending_checkouts (viva_order_code);
+    CREATE INDEX IF NOT EXISTS pending_checkouts_status_idx ON pending_checkouts (status);
+  `);
+}
+
 // Database connection with error handling
 let sqlite: Database.Database;
 let db: ReturnType<typeof drizzle>;
@@ -32,9 +52,10 @@ export async function initializeDatabase() {
     // Initialize Drizzle
     db = drizzle(sqlite, { schema });
     
-    // Run migrations
-    migrate(db, { migrationsFolder: './migrations' });
-    
+    const migrationsFolder = resolveMigrationsFolder();
+    migrate(db, { migrationsFolder });
+    ensurePendingCheckoutsTable(sqlite);
+
     console.log('SQLite database initialized successfully');
     console.log(`Database file: ${dbPath}`);
     

@@ -71,6 +71,32 @@ Or use the safe deploy script if you use it:
 ./scripts/hostman-safe-deploy.sh
 ```
 
+## Troubleshooting: `no such table: pending_checkouts`
+
+The app creates this table on startup via migration `0034_pending_checkouts`. If card pay fails with that error:
+
+```bash
+cd ~/DigitalMenuBuilder
+git pull
+docker compose --env-file .env up -d --build
+docker compose --env-file .env logs app --tail 30
+```
+
+Or run once against the live DB volume:
+
+```bash
+docker compose --env-file .env exec app node -e "
+const Database=require('better-sqlite3');
+const db=new Database(process.env.DATABASE_PATH||'/data/menu.db');
+db.exec(\`CREATE TABLE IF NOT EXISTS pending_checkouts (
+  id text PRIMARY KEY NOT NULL, viva_order_code text, amount_cents integer NOT NULL,
+  cart_json text NOT NULL, status text NOT NULL DEFAULT 'pending', order_id integer,
+  transaction_id text, failure_event_id integer, created_at integer NOT NULL, expires_at integer NOT NULL
+);\`);
+console.log('pending_checkouts OK');
+"
+```
+
 ## 5. Verify
 
 1. Open `https://www.shishapoint.site/menu` → admin → enable card payments if needed.
