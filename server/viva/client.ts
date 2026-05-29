@@ -28,18 +28,39 @@ export interface VivaTransaction {
 
 let cachedToken: { value: string; expiresAt: number } | null = null;
 
+function vivaResponseMeta(response: Response): string {
+  const parts = [`HTTP ${response.status}`];
+  const correlationId = response.headers.get("x-viva-correlationid");
+  if (correlationId) {
+    parts.push(`correlationId=${correlationId}`);
+  }
+  return parts.join(", ");
+}
+
 async function readVivaJson<T>(response: Response, label: string): Promise<T> {
   const text = await response.text();
   if (!text.trim()) {
-    throw new Error(`${label}: empty response body (HTTP ${response.status})`);
+    throw new Error(`${label}: empty response body (${vivaResponseMeta(response)})`);
   }
   try {
     return JSON.parse(text) as T;
   } catch {
     throw new Error(
-      `${label}: response was not JSON (HTTP ${response.status}): ${text.slice(0, 300)}`,
+      `${label}: response was not JSON (${vivaResponseMeta(response)}): ${text.slice(0, 300)}`,
     );
   }
+}
+
+function formatCreateOrder403(sourceCode: string, response: Response, bodyText: string): string {
+  const bodyHint = bodyText.trim() ? ` Viva said: ${bodyText.slice(0, 200)}` : "";
+  return (
+    `Viva create order forbidden (403, sourceCode="${sourceCode}").` +
+    " Use a payment source configured for Smart Checkout / Redirection (not Native Checkout only)." +
+    " In Viva: Sales → Online payments → Websites/Apps → open the source → confirm integration is Redirection," +
+    ' copy the exact Source code into VIVA_SOURCE_CODE (often "Default"), then redeploy.' +
+    bodyHint +
+    (bodyHint ? "" : ` (${vivaResponseMeta(response)})`)
+  );
 }
 
 export class VivaClient {
@@ -148,21 +169,45 @@ export class VivaClient {
       body: JSON.stringify(orderBody),
     });
 
-    const payload = await readVivaJson<{
+    const rawBody = await response.text();
+    let payload: {
       orderCode?: number | string;
       OrderCode?: number | string;
       message?: string;
       detail?: string;
       title?: string;
       status?: number;
-    }>(response, "Viva create order");
+    } = {};
+    if (rawBody.trim()) {
+      try {
+        payload = JSON.parse(rawBody) as typeof payload;
+      } catch {
+        throw new Error(
+          `Viva create order: response was not JSON (${vivaResponseMeta(response)}): ${rawBody.slice(0, 300)}`,
+        );
+      }
+    } else if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error(formatCreateOrder403(this.config.sourceCode, response, rawBody));
+      }
+      throw new Error(`Viva create order: empty response body (${vivaResponseMeta(response)})`);
+    }
 
     if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error(
+          formatCreateOrder403(
+            this.config.sourceCode,
+            response,
+            payload.message || payload.detail || payload.title || rawBody,
+          ),
+        );
+      }
       const detail =
         payload.message ||
         payload.detail ||
         payload.title ||
-        `Viva create order failed (HTTP ${response.status}, sourceCode=${this.config.sourceCode})`;
+        `Viva create order failed (${vivaResponseMeta(response)}, sourceCode=${this.config.sourceCode})`;
       throw new Error(detail);
     }
 

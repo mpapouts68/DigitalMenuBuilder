@@ -128,7 +128,9 @@ export function registerVivaPaymentRoutes(
         message.includes("invalid_scope") ||
         message.includes("Viva OAuth") ||
         message.includes("Viva is not configured");
-      return res.status(isOAuthConfig ? 503 : 500).json({ message });
+      const isSourceConfig =
+        message.includes("create order forbidden") || message.includes("sourceCode=");
+      return res.status(isOAuthConfig || isSourceConfig ? 503 : 500).json({ message });
     }
   });
 

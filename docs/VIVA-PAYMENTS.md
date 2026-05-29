@@ -130,6 +130,39 @@ If you see **`invalid_scope`**, redeploy the latest app (older builds sent an ex
 
 3. **`VIVA_SOURCE_CODE`** must be the **payment source code** from Viva (Sales → Payment sources), e.g. `Default` or a short code shown there — **not** the Smart Checkout Client ID and usually not the Merchant ID. Wrong source codes often return a JSON error; if create-order still fails, check `docker compose logs app` for the full Viva message.
 
+## Troubleshooting: create order **403** (empty body)
+
+OAuth works but `POST /checkout/v2/orders` returns **403**. Common causes:
+
+| Cause | Fix |
+|--------|-----|
+| Wrong `VIVA_SOURCE_CODE` | Open **Sales → Online payments → Websites/Apps** → your source → copy **Source code** exactly (case-sensitive). Try `Default` if unsure. |
+| Source is **Native Checkout** only | Smart Checkout needs **Redirection** integration. Create a new website/app source with **Redirection** (per bank form point 11), set success/failure URLs, use that source code in `.env`. |
+| Demo vs live mismatch | Demo credentials + `VIVA_ENVIRONMENT=demo`, or live + `production`. |
+
+Test create-order on the server (1 cent test order):
+
+```bash
+docker compose --env-file .env exec app node -e "
+const id=process.env.VIVA_CLIENT_ID;
+const sec=process.env.VIVA_CLIENT_SECRET;
+const src=process.env.VIVA_SOURCE_CODE||'Default';
+const api=process.env.VIVA_ENVIRONMENT==='demo'?'https://demo-api.vivapayments.com':'https://api.vivapayments.com';
+const oauth=process.env.VIVA_ENVIRONMENT==='demo'?'https://demo-accounts.vivapayments.com/connect/token':'https://accounts.vivapayments.com/connect/token';
+const basic=Buffer.from(id+':'+sec).toString('base64');
+(async()=>{
+  const t=await fetch(oauth,{method:'POST',headers:{Authorization:'Basic '+basic,'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials'});
+  const tok=await t.json();
+  if(!tok.access_token){console.log('OAuth',t.status,tok);return;}
+  const o=await fetch(api+'/checkout/v2/orders',{method:'POST',headers:{Authorization:'Bearer '+tok.access_token,'Content-Type':'application/json'},body:JSON.stringify({amount:1,customerTrns:'test',merchantTrns:'test-'+Date.now(),sourceCode:src})});
+  const body=await o.text();
+  console.log('create order',o.status,body.slice(0,300));
+})();
+"
+```
+
+Expect `create order 200` with `orderCode`. If `403`, fix the payment source in Viva (redirection / Smart Checkout), not the Client ID.
+
 ## Troubleshooting: `no such table: pending_checkouts`
 
 The app creates this table on startup via migration `0034_pending_checkouts`. If card pay fails with that error:
