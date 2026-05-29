@@ -68,6 +68,12 @@ export class VivaClient {
     };
 
     if (!response.ok || !payload.access_token) {
+      const oauthError = payload.error || `http_${response.status}`;
+      if (oauthError === "invalid_client") {
+        throw new Error(
+          `Viva OAuth invalid_client (${this.config.environment}): check VIVA_CLIENT_ID and VIVA_CLIENT_SECRET are Smart Checkout credentials from Settings → API Access (not Merchant ID / API Key), with no extra spaces or quotes in .env, and VIVA_ENVIRONMENT matching your Viva account (production vs demo).`,
+        );
+      }
       throw new Error(
         payload.error_description || payload.error || `Viva OAuth failed (${response.status})`,
       );

@@ -71,6 +71,34 @@ Or use the safe deploy script if you use it:
 ./scripts/hostman-safe-deploy.sh
 ```
 
+## Troubleshooting: `invalid_client`
+
+Viva rejected the **Smart Checkout** OAuth login. Fix on the server `.env`:
+
+| Check | What to do |
+|--------|------------|
+| Credential type | Use **Smart Checkout Client ID + Client Secret** from **Settings → API Access** — **not** Merchant ID / API Key |
+| Environment | Live credentials → `VIVA_ENVIRONMENT=production`. Demo account → `VIVA_ENVIRONMENT=demo` |
+| Copy/paste | No quotes around values, no trailing spaces, one line per variable |
+| Reload | After editing `.env`: `docker compose --env-file .env up -d --build` |
+
+Test OAuth on the server (does not print secrets):
+
+```bash
+cd ~/DigitalMenuBuilder
+docker compose --env-file .env exec app node -e "
+const id=process.env.VIVA_CLIENT_ID||'';
+const sec=process.env.VIVA_CLIENT_SECRET||'';
+const env=process.env.VIVA_ENVIRONMENT||'production';
+const url=env==='demo'?'https://demo-accounts.vivapayments.com/connect/token':'https://accounts.vivapayments.com/connect/token';
+const auth=Buffer.from(id+':'+sec).toString('base64');
+fetch(url,{method:'POST',headers:{Authorization:'Basic '+auth,'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials'})
+.then(r=>r.json()).then(j=>console.log(j.error||j.error_description||'OK token received')).catch(e=>console.error(e));
+"
+```
+
+If you see `invalid_client`, regenerate or recopy credentials in the **live** Viva portal and update `.env`.
+
 ## Troubleshooting: `no such table: pending_checkouts`
 
 The app creates this table on startup via migration `0034_pending_checkouts`. If card pay fails with that error:
