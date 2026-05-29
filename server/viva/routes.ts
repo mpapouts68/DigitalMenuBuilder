@@ -121,9 +121,13 @@ export function registerVivaPaymentRoutes(
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid checkout payload", errors: error.errors });
       }
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to start Viva checkout",
-      });
+      const message = error instanceof Error ? error.message : "Failed to start Viva checkout";
+      console.error("[viva] /api/payments/viva/start failed:", message, error);
+      const isOAuthConfig =
+        message.includes("invalid_client") ||
+        message.includes("Viva OAuth") ||
+        message.includes("Viva is not configured");
+      return res.status(isOAuthConfig ? 503 : 500).json({ message });
     }
   });
 

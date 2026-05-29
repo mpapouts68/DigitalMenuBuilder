@@ -99,6 +99,35 @@ fetch(url,{method:'POST',headers:{Authorization:'Basic '+auth,'Content-Type':'ap
 
 If you see `invalid_client`, regenerate or recopy credentials in the **live** Viva portal and update `.env`.
 
+## Troubleshooting: `Unexpected end of JSON input` (or empty Viva response)
+
+This usually meant the server called `response.json()` on an **empty** body from Viva (OAuth or create order). After pulling the latest code, the API returns a clearer message such as `Viva OAuth: empty response body` or `Viva create order: …`.
+
+1. **Redeploy** so `server/viva/client.ts` with safe JSON parsing is running.
+2. **Test OAuth on the server** (replace values from `.env`):
+
+```bash
+docker compose --env-file .env exec app node -e "
+const id=process.env.VIVA_CLIENT_ID;
+const secret=process.env.VIVA_CLIENT_SECRET;
+const url=process.env.VIVA_ENVIRONMENT==='demo'
+  ? 'https://demo-accounts.vivapayments.com/connect/token'
+  : 'https://accounts.vivapayments.com/connect/token';
+const basic=Buffer.from(id+':'+secret).toString('base64');
+fetch(url,{method:'POST',headers:{
+  Authorization:'Basic '+basic,
+  'Content-Type':'application/x-www-form-urlencoded',
+  Accept:'application/json'
+},body:'grant_type=client_credentials&scope=urn:viva:payments:core:api:redirectcheckout'})
+.then(r=>r.text().then(t=>console.log('status',r.status,'body',t.slice(0,200))))
+.catch(e=>console.error(e));
+"
+```
+
+Expect `status 200` and JSON containing `access_token`.
+
+3. **`VIVA_SOURCE_CODE`** must be the **payment source code** from Viva (Sales → Payment sources), e.g. `Default` or a short code shown there — **not** the Smart Checkout Client ID and usually not the Merchant ID. Wrong source codes often return a JSON error; if create-order still fails, check `docker compose logs app` for the full Viva message.
+
 ## Troubleshooting: `no such table: pending_checkouts`
 
 The app creates this table on startup via migration `0034_pending_checkouts`. If card pay fails with that error:
