@@ -118,13 +118,15 @@ fetch(url,{method:'POST',headers:{
   Authorization:'Basic '+basic,
   'Content-Type':'application/x-www-form-urlencoded',
   Accept:'application/json'
-},body:'grant_type=client_credentials&scope=urn:viva:payments:core:api:redirectcheckout'})
+},body:'grant_type=client_credentials'})
 .then(r=>r.text().then(t=>console.log('status',r.status,'body',t.slice(0,200))))
 .catch(e=>console.error(e));
 "
 ```
 
-Expect `status 200` and JSON containing `access_token`.
+Expect `status 200` and JSON containing `access_token`. Do **not** add a `scope` parameter — Viva assigns `urn:viva:payments:core:api:redirectcheckout` automatically for Smart Checkout credentials.
+
+If you see **`invalid_scope`**, redeploy the latest app (older builds sent an explicit scope Viva rejects) and confirm you use **Smart Checkout** credentials, not Merchant ID / API Key.
 
 3. **`VIVA_SOURCE_CODE`** must be the **payment source code** from Viva (Sales → Payment sources), e.g. `Default` or a short code shown there — **not** the Smart Checkout Client ID and usually not the Merchant ID. Wrong source codes often return a JSON error; if create-order still fails, check `docker compose logs app` for the full Viva message.
 

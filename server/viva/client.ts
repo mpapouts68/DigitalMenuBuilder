@@ -28,8 +28,6 @@ export interface VivaTransaction {
 
 let cachedToken: { value: string; expiresAt: number } | null = null;
 
-const VIVA_OAUTH_SCOPE = "urn:viva:payments:core:api:redirectcheckout";
-
 async function readVivaJson<T>(response: Response, label: string): Promise<T> {
   const text = await response.text();
   if (!text.trim()) {
@@ -66,7 +64,6 @@ export class VivaClient {
     );
     const body = new URLSearchParams();
     body.set("grant_type", "client_credentials");
-    body.set("scope", VIVA_OAUTH_SCOPE);
 
     const response = await fetch(this.config.oauthUrl, {
       method: "POST",
@@ -90,6 +87,11 @@ export class VivaClient {
       if (oauthError === "invalid_client") {
         throw new Error(
           `Viva OAuth invalid_client (${this.config.environment}): check VIVA_CLIENT_ID and VIVA_CLIENT_SECRET are Smart Checkout credentials from Settings → API Access (not Merchant ID / API Key), with no extra spaces or quotes in .env, and VIVA_ENVIRONMENT matching your Viva account (production vs demo).`,
+        );
+      }
+      if (oauthError === "invalid_scope") {
+        throw new Error(
+          `Viva OAuth invalid_scope (${this.config.environment}): use Smart Checkout Client ID and Secret only; do not pass a custom OAuth scope. Regenerate credentials under Settings → API Access if the error persists.`,
         );
       }
       throw new Error(

@@ -125,6 +125,7 @@ export function registerVivaPaymentRoutes(
       console.error("[viva] /api/payments/viva/start failed:", message, error);
       const isOAuthConfig =
         message.includes("invalid_client") ||
+        message.includes("invalid_scope") ||
         message.includes("Viva OAuth") ||
         message.includes("Viva is not configured");
       return res.status(isOAuthConfig ? 503 : 500).json({ message });
