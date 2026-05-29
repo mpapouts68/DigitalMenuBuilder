@@ -19,16 +19,6 @@ import { useToast } from "@/hooks/use-toast";
 import { CreditCard } from "lucide-react";
 import type { CartItem, OrderCreatePayload, OrderCreateResponse, OrderSourceContext } from "@/types/pos";
 
-declare global {
-  interface Window {
-    Checkout?: {
-      configure: (options: unknown) => void;
-      showLightbox: () => void;
-    };
-    [key: string]: unknown;
-  }
-}
-
 interface OrderCartSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -78,109 +68,6 @@ export function OrderCartSheet({
     });
   }, [open, paymentMethod, toast]);
 
-  const runNbgHostedCheckout = async (prepared: {
-    nbgSessionId?: string;
-    nbgApiVersion?: string;
-    nbgMerchantId?: string;
-    nbgBaseUrl?: string;
-  }): Promise<{ resultIndicator?: string }> => {
-    const sessionId = prepared.nbgSessionId?.trim();
-    const merchantId = prepared.nbgMerchantId?.trim();
-    const apiVersion = prepared.nbgApiVersion?.trim() || "57";
-    const baseUrl = (prepared.nbgBaseUrl?.trim() || "https://test.ibanke-commerce.nbg.gr").replace(/\/$/, "");
-
-    if (!sessionId || !merchantId) {
-      throw new Error("NBG checkout session is incomplete.");
-    }
-
-    const runId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const completeCbName = `nbgComplete_${runId}`;
-    const errorCbName = `nbgError_${runId}`;
-    const cancelCbName = `nbgCancel_${runId}`;
-
-    return await new Promise<{ resultIndicator?: string }>((resolve, reject) => {
-      const cleanup = () => {
-        delete window[completeCbName];
-        delete window[errorCbName];
-        delete window[cancelCbName];
-      };
-
-      window[completeCbName] = (...args: unknown[]) => {
-        const first = args[0];
-        let resultIndicator: string | undefined;
-        if (typeof first === "string") {
-          resultIndicator = first;
-        } else if (first && typeof first === "object") {
-          const maybeObject = first as Record<string, unknown>;
-          const indicator = maybeObject.resultIndicator ?? maybeObject.successIndicator;
-          if (typeof indicator === "string") {
-            resultIndicator = indicator;
-          }
-        }
-        cleanup();
-        resolve({ resultIndicator });
-      };
-
-      window[errorCbName] = (error: unknown) => {
-        const message =
-          error && typeof error === "object" && "explanation" in (error as Record<string, unknown>)
-            ? String((error as Record<string, unknown>).explanation)
-            : "NBG hosted checkout failed.";
-        cleanup();
-        reject(new Error(message));
-      };
-
-      window[cancelCbName] = () => {
-        cleanup();
-        reject(new Error("Card payment cancelled."));
-      };
-
-      const existing = document.getElementById("nbg-checkout-script");
-      if (existing) {
-        existing.remove();
-      }
-
-      const script = document.createElement("script");
-      script.id = "nbg-checkout-script";
-      script.src = `${baseUrl}/checkout/version/${encodeURIComponent(apiVersion)}/checkout.js`;
-      script.setAttribute("data-complete", completeCbName);
-      script.setAttribute("data-error", errorCbName);
-      script.setAttribute("data-cancel", cancelCbName);
-      script.async = true;
-      script.onload = () => {
-        try {
-          if (!window.Checkout?.configure || !window.Checkout.showLightbox) {
-            cleanup();
-            reject(new Error("NBG checkout library did not initialize."));
-            return;
-          }
-          window.Checkout.configure({
-            version: apiVersion,
-            merchant: merchantId,
-            interaction: {
-              operation: "PURCHASE",
-              merchant: {
-                name: "Digital Menu",
-              },
-            },
-            session: {
-              id: sessionId,
-            },
-          });
-          window.Checkout.showLightbox();
-        } catch (error) {
-          cleanup();
-          reject(error instanceof Error ? error : new Error("Unable to launch NBG checkout."));
-        }
-      };
-      script.onerror = () => {
-        cleanup();
-        reject(new Error("Failed to load NBG checkout script."));
-      };
-      document.head.appendChild(script);
-    });
-  };
-
   const isTableLockedByQr = sourceContext?.serviceMode === "table" && !!sourceContext.tableCode;
 
   const handleServiceModeChange = (nextMode: "table" | "pickup") => {
@@ -206,9 +93,9 @@ export function OrderCartSheet({
   );
 
   const { data: paymentProviderInfo } = useQuery<{
-    provider: "simulated" | "nbg";
+    provider: "viva";
     configured: boolean;
-    mode: "simulation" | "gateway";
+    mode: "redirect";
     cardEnabled?: boolean;
   }>({
     queryKey: ["/api/payments/provider"],
@@ -248,77 +135,35 @@ export function OrderCartSheet({
       };
 
       if (paymentMethod === "card") {
-        const prepareResponse = await apiRequest("POST", "/api/payments/prepare", {
+        if (!paymentProviderInfo?.configured) {
+          throw new Error("Card payments are not configured. Contact the venue.");
+        }
+        const startResponse = await apiRequest("POST", "/api/payments/viva/start", {
           amount: Number(totals.grandTotal.toFixed(2)),
-          currency: "EUR",
-          method: "card",
+          customerName: payload.customerName,
+          customerPhone: payload.customerPhone,
+          notes: payload.notes,
+          serviceMode: payload.serviceMode,
+          tableCode: payload.tableCode,
+          tableLabel: payload.tableLabel,
+          pickupPoint: payload.pickupPoint,
+          sourceToken: payload.sourceToken,
+          items: payload.items,
         });
-        const prepared = (await prepareResponse.json()) as {
-          mode?: "simulated" | "nbg_hosted";
-          paymentProvider?: string;
-          paymentIntentId?: string;
-          clientSecret?: string | null;
-          paymentStatus?: "pending" | "authorized" | "succeeded";
-          nbgSessionId?: string;
-          nbgSuccessIndicator?: string;
-          nbgApiVersion?: string;
-          nbgMerchantId?: string;
-          nbgBaseUrl?: string;
-          message?: string;
-        };
-        const resolvedIntentId = prepared.paymentIntentId?.trim() || prepared.clientSecret?.trim();
-        if (!resolvedIntentId) {
-          throw new Error("Card payment initialization failed: missing payment intent/session.");
+        const started = (await startResponse.json()) as { checkoutUrl?: string };
+        if (!started.checkoutUrl) {
+          throw new Error("Could not start card payment. Please try again.");
         }
-
-        if (prepared.mode === "nbg_hosted") {
-          const hostedResult = await runNbgHostedCheckout({
-            nbgSessionId: prepared.nbgSessionId,
-            nbgApiVersion: prepared.nbgApiVersion,
-            nbgMerchantId: prepared.nbgMerchantId,
-            nbgBaseUrl: prepared.nbgBaseUrl,
-          });
-          const confirmResponse = await apiRequest("POST", "/api/payments/confirm", {
-            paymentIntentId: resolvedIntentId,
-            resultIndicator: hostedResult.resultIndicator,
-          });
-          const confirmation = (await confirmResponse.json()) as {
-            paymentStatus?: "succeeded" | "failed";
-            message?: string;
-          };
-          if (confirmation.paymentStatus !== "succeeded") {
-            throw new Error(confirmation.message || "NBG payment was not approved.");
-          }
-          payload.payment = {
-            method: "card",
-            status: "succeeded",
-            provider: "nbg",
-            intentId: resolvedIntentId,
-          };
-        } else {
-          const confirmResponse = await apiRequest("POST", "/api/payments/confirm", {
-            paymentIntentId: resolvedIntentId,
-          });
-          const confirmation = (await confirmResponse.json()) as {
-            paymentStatus?: "succeeded" | "failed";
-            message?: string;
-          };
-          if (confirmation.paymentStatus !== "succeeded") {
-            throw new Error(confirmation.message || "Card payment was not approved");
-          }
-
-          payload.payment = {
-            method: "card",
-            status: "succeeded",
-            provider: prepared.paymentProvider || "simulated_terminal",
-            intentId: resolvedIntentId,
-          };
-        }
+        window.location.assign(started.checkoutUrl);
+        return null;
       }
       const response = await apiRequest("POST", "/api/orders", payload);
       return response.json() as Promise<OrderCreateResponse>;
     },
     onSuccess: (data) => {
+      if (!data) {
+        return;
+      }
       const isCashPending =
         data.order.paymentProvider === "cash_counter" &&
         data.order.paymentStatus === "pending";
@@ -555,11 +400,9 @@ export function OrderCartSheet({
             )}
             {paymentMethod === "card" && (
               <p className="text-[10px] text-slate-500">
-                {paymentProviderInfo?.provider === "nbg"
-                  ? paymentProviderInfo.configured
-                    ? "NBG mode active. Secure bank lightbox will open for cardholder authentication."
-                    : "NBG mode selected but not configured yet."
-                  : "Simulation mode active. No real bank charge is performed yet."}
+                {paymentProviderInfo?.configured
+                  ? "You will be redirected to Viva secure checkout to pay by card."
+                  : "Card payments are not configured on the server yet."}
               </p>
             )}
             {paymentMethod === "cash" && (

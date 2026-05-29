@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QRCodeSVG } from "qrcode.react";
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type {
@@ -140,19 +141,26 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
       }, {});
     const selectedPickupUrl = `${baseUrl}?mode=pickup&point=${encodeURIComponent(selectedPickupPoint || "bar")}`;
 
-    const qrImageDataUrl = async (url: string): Promise<string> => {
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(url)}`;
-      const response = await fetch(qrApiUrl);
-      if (!response.ok) {
-        throw new Error(`QR generation failed (${response.status})`);
+    const drawVectorQr = (doc: jsPDF, url: string, x: number, y: number, sizeMm: number) => {
+      const qr = QRCode.create(url, { errorCorrectionLevel: "M" });
+      const modules = qr.modules;
+      const moduleCount = modules.size;
+      const quietZoneModules = 4;
+      const totalModules = moduleCount + quietZoneModules * 2;
+      const moduleSize = sizeMm / totalModules;
+
+      doc.setFillColor(255, 255, 255);
+      doc.rect(x, y, sizeMm, sizeMm, "F");
+      doc.setFillColor(0, 0, 0);
+
+      for (let row = 0; row < moduleCount; row += 1) {
+        for (let col = 0; col < moduleCount; col += 1) {
+          if (!modules.data[row * moduleCount + col]) continue;
+          const px = x + (col + quietZoneModules) * moduleSize;
+          const py = y + (row + quietZoneModules) * moduleSize;
+          doc.rect(px, py, moduleSize, moduleSize, "F");
+        }
       }
-      const blob = await response.blob();
-      return await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(String(reader.result ?? ""));
-        reader.onerror = () => reject(new Error("Failed to read generated QR image"));
-        reader.readAsDataURL(blob);
-      });
     };
 
     try {
@@ -168,21 +176,16 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
       doc.setFontSize(9);
       doc.text(`Generated: ${new Date().toLocaleString()}`, margin, 17);
 
-      const pickupQr = await qrImageDataUrl(selectedPickupUrl);
       const pickupTop = 22;
-      const pickupHeight = 62;
-      const pickupQrSize = 42;
+      const pickupHeight = 52;
+      const pickupQrSize = 40;
 
       doc.setDrawColor(180);
       doc.roundedRect(margin, pickupTop, pageWidth - margin * 2, pickupHeight, 2, 2);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       doc.text(`Pickup (${selectedPickupPoint || "bar"})`, margin + 3, pickupTop + 7);
-      doc.addImage(pickupQr, "PNG", margin + 3, pickupTop + 10, pickupQrSize, pickupQrSize);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      const pickupUrlText = doc.splitTextToSize(selectedPickupUrl, pageWidth - margin * 2 - pickupQrSize - 12);
-      doc.text(pickupUrlText, margin + pickupQrSize + 7, pickupTop + 14);
+      drawVectorQr(doc, selectedPickupUrl, margin + 3, pickupTop + 10, pickupQrSize);
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
@@ -191,8 +194,8 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
       const cols = 3;
       const cellGap = 4;
       const cellWidth = (pageWidth - margin * 2 - cellGap * (cols - 1)) / cols;
-      const cellHeight = 58;
-      const qrSize = 24;
+      const cellHeight = 46;
+      const qrSize = 26;
       let cursorY = pickupTop + pickupHeight + 12;
 
       for (let idx = 0; idx < selectedTableCodes.length; idx += 1) {
@@ -210,28 +213,22 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
         const tableUrl = `${baseUrl}?mode=table&table=${encodeURIComponent(tableCode)}${
           tableLabel ? `&tableLabel=${encodeURIComponent(tableLabel)}` : ""
         }`;
-        const tableQr = await qrImageDataUrl(tableUrl);
 
         const x = margin + col * (cellWidth + cellGap);
         doc.setDrawColor(205);
         doc.roundedRect(x, cursorY, cellWidth, cellHeight, 2, 2);
-        doc.addImage(tableQr, "PNG", x + (cellWidth - qrSize) / 2, cursorY + 3, qrSize, qrSize);
+        drawVectorQr(doc, tableUrl, x + (cellWidth - qrSize) / 2, cursorY + 3, qrSize);
 
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
-        doc.text(tableCode, x + cellWidth / 2, cursorY + 31, { align: "center" });
+        doc.text(tableCode, x + cellWidth / 2, cursorY + 32, { align: "center" });
 
         if (tableLabel) {
           doc.setFont("helvetica", "normal");
           doc.setFontSize(8);
           const labelLines = doc.splitTextToSize(tableLabel, cellWidth - 6);
-          doc.text(labelLines, x + cellWidth / 2, cursorY + 36, { align: "center", maxWidth: cellWidth - 6 });
+          doc.text(labelLines, x + cellWidth / 2, cursorY + 38, { align: "center", maxWidth: cellWidth - 6 });
         }
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(6.5);
-        const urlLines = doc.splitTextToSize(tableUrl, cellWidth - 6);
-        doc.text(urlLines, x + 3, cursorY + 45, { maxWidth: cellWidth - 6 });
       }
 
       const fileDate = new Date().toISOString().slice(0, 10);

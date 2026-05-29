@@ -635,7 +635,7 @@ export class DatabaseStorage implements IStorage {
         orderColumns,
         "payment_provider",
         "paymentProvider",
-        paymentMethod === "card" ? input.payment?.provider || "simulated_terminal" : input.payment?.provider || "cash_counter",
+        paymentMethod === "card" ? input.payment?.provider || "viva" : input.payment?.provider || "cash_counter",
       );
       this.setIfColumnExists(
         orderInsertValues,

@@ -24,123 +24,19 @@ import {
   verifyAdminPasscode,
 } from "./auth";
 import { z } from "zod";
+import { hasVivaCredentials } from "./viva/config";
+import { registerVivaPaymentRoutes } from "./viva/routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const embeddedPrinterEnabled =
     process.env.EMBEDDED_PRINTER_ENABLED === "1" ||
     (process.env.EMBEDDED_PRINTER_ENABLED !== "0" && process.env.NODE_ENV !== "production");
-  const nbgPayments = new Map<
-    string,
-    {
-      sessionId: string;
-      successIndicator?: string;
-      status: "pending" | "succeeded" | "failed";
-      expiresAt: number;
-    }
-  >();
 
-  const cardProvider = (process.env.CARD_PROVIDER || "simulated").trim().toLowerCase();
   const isCardPaymentEnabled = async () => {
     const settings = await storage.getPaymentSettings();
     return Number(settings?.cardEnabled ?? 1) === 1;
   };
-  const nbgConfig = {
-    baseUrl: process.env.NBG_BASE_URL || "https://test.ibanke-commerce.nbg.gr",
-    apiVersion: process.env.NBG_API_VERSION || "85",
-    merchantId: process.env.NBG_MERCHANT_ID || "",
-    apiUsername: process.env.NBG_API_USERNAME || "",
-    apiPassword: process.env.NBG_API_PASSWORD || "",
-    returnUrl: process.env.NBG_RETURN_URL || "",
-  };
 
-  const hasNbgCredentials = () =>
-    Boolean(
-      nbgConfig.merchantId &&
-      nbgConfig.apiUsername &&
-      nbgConfig.apiPassword &&
-      nbgConfig.returnUrl,
-    );
-
-  const parseNbgNvpResponse = (raw: string): Record<string, string> => {
-    const normalized = raw.trim();
-    const rows = normalized.includes("&")
-      ? normalized.split("&")
-      : normalized.split(/\r?\n/).filter(Boolean);
-    const result: Record<string, string> = {};
-    for (const row of rows) {
-      const [k, ...rest] = row.split("=");
-      if (!k) continue;
-      result[decodeURIComponent(k)] = decodeURIComponent(rest.join("=") || "");
-    }
-    return result;
-  };
-
-  const initiateNbgHostedCheckout = async (amount: number, currency: string) => {
-    const params = new URLSearchParams();
-    params.set("apiOperation", "INITIATE_CHECKOUT");
-    params.set("apiUsername", nbgConfig.apiUsername);
-    params.set("apiPassword", nbgConfig.apiPassword);
-    params.set("merchant", nbgConfig.merchantId);
-    params.set("interaction.operation", "PURCHASE");
-    params.set("interaction.returnUrl", nbgConfig.returnUrl);
-    params.set("interaction.merchant.name", "Digital Menu");
-    params.set("order.id", `ORD-${Date.now()}`);
-    params.set("order.amount", amount.toFixed(2));
-    params.set("order.currency", currency.toUpperCase());
-
-    const response = await fetch(`${nbgConfig.baseUrl}/api/nvp/version/${nbgConfig.apiVersion}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
-    });
-    const rawBody = await response.text();
-    const parsed = parseNbgNvpResponse(rawBody);
-
-    if (!response.ok) {
-      throw new Error(parsed["error.explanation"] || parsed.result || `NBG gateway error ${response.status}`);
-    }
-
-    const sessionId = parsed["session.id"];
-    if (!sessionId) {
-      throw new Error("NBG response did not include session.id");
-    }
-    return {
-      sessionId,
-      successIndicator: parsed.successIndicator,
-      result: parsed.result || "SUCCESS",
-    };
-  };
-
-  const resolveNbgPaymentStatus = (
-    paymentIntentId: string,
-    resultIndicator?: string,
-    gatewayResult?: string,
-  ): "succeeded" | "failed" => {
-    const payment = nbgPayments.get(paymentIntentId);
-    if (!payment) {
-      throw new Error("Unknown NBG payment intent");
-    }
-
-    if (Date.now() > payment.expiresAt) {
-      payment.status = "failed";
-      return "failed";
-    }
-
-    const normalizedGatewayResult = (gatewayResult || "").trim().toUpperCase();
-    const normalizedResultIndicator = (resultIndicator || "").trim();
-    const expected = (payment.successIndicator || "").trim();
-
-    const successByIndicator = Boolean(
-      expected && normalizedResultIndicator && normalizedResultIndicator === expected,
-    );
-    const successByGatewayResult = ["SUCCESS", "APPROVED", "CAPTURED", "AUTHORIZED"].includes(
-      normalizedGatewayResult,
-    );
-
-    const success = successByIndicator || successByGatewayResult;
-    payment.status = success ? "succeeded" : "failed";
-    return payment.status;
-  };
   const resolveDefaultBeepMode = (normalizedProfile: string): "off" | "bel" | "esc_b" | "esc_p" | "both" | "both_plus_p" => {
     if (
       normalizedProfile === "samsung_srp" ||
@@ -927,8 +823,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", async (req, res) => {
     try {
       const orderInput = createOrderSchema.parse(req.body);
-      if ((orderInput.payment?.method ?? "cash") === "card" && !(await isCardPaymentEnabled())) {
-        return res.status(403).json({ message: "Card payment is currently disabled by admin." });
+      if ((orderInput.payment?.method ?? "cash") === "card") {
+        return res.status(400).json({
+          message: "Card orders are created after Viva payment via /api/payments/viva/finalize.",
+        });
       }
       const order = await storage.createOrder(orderInput);
       triggerEmbeddedPrinterTick();
@@ -943,161 +841,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/payments/provider", async (_req, res) => {
-    const provider = cardProvider === "nbg" ? "nbg" : "simulated";
     const cardEnabled = await isCardPaymentEnabled();
     res.json({
-      provider,
-      configured: provider === "simulated" ? true : hasNbgCredentials(),
-      mode: provider === "simulated" ? "simulation" : "gateway",
+      provider: "viva" as const,
+      configured: hasVivaCredentials(),
+      mode: "redirect" as const,
       cardEnabled,
     });
   });
 
-  app.post("/api/payments/prepare", async (req, res) => {
-    try {
-      if (!(await isCardPaymentEnabled())) {
-        return res.status(403).json({ message: "Card payment is currently disabled by admin." });
-      }
-      const body = z
-        .object({
-          amount: z.number().positive(),
-          currency: z.string().min(3).max(3).default("eur"),
-          method: z.enum(["card"]).default("card"),
-        })
-        .parse(req.body);
-      if (cardProvider === "nbg") {
-        if (!hasNbgCredentials()) {
-          return res.status(503).json({
-            message:
-              "NBG card provider selected but credentials are incomplete. Set NBG_MERCHANT_ID, NBG_API_USERNAME, NBG_API_PASSWORD and NBG_RETURN_URL.",
-          });
-        }
-
-        const checkout = await initiateNbgHostedCheckout(body.amount, body.currency);
-        const paymentIntentId = `nbg_session_${checkout.sessionId}_${Date.now()}`;
-        // Best-effort in-memory tracking for hosted checkout verification.
-        const now = Date.now();
-        nbgPayments.forEach((value, key) => {
-          if (value.expiresAt < now) {
-            nbgPayments.delete(key);
-          }
-        });
-        nbgPayments.set(paymentIntentId, {
-          sessionId: checkout.sessionId,
-          successIndicator: checkout.successIndicator,
-          status: "pending",
-          expiresAt: now + 30 * 60 * 1000,
-        });
-        return res.json({
-          mode: "nbg_hosted" as const,
-          paymentProvider: "nbg",
-          paymentIntentId,
-          paymentStatus: "pending" as const,
-          nbgSessionId: checkout.sessionId,
-          nbgSuccessIndicator: checkout.successIndicator,
-          nbgApiVersion: nbgConfig.apiVersion,
-          nbgMerchantId: nbgConfig.merchantId,
-          nbgBaseUrl: nbgConfig.baseUrl,
-          message: "NBG hosted checkout session prepared.",
-          amount: body.amount,
-          currency: body.currency.toLowerCase(),
-        });
-      }
-
-      const paymentIntentId = `sim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      return res.json({
-        mode: "simulated" as const,
-        paymentProvider: "simulated_terminal",
-        paymentIntentId,
-        paymentStatus: "pending" as const,
-        message: "Simulated payment prepared.",
-        amount: body.amount,
-        currency: body.currency.toLowerCase(),
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid payment prepare payload", errors: error.errors });
-      } else {
-        res.status(500).json({ message: error instanceof Error ? error.message : "Failed to prepare payment" });
-      }
-    }
+  registerVivaPaymentRoutes(app, {
+    storage,
+    createOrderSchema,
+    isCardPaymentEnabled,
+    triggerEmbeddedPrinterTick,
   });
 
-  app.post("/api/payments/confirm", async (req, res) => {
-    try {
-      if (!(await isCardPaymentEnabled())) {
-        return res.status(403).json({ message: "Card payment is currently disabled by admin." });
-      }
-      const body = z
-        .object({
-          paymentIntentId: z.string().min(6),
-          resultIndicator: z.string().optional(),
-          gatewayResult: z.string().optional(),
-        })
-        .parse(req.body);
-      if (cardProvider === "nbg") {
-        const paymentStatus = resolveNbgPaymentStatus(
-          body.paymentIntentId,
-          body.resultIndicator,
-          body.gatewayResult,
-        );
-        return res.json({
-          mode: "nbg_hosted" as const,
-          paymentIntentId: body.paymentIntentId,
-          paymentStatus,
-          message:
-            paymentStatus === "succeeded"
-              ? "NBG payment verified."
-              : "NBG payment verification failed.",
-        });
-      }
-      res.json({
-        mode: "simulated" as const,
-        paymentIntentId: body.paymentIntentId,
-        paymentStatus: "succeeded" as const,
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid payment confirm payload", errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Failed to confirm payment" });
-      }
-    }
-  });
-
-  app.get("/api/payments/nbg/return", async (req, res) => {
-    try {
-      const paymentIntentId = typeof req.query.paymentIntentId === "string" ? req.query.paymentIntentId : "";
-      const resultIndicator = typeof req.query.resultIndicator === "string" ? req.query.resultIndicator : "";
-      const gatewayResult =
-        typeof req.query.result === "string"
-          ? req.query.result
-          : typeof req.query.gatewayResult === "string"
-            ? req.query.gatewayResult
-            : "";
-
-      if (paymentIntentId && nbgPayments.has(paymentIntentId)) {
-        resolveNbgPaymentStatus(paymentIntentId, resultIndicator, gatewayResult);
-      }
-
-      return res.send(`
-        <!doctype html>
-        <html>
-          <head><meta charset="utf-8"><title>Payment Return</title></head>
-          <body style="font-family: Arial, sans-serif; padding: 16px;">
-            <p>Payment result received. You can close this window and continue checkout.</p>
-            <script>
-              if (window.opener) {
-                window.close();
-              }
-            </script>
-          </body>
-        </html>
-      `);
-    } catch (error) {
-      return res.status(500).send("Failed to process payment return.");
-    }
-  });
 
   app.get("/api/admin/orders", isAuthenticated, isAdmin, async (req, res) => {
     try {

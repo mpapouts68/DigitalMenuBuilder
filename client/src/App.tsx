@@ -9,6 +9,8 @@ import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import PrinterPage from "@/pages/printer";
 import AdminPage from "@/pages/admin";
+import PaymentSuccessPage from "@/pages/payment-success";
+import PaymentFailedPage from "@/pages/payment-failed";
 
 function Router() {
   return (
@@ -18,6 +20,8 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/printer" component={PrinterPage} />
       <Route path="/admin" component={AdminPage} />
+      <Route path="/payment/success" component={PaymentSuccessPage} />
+      <Route path="/payment/failed" component={PaymentFailedPage} />
       <Route>
         <div className="min-h-screen w-full flex items-center justify-center bg-slate-50">
           <div className="text-center">

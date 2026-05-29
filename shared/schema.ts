@@ -180,6 +180,27 @@ export const paymentSettings = sqliteTable("payment_settings", {
   updatedAt: integer("updated_at").notNull().default(Date.now()),
 });
 
+/** Viva Smart Checkout carts awaiting payment (survives browser redirect). */
+export const pendingCheckouts = sqliteTable(
+  "pending_checkouts",
+  {
+    id: text("id").primaryKey(),
+    vivaOrderCode: text("viva_order_code"),
+    amountCents: integer("amount_cents").notNull(),
+    cartJson: text("cart_json").notNull(),
+    status: text("status").notNull().default("pending"),
+    orderId: integer("order_id"),
+    transactionId: text("transaction_id"),
+    failureEventId: integer("failure_event_id"),
+    createdAt: integer("created_at").notNull(),
+    expiresAt: integer("expires_at").notNull(),
+  },
+  (table) => [
+    index("pending_checkouts_viva_order_code_idx").on(table.vivaOrderCode),
+    index("pending_checkouts_status_idx").on(table.status),
+  ],
+);
+
 export const banners = sqliteTable("banners", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   type: text("type").notNull(), // 'advertisement' or 'promotional'

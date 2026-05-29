@@ -20,7 +20,13 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       PRINTER_USERNAME: ${PRINTER_USERNAME:-printer}
       PRINTER_PASSWORD: ${PRINTER_PASSWORD:-printer123}
-      CARD_PROVIDER: ${CARD_PROVIDER:-simulated}
+      VIVA_ENVIRONMENT: ${VIVA_ENVIRONMENT:-production}
+      VIVA_CLIENT_ID: ${VIVA_CLIENT_ID:-}
+      VIVA_CLIENT_SECRET: ${VIVA_CLIENT_SECRET:-}
+      VIVA_SOURCE_CODE: ${VIVA_SOURCE_CODE:-Default}
+      VIVA_SUCCESS_URL: ${VIVA_SUCCESS_URL:-https://www.shishapoint.site/payment/success}
+      VIVA_FAILURE_URL: ${VIVA_FAILURE_URL:-https://www.shishapoint.site/payment/failed}
+      VIVA_WEBHOOK_KEY: ${VIVA_WEBHOOK_KEY:-}
     volumes:
       - menu_data:/data
     healthcheck:
