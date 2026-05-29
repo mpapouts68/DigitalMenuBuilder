@@ -35,16 +35,38 @@ VIVA_WEBHOOK_KEY=
 
 Production uses `accounts.vivapayments.com`, `api.vivapayments.com`, and `www.vivapayments.com` automatically. For sandbox testing only, set `VIVA_ENVIRONMENT=demo`.
 
-## 3. Viva dashboard URLs (payment source)
+## 3. Viva dashboard — create a **Redirection** payment source
 
-**Menu → Sales → Online payments → Websites/Apps** → your app/source:
+Your existing **Default** source may be POS-only or Native-only. Smart Checkout needs a **Websites/Apps** source with **Redirection**.
 
-| Field | Value |
-|--------|--------|
+1. Log into **live** Viva (same account as your Smart Checkout Client ID).
+2. **Sales → Online payments → Websites/Apps**.
+3. Click **Add Website/App** (top right).
+4. Fill in:
+
+| Field | Example for Shisha Point |
+|--------|----------------------------|
+| Name | `Shisha Point menu` |
+| Linked account | Your main wallet |
+| Protocol | `https` |
+| Domain name | `www.shishapoint.site` (no `https://`, no trailing `/`) |
+| Integration method | **Redirection / Native Checkout v2** (required) |
 | Success URL | `https://www.shishapoint.site/payment/success` |
 | Failure URL | `https://www.shishapoint.site/payment/failed` |
 
-**Settings → API Access → Webhooks** (recommended):
+5. Accept terms → **Create**.
+6. Open the new source and copy the **Source code** (often a 4-digit code, e.g. `4821` — **not** Merchant ID).
+7. Put that exact code in server `.env`:
+
+```env
+VIVA_SOURCE_CODE=4821
+```
+
+8. Redeploy: `docker compose --env-file .env up -d --build`.
+
+If **Default** still returns 403, do **not** use Default — use the source code from the new Websites/Apps entry above.
+
+### Webhooks (recommended)
 
 | Field | Value |
 |--------|--------|
@@ -137,7 +159,8 @@ OAuth works but `POST /checkout/v2/orders` returns **403**. Common causes:
 | Cause | Fix |
 |--------|-----|
 | Wrong `VIVA_SOURCE_CODE` | Open **Sales → Online payments → Websites/Apps** → your source → copy **Source code** exactly (case-sensitive). Try `Default` if unsure. |
-| Source is **Native Checkout** only | Smart Checkout needs **Redirection** integration. Create a new website/app source with **Redirection** (per bank form point 11), set success/failure URLs, use that source code in `.env`. |
+| Source is **Native Checkout** only | Create a **new** source via **Add Website/App** with **Redirection / Native Checkout v2** — editing an old POS source is not enough. |
+| Using **Default** but still 403 | Your account’s Default source is not a redirect source. Use the **4-digit Source code** from the new Websites/Apps entry. |
 | Demo vs live mismatch | Demo credentials + `VIVA_ENVIRONMENT=demo`, or live + `production`. |
 
 Test create-order on the server (1 cent test order):
