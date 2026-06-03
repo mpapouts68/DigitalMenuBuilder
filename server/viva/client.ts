@@ -55,9 +55,9 @@ function formatCreateOrder403(sourceCode: string, response: Response, bodyText: 
   const bodyHint = bodyText.trim() ? ` Viva said: ${bodyText.slice(0, 200)}` : "";
   return (
     `Viva create order forbidden (403, sourceCode="${sourceCode}").` +
-    " Use a payment source configured for Smart Checkout / Redirection (not Native Checkout only)." +
-    " In Viva: Sales → Online payments → Websites/Apps → open the source → confirm integration is Redirection," +
-    ' copy the exact Source code into VIVA_SOURCE_CODE (often "Default"), then redeploy.' +
+    " Viva rejected this source for the current Smart Checkout OAuth credentials." +
+    " In Viva: Sales → Online payments → Websites/Apps → open the source, confirm it belongs to the same live/demo account as the Smart Checkout credentials," +
+    " then copy the exact Source code into VIVA_SOURCE_CODE and redeploy." +
     bodyHint +
     (bodyHint ? "" : ` (${vivaResponseMeta(response)})`)
   );

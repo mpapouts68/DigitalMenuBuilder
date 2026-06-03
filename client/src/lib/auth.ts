@@ -12,16 +12,12 @@ export interface AuthTokenPayload {
 export const auth = {
   // Store JWT token in localStorage
   setToken: (token: string) => {
-    console.log('🔑 Storing JWT token:', token.substring(0, 50) + '...');
     localStorage.setItem(TOKEN_KEY, token);
-    console.log('🔑 Token stored successfully');
   },
 
   // Get JWT token from localStorage
   getToken: (): string | null => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    console.log('🔑 Getting JWT token:', token ? token.substring(0, 50) + '...' : 'none');
-    return token;
+    return localStorage.getItem(TOKEN_KEY);
   },
 
   // Remove JWT token from localStorage

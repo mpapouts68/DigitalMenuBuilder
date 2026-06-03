@@ -24,7 +24,8 @@ for key in VIVA_CLIENT_ID VIVA_CLIENT_SECRET VIVA_SOURCE_CODE; do
   fi
 done
 
-echo "VIVA_ENVIRONMENT=${VIVA_ENVIRONMENT:-demo}"
+echo "VIVA_ENVIRONMENT=${VIVA_ENVIRONMENT:-production}"
+echo "VIVA_SOURCE_CODE=${VIVA_SOURCE_CODE:-}"
 echo "VIVA_SUCCESS_URL=${VIVA_SUCCESS_URL:-https://www.shishapoint.site/payment/success}"
 echo "VIVA_FAILURE_URL=${VIVA_FAILURE_URL:-https://www.shishapoint.site/payment/failed}"
 

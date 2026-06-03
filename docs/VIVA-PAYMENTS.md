@@ -10,7 +10,7 @@ You need these four values:
 |----------|------------------|
 | `VIVA_CLIENT_ID` | **Settings → API Access** → Smart Checkout credentials (Client ID) |
 | `VIVA_CLIENT_SECRET` | Same screen (Client Secret) — never commit to git |
-| `VIVA_SOURCE_CODE` | **Sales → Online payments → Websites/Apps** → open your source → **Source code** (e.g. `Default` or a numeric code) |
+| `VIVA_SOURCE_CODE` | **Sales → Online payments → Websites/Apps** → open your source → **Source code** |
 | `VIVA_ENVIRONMENT` | `demo` for test credentials, `production` for live |
 
 Use **demo** API hosts with demo credentials; use **production** with live credentials.
@@ -27,7 +27,7 @@ JWT_SECRET=your-long-random-secret
 VIVA_ENVIRONMENT=production
 VIVA_CLIENT_ID=paste_client_id_here
 VIVA_CLIENT_SECRET=paste_client_secret_here
-VIVA_SOURCE_CODE=Default
+VIVA_SOURCE_CODE=paste_source_code_here
 VIVA_SUCCESS_URL=https://www.shishapoint.site/payment/success
 VIVA_FAILURE_URL=https://www.shishapoint.site/payment/failed
 VIVA_WEBHOOK_KEY=
@@ -150,7 +150,7 @@ Expect `status 200` and JSON containing `access_token`. Do **not** add a `scope`
 
 If you see **`invalid_scope`**, redeploy the latest app (older builds sent an explicit scope Viva rejects) and confirm you use **Smart Checkout** credentials, not Merchant ID / API Key.
 
-3. **`VIVA_SOURCE_CODE`** must be the **payment source code** from Viva (Sales → Payment sources), e.g. `Default` or a short code shown there — **not** the Smart Checkout Client ID and usually not the Merchant ID. Wrong source codes often return a JSON error; if create-order still fails, check `docker compose logs app` for the full Viva message.
+3. **`VIVA_SOURCE_CODE`** must be the **payment source code** from Viva (Sales → Online payments → Websites/Apps), e.g. the 4-digit code shown on the source — **not** the Smart Checkout Client ID and usually not the Merchant ID. Wrong or cross-account source codes often return a JSON error; if create-order still fails, check `docker compose logs app` for the full Viva message.
 
 ## Troubleshooting: create order **403** (empty body)
 
@@ -158,7 +158,7 @@ OAuth works but `POST /checkout/v2/orders` returns **403**. Common causes:
 
 | Cause | Fix |
 |--------|-----|
-| Wrong `VIVA_SOURCE_CODE` | Open **Sales → Online payments → Websites/Apps** → your source → copy **Source code** exactly (case-sensitive). Try `Default` if unsure. |
+| Wrong `VIVA_SOURCE_CODE` | Open **Sales → Online payments → Websites/Apps** → your source → copy **Source code** exactly (case-sensitive). |
 | Source is **Native Checkout** only | Create a **new** source via **Add Website/App** with **Redirection / Native Checkout v2** — editing an old POS source is not enough. |
 | Using **Default** but still 403 | Your account’s Default source is not a redirect source. Use the **4-digit Source code** from the new Websites/Apps entry. |
 | Demo vs live mismatch | Demo credentials + `VIVA_ENVIRONMENT=demo`, or live + `production`. |
@@ -169,7 +169,8 @@ Test create-order on the server (1 cent test order):
 docker compose --env-file .env exec app node -e "
 const id=process.env.VIVA_CLIENT_ID;
 const sec=process.env.VIVA_CLIENT_SECRET;
-const src=process.env.VIVA_SOURCE_CODE||'Default';
+const src=process.env.VIVA_SOURCE_CODE;
+if(!src) throw new Error('Missing VIVA_SOURCE_CODE');
 const api=process.env.VIVA_ENVIRONMENT==='demo'?'https://demo-api.vivapayments.com':'https://api.vivapayments.com';
 const oauth=process.env.VIVA_ENVIRONMENT==='demo'?'https://demo-accounts.vivapayments.com/connect/token':'https://accounts.vivapayments.com/connect/token';
 const basic=Buffer.from(id+':'+sec).toString('base64');

@@ -42,7 +42,7 @@ export function loadVivaConfig(): VivaConfig {
     ),
     clientId: process.env.VIVA_CLIENT_ID?.trim() || "",
     clientSecret: process.env.VIVA_CLIENT_SECRET?.trim() || "",
-    sourceCode: process.env.VIVA_SOURCE_CODE?.trim() || "Default",
+    sourceCode: process.env.VIVA_SOURCE_CODE?.trim() || "",
     successUrl:
       process.env.VIVA_SUCCESS_URL?.trim() || "https://www.shishapoint.site/payment/success",
     failureUrl:

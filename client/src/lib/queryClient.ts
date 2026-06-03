@@ -22,41 +22,23 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   const token = auth.getToken();
-  console.log('🌐 Frontend API Request:', {
-    method,
-    url,
-    hasData: !!data,
-    hasToken: !!token,
-    tokenPreview: token ? token.substring(0, 50) + '...' : 'none'
-  });
-  
+
   const headers: Record<string, string> = {};
-  
+
   // Add content type for requests with data
   if (data) {
     headers['Content-Type'] = 'application/json';
   }
-  
+
   // Add authorization header if authenticated
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    console.log('🔑 Adding Authorization header:', `Bearer ${token.substring(0, 50)}...`);
-  } else {
-    console.log('❌ No token available for request');
   }
-  
+
   const res = await fetch(url, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-  });
-
-  console.log('🌐 Frontend API Response:', {
-    method,
-    url,
-    status: res.status,
-    statusText: res.statusText,
-    headers: Object.fromEntries(res.headers.entries())
   });
 
   await throwIfResNotOk(res);

@@ -31,6 +31,7 @@ export function registerVivaPaymentRoutes(
       successUrl: config.successUrl,
       failureUrl: config.failureUrl,
       environment: config.environment,
+      sourceCode: config.sourceCode,
     });
   });
 
