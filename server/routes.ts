@@ -1561,6 +1561,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ status: "error", message: "Missing order payload" });
       }
 
+      const isNonTicketPayload =
+        parsedPayload?.type === "cash_payment_notice" || parsedPayload?.type === "printer_test";
+      const ecrPayload = isNonTicketPayload
+        ? null
+        : parsedPayload?.order
+          ? {
+              order: parsedPayload.order,
+              items: parsedPayload.items ?? [],
+            }
+          : null;
+
       return res.json({
         status: "job",
         job: {
@@ -1569,6 +1580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           printerIp: settings.printerIp,
           printerPort: settings.printerPort,
           receipt,
+          ecrPayload,
         },
       });
     } catch (error) {

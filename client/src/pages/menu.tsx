@@ -156,7 +156,8 @@ export default function Menu() {
 
     const resolvedMode: "table" | "pickup" = modeParam === "table" ? "table" : "pickup";
     const fallbackToTable = !modeParam && !!tableParam;
-    const serviceMode: "table" | "pickup" = fallbackToTable ? "table" : resolvedMode;
+    const serviceMode: "table" | "pickup" =
+      (resolvedMode === "table" || fallbackToTable) && tableParam ? "table" : "pickup";
 
     setOrderSourceContext({
       serviceMode,

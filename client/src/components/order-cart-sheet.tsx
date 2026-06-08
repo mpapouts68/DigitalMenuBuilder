@@ -68,10 +68,35 @@ export function OrderCartSheet({
     });
   }, [open, paymentMethod, toast]);
 
-  const isTableLockedByQr = sourceContext?.serviceMode === "table" && !!sourceContext.tableCode;
+  const isTableOrderByQr = sourceContext?.serviceMode === "table" && !!sourceContext.tableCode;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    if (isTableOrderByQr) {
+      setServiceMode("table");
+      setTableCode(sourceContext?.tableCode ?? "");
+      setTableLabel(sourceContext?.tableLabel ?? "");
+      return;
+    }
+    setServiceMode("pickup");
+    setTableCode("");
+    setTableLabel("");
+    setPickupPoint(sourceContext?.pickupPoint ?? "bar");
+  }, [
+    open,
+    isTableOrderByQr,
+    sourceContext?.tableCode,
+    sourceContext?.tableLabel,
+    sourceContext?.pickupPoint,
+  ]);
 
   const handleServiceModeChange = (nextMode: "table" | "pickup") => {
-    if (isTableLockedByQr && nextMode !== "table") {
+    if (nextMode === "table" && !isTableOrderByQr) {
+      return;
+    }
+    if (nextMode === "pickup" && isTableOrderByQr) {
       return;
     }
     setServiceMode(nextMode);
@@ -263,29 +288,33 @@ export function OrderCartSheet({
           <div className="rounded-md border bg-white p-2 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide">Order type</span>
-              <div className="flex gap-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={serviceMode === "table" ? "default" : "outline"}
-                  className="h-7 px-2 text-xs"
-                  onClick={() => handleServiceModeChange("table")}
-                >
-                  Table
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={serviceMode === "pickup" ? "default" : "outline"}
-                  className="h-7 px-2 text-xs"
-                  onClick={() => handleServiceModeChange("pickup")}
-                  disabled={isTableLockedByQr}
-                >
-                  Pickup
-                </Button>
-              </div>
+              {isTableOrderByQr ? (
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={serviceMode === "table" ? "default" : "outline"}
+                    className="h-7 px-2 text-xs"
+                    onClick={() => handleServiceModeChange("table")}
+                  >
+                    Table
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={serviceMode === "pickup" ? "default" : "outline"}
+                    className="h-7 px-2 text-xs"
+                    onClick={() => handleServiceModeChange("pickup")}
+                    disabled
+                  >
+                    Pickup
+                  </Button>
+                </div>
+              ) : (
+                <span className="text-xs font-medium text-slate-700">Pickup</span>
+              )}
             </div>
-            {serviceMode === "table" ? (
+            {serviceMode === "table" && isTableOrderByQr ? (
               <div className="grid grid-cols-2 gap-1.5">
                 <div className="space-y-0.5">
                   <Label htmlFor="table-code" className="text-[10px] text-slate-500">
@@ -294,9 +323,9 @@ export function OrderCartSheet({
                   <Input
                     id="table-code"
                     value={tableCode}
-                    onChange={(event) => setTableCode(event.target.value)}
+                    readOnly
                     placeholder="T12"
-                    disabled={isTableLockedByQr}
+                    disabled
                     className="h-8 text-xs"
                   />
                 </div>
@@ -307,15 +336,13 @@ export function OrderCartSheet({
                   <Input
                     id="table-label"
                     value={tableLabel}
-                    onChange={(event) => setTableLabel(event.target.value)}
+                    readOnly
                     placeholder="Optional"
-                    disabled={isTableLockedByQr}
+                    disabled
                     className="h-8 text-xs"
                   />
                 </div>
-                {isTableLockedByQr && (
-                  <p className="col-span-2 text-[10px] text-slate-500">Table set from QR.</p>
-                )}
+                <p className="col-span-2 text-[10px] text-slate-500">Table set from QR.</p>
               </div>
             ) : (
               <div className="space-y-0.5">

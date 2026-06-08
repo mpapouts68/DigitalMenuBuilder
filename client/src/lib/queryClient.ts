@@ -3,8 +3,22 @@ import { auth } from "./auth";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const text = await res.text();
+    let message = text || res.statusText;
+
+    if (text) {
+      try {
+        const payload = JSON.parse(text) as { message?: unknown; error?: unknown };
+        const payloadMessage = payload.message ?? payload.error;
+        if (typeof payloadMessage === "string" && payloadMessage.trim()) {
+          message = payloadMessage;
+        }
+      } catch {
+        // Keep the raw response body for non-JSON errors.
+      }
+    }
+
+    throw new Error(`${res.status}: ${message}`);
   }
 }
 
