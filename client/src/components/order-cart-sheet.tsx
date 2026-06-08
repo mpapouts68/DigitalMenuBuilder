@@ -352,7 +352,8 @@ export function OrderCartSheet({
                 <Input
                   id="pickup-point"
                   value={pickupPoint}
-                  onChange={(event) => setPickupPoint(event.target.value)}
+                  readOnly
+                  disabled
                   placeholder="bar"
                   className="h-8 text-xs"
                 />
