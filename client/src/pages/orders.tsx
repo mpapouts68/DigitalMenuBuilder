@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, BellOff, Volume2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import { auth } from "@/lib/auth";
+import { useNewOrderAlarm } from "@/hooks/use-new-order-alarm";
+import {
+  playOrderAlarm,
+  readOrderAlarmEnabled,
+  unlockOrderAlarmAudio,
+  writeOrderAlarmEnabled,
+} from "@/lib/order-alarm";
 import type {
   BrandingSettingsResponse,
   StaffOrderDetails,
@@ -66,6 +74,7 @@ export default function OrdersPage() {
   const [loginError, setLoginError] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<StaffOrderPaymentFilter>("all");
   const [serviceFilter, setServiceFilter] = useState<StaffOrderServiceFilter>("all");
+  const [orderAlarmEnabled, setOrderAlarmEnabled] = useState(() => readOrderAlarmEnabled());
 
   const { data: user, refetch: refetchUser } = useQuery<AuthUser | null>({
     queryKey: ["/api/auth/user", ORDERS_QUERY_SCOPE],
@@ -103,6 +112,27 @@ export default function OrdersPage() {
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/admin/served-orders/details?limit=200");
       return response.json();
+    },
+  });
+
+  const {
+    unacknowledgedOrders,
+    unacknowledgedCount,
+    acknowledgeOrder,
+    acknowledgeAll,
+  } = useNewOrderAlarm(openOrders, { enabled: orderAlarmEnabled, active: !!user });
+
+  const clearServedOrdersMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/orders/clear-served");
+      return response.json() as Promise<{ deletedCount: number }>;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/served-orders/details", ORDERS_QUERY_SCOPE] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      if (result.deletedCount > 0) {
+        window.alert(`Removed ${result.deletedCount} served order(s).`);
+      }
     },
   });
 
@@ -164,6 +194,7 @@ export default function OrdersPage() {
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoginError("");
+    unlockOrderAlarmAudio();
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -181,6 +212,18 @@ export default function OrdersPage() {
     } catch {
       setLoginError("Login failed due to network error.");
     }
+  };
+
+  const toggleOrderAlarm = () => {
+    unlockOrderAlarmAudio();
+    const next = !orderAlarmEnabled;
+    setOrderAlarmEnabled(next);
+    writeOrderAlarmEnabled(next);
+  };
+
+  const testOrderAlarm = () => {
+    unlockOrderAlarmAudio();
+    void playOrderAlarm();
   };
 
   const handleLogout = () => {
@@ -384,6 +427,19 @@ export default function OrdersPage() {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2 shrink-0">
+              <Button
+                variant={orderAlarmEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={toggleOrderAlarm}
+                title={orderAlarmEnabled ? "Order alarm on" : "Order alarm off"}
+              >
+                {orderAlarmEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                <span className="ml-1.5 hidden sm:inline">{orderAlarmEnabled ? "Alarm on" : "Alarm off"}</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={testOrderAlarm} title="Test order alarm">
+                <Volume2 className="h-4 w-4" />
+                <span className="ml-1.5 hidden sm:inline">Test</span>
+              </Button>
               {user.role === "admin" && (
                 <>
                   <Button variant="outline" size="sm" onClick={() => setLocation("/admin")}>
@@ -400,6 +456,53 @@ export default function OrdersPage() {
             </div>
           </CardHeader>
         </Card>
+
+        {unacknowledgedCount > 0 && (
+          <Alert className="sticky top-2 z-50 border-amber-500 bg-amber-50 shadow-md">
+            <AlertDescription className="space-y-3">
+              <p className="font-semibold text-amber-950">
+                {unacknowledgedCount === 1
+                  ? "New order received"
+                  : `${unacknowledgedCount} new orders received`}
+                {orderAlarmEnabled ? " — alarm will repeat until you confirm." : "."}
+              </p>
+              <ul className="space-y-2 text-sm text-amber-900">
+                {unacknowledgedOrders.map((entry) => (
+                  <li
+                    key={entry.order.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-200 bg-white/80 px-3 py-2"
+                  >
+                    <span>
+                      <strong>{entry.order.orderNumber}</strong>
+                      {" · "}
+                      {serviceSummary(entry)}
+                      {" · "}
+                      €{Number(entry.order.total).toFixed(2)}
+                      {entry.order.paymentProvider === "cash_counter" &&
+                      entry.order.paymentStatus === "pending"
+                        ? " · unpaid cash"
+                        : ""}
+                    </span>
+                    {unacknowledgedCount > 1 && (
+                      <Button size="sm" variant="outline" onClick={() => acknowledgeOrder(entry.order.id)}>
+                        Seen
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <Button className="w-full sm:w-auto" onClick={acknowledgeAll}>
+                {unacknowledgedCount === 1 ? "I've seen this order" : "I've seen all orders"}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {orderAlarmEnabled && unacknowledgedCount === 0 && (
+          <p className="text-xs text-slate-500 text-center">
+            PC alarm repeats for new orders until you confirm. Keep this tab open and use Test once so the browser allows sound.
+          </p>
+        )}
 
         {unpaidCashCount > 0 && (
           <Alert className="border-red-300 bg-red-50">
@@ -469,6 +572,27 @@ export default function OrdersPage() {
               </TabsContent>
 
               <TabsContent value="served" className="space-y-3">
+                <div className="flex items-center justify-between gap-2 pb-1">
+                  <p className="text-xs text-slate-500">
+                    {servedOrders.length} served order{servedOrders.length === 1 ? "" : "s"} in history
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={servedOrders.length === 0 || clearServedOrdersMutation.isPending}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Remove all ${servedOrders.length} served order(s) from the list? This cannot be undone.`,
+                        )
+                      ) {
+                        clearServedOrdersMutation.mutate();
+                      }
+                    }}
+                  >
+                    {clearServedOrdersMutation.isPending ? "Clearing…" : "Clear served"}
+                  </Button>
+                </div>
                 {filteredServedOrders.length === 0 && (
                   <p className="text-sm text-slate-500 py-6 text-center">No served orders match the current filters.</p>
                 )}

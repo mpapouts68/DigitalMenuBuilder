@@ -17,6 +17,7 @@ import type {
   DailyRevenueStats,
   PendingPrintJob,
   PaymentSettingsResponse,
+  CustomerPaymentMode,
   PrinterTestPayloadResponse,
   PrinterSettingsResponse,
   QrGroup,
@@ -43,6 +44,24 @@ function todayIsoDate() {
 
 function normalizeTableCode(raw: string): string {
   return raw.trim().toUpperCase();
+}
+
+function customerPaymentModeFromSettings(cardEnabled: number, cashEnabled: number): CustomerPaymentMode {
+  if (cardEnabled && cashEnabled) return "both";
+  if (cardEnabled) return "card_only";
+  return "cash_only";
+}
+
+function customerPaymentModeToSettings(mode: CustomerPaymentMode): { cardEnabled: number; cashEnabled: number } {
+  if (mode === "card_only") return { cardEnabled: 1, cashEnabled: 0 };
+  if (mode === "cash_only") return { cardEnabled: 0, cashEnabled: 1 };
+  return { cardEnabled: 1, cashEnabled: 1 };
+}
+
+function customerPaymentModeLabel(mode: CustomerPaymentMode): string {
+  if (mode === "card_only") return "Card only (cash disabled for customers).";
+  if (mode === "cash_only") return "Cash only (card disabled for customers).";
+  return "Cash and card are available.";
 }
 
 export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModalProps) {
@@ -96,6 +115,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
   );
   const [paymentSettingsDraft, setPaymentSettingsDraft] = useState({
     cardEnabled: 1,
+    cashEnabled: 1,
   });
   const tableCodes = Array.from({ length: Math.max(0, tableEnd - tableStart + 1) }).map((_, idx) =>
     `${tablePrefix}${tableStart + idx}`.trim(),
@@ -477,6 +497,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
     if (!paymentSettings) return;
     setPaymentSettingsDraft({
       cardEnabled: paymentSettings.cardEnabled ?? 1,
+      cashEnabled: paymentSettings.cashEnabled ?? 1,
     });
   }, [paymentSettings]);
 
@@ -768,16 +789,19 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
     mutationFn: async () => {
       const response = await apiRequest("PUT", "/api/admin/payment-settings", {
         cardEnabled: paymentSettingsDraft.cardEnabled ? 1 : 0,
+        cashEnabled: paymentSettingsDraft.cashEnabled ? 1 : 0,
       });
       return response.json() as Promise<PaymentSettingsResponse>;
     },
     onSuccess: (saved) => {
-      setPaymentSettingsDraft({ cardEnabled: saved.cardEnabled });
+      setPaymentSettingsDraft({
+        cardEnabled: saved.cardEnabled,
+        cashEnabled: saved.cashEnabled ?? 1,
+      });
+      const mode = customerPaymentModeFromSettings(saved.cardEnabled, saved.cashEnabled ?? 1);
       toast({
         title: "Payment settings updated",
-        description: saved.cardEnabled
-          ? "Card + cash are available."
-          : "Card disabled. Cash is now the only method.",
+        description: customerPaymentModeLabel(mode),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/payment-settings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/payments/provider"] });
@@ -1081,21 +1105,23 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
               </p>
             </div>
             <div className="rounded-lg border p-3 space-y-3">
-              <h3 className="font-semibold">Payment methods</h3>
+              <h3 className="font-semibold">Payment methods (customer checkout)</h3>
               <div className="space-y-1">
-                <Label>Card payment</Label>
+                <Label>Available methods</Label>
                 <select
                   className="h-10 rounded-md border px-3 text-sm w-full"
-                  value={paymentSettingsDraft.cardEnabled ? "1" : "0"}
-                  onChange={(event) =>
-                    setPaymentSettingsDraft((prev) => ({
-                      ...prev,
-                      cardEnabled: Number(event.target.value) ? 1 : 0,
-                    }))
-                  }
+                  value={customerPaymentModeFromSettings(
+                    paymentSettingsDraft.cardEnabled,
+                    paymentSettingsDraft.cashEnabled,
+                  )}
+                  onChange={(event) => {
+                    const next = customerPaymentModeToSettings(event.target.value as CustomerPaymentMode);
+                    setPaymentSettingsDraft(next);
+                  }}
                 >
-                  <option value="1">Enabled (cash + card)</option>
-                  <option value="0">Disabled (cash only)</option>
+                  <option value="both">Cash + card</option>
+                  <option value="card_only">Card only</option>
+                  <option value="cash_only">Cash only</option>
                 </select>
               </div>
               <Button
@@ -1105,7 +1131,8 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
                 {savePaymentSettingsMutation.isPending ? "Saving..." : "Save payment settings"}
               </Button>
               <p className="text-xs text-slate-500">
-                Disable card if bank gateway/provider is unavailable; customers will only be able to place cash orders.
+                Use <strong>Card only</strong> when you want customers to pay online only. Use{" "}
+                <strong>Cash only</strong> if the card gateway is unavailable.
               </p>
             </div>
 

@@ -177,6 +177,7 @@ export const printerSettings = sqliteTable("printer_settings", {
 export const paymentSettings = sqliteTable("payment_settings", {
   id: integer("id").primaryKey(),
   cardEnabled: integer("card_enabled").notNull().default(1),
+  cashEnabled: integer("cash_enabled").notNull().default(1),
   updatedAt: integer("updated_at").notNull().default(Date.now()),
 });
 
@@ -359,8 +360,18 @@ export const insertPrinterSettingsSchema = createInsertSchema(printerSettings).p
 
 export const insertPaymentSettingsSchema = createInsertSchema(paymentSettings).pick({
   cardEnabled: true,
+  cashEnabled: true,
 }).extend({
   cardEnabled: z.number().min(0).max(1),
+  cashEnabled: z.number().min(0).max(1),
+}).superRefine((value, ctx) => {
+  if (value.cardEnabled === 0 && value.cashEnabled === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one payment method must be enabled",
+      path: ["cardEnabled"],
+    });
+  }
 });
 
 export type InsertCategory = z.infer<typeof insertCategorySchema>;

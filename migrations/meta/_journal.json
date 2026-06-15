@@ -246,6 +246,13 @@
       "when": 1778540000000,
       "tag": "0034_pending_checkouts",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1778550000000,
+      "tag": "0035_payment_settings_cash_enabled",
+      "breakpoints": true
     }
   ]
 }

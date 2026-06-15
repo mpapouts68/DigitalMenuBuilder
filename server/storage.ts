@@ -93,6 +93,7 @@ export interface IStorage {
   getOrderDetails(orderId: number): Promise<OrderDetails | undefined>;
   getOpenOrderDetails(): Promise<OrderDetails[]>;
   getServedOrderDetails(limit?: number): Promise<OrderDetails[]>;
+  clearServedOrders(): Promise<{ deletedCount: number }>;
   markOrderPaid(orderId: number): Promise<Order | undefined>;
   updateOrderStatus(orderId: number, status: string): Promise<Order | undefined>;
   markOrderServed(orderId: number): Promise<Order | undefined>;
@@ -832,6 +833,31 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
+  private async deleteOrdersByIds(orderIds: number[]): Promise<void> {
+    if (orderIds.length === 0) {
+      return;
+    }
+    const oldOrderItems = await db
+      .select({ id: orderItems.id })
+      .from(orderItems)
+      .where(inArray(orderItems.orderId, orderIds));
+    const orderItemIds = oldOrderItems.map((item) => item.id);
+
+    if (orderItemIds.length > 0) {
+      await db.delete(orderItemModifiers).where(inArray(orderItemModifiers.orderItemId, orderItemIds));
+    }
+    await db.delete(orderItems).where(inArray(orderItems.orderId, orderIds));
+    await db.delete(printJobs).where(inArray(printJobs.orderId, orderIds));
+    await db.delete(orders).where(inArray(orders.id, orderIds));
+  }
+
+  async clearServedOrders(): Promise<{ deletedCount: number }> {
+    const served = await db.select({ id: orders.id }).from(orders).where(eq(orders.status, "served"));
+    const orderIds = served.map((order) => order.id);
+    await this.deleteOrdersByIds(orderIds);
+    return { deletedCount: orderIds.length };
+  }
+
   async markOrderServed(orderId: number): Promise<Order | undefined> {
     return this.updateOrderStatus(orderId, "served");
   }
@@ -1075,20 +1101,7 @@ export class DatabaseStorage implements IStorage {
         .where(lt(orders.createdAt, purgeBeforeTs));
 
       const orderIds = oldOrders.map((order) => order.id);
-      if (orderIds.length > 0) {
-        const oldOrderItems = await db
-          .select({ id: orderItems.id })
-          .from(orderItems)
-          .where(inArray(orderItems.orderId, orderIds));
-        const orderItemIds = oldOrderItems.map((item) => item.id);
-
-        if (orderItemIds.length > 0) {
-          await db.delete(orderItemModifiers).where(inArray(orderItemModifiers.orderItemId, orderItemIds));
-        }
-        await db.delete(orderItems).where(inArray(orderItems.orderId, orderIds));
-        await db.delete(printJobs).where(inArray(printJobs.orderId, orderIds));
-        await db.delete(orders).where(inArray(orders.id, orderIds));
-      }
+      await this.deleteOrdersByIds(orderIds);
     }
 
     return closure;
@@ -1320,12 +1333,14 @@ export class DatabaseStorage implements IStorage {
       .values({
         id: 1,
         cardEnabled: settings.cardEnabled ?? 1,
+        cashEnabled: settings.cashEnabled ?? 1,
         updatedAt: Date.now(),
       })
       .onConflictDoUpdate({
         target: paymentSettings.id,
         set: {
           cardEnabled: settings.cardEnabled ?? 1,
+          cashEnabled: settings.cashEnabled ?? 1,
           updatedAt: Date.now(),
         },
       })

@@ -282,8 +282,11 @@ export interface PrinterSettingsResponse {
 export interface PaymentSettingsResponse {
   id: number;
   cardEnabled: number;
+  cashEnabled: number;
   updatedAt: number;
 }
+
+export type CustomerPaymentMode = "both" | "card_only" | "cash_only";
 
 export interface PrinterDispatchResponse {
   status: "idle" | "printed" | "error";

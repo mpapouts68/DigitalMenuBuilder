@@ -17,6 +17,14 @@ function resolveMigrationsFolder(): string {
   return path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
 }
 
+function ensurePaymentSettingsCashEnabled(database: Database.Database) {
+  const columns = database.prepare("PRAGMA table_info(payment_settings)").all() as Array<{ name: string }>;
+  const hasCashEnabled = columns.some((column) => column.name === "cash_enabled");
+  if (!hasCashEnabled) {
+    database.exec(`ALTER TABLE payment_settings ADD COLUMN cash_enabled integer NOT NULL DEFAULT 1;`);
+  }
+}
+
 /** Safety net if a SQL file was deployed before it was added to the Drizzle journal. */
 function ensurePendingCheckoutsTable(database: Database.Database) {
   database.exec(`
@@ -55,6 +63,7 @@ export async function initializeDatabase() {
     const migrationsFolder = resolveMigrationsFolder();
     migrate(db, { migrationsFolder });
     ensurePendingCheckoutsTable(sqlite);
+    ensurePaymentSettingsCashEnabled(sqlite);
 
     console.log('SQLite database initialized successfully');
     console.log(`Database file: ${dbPath}`);

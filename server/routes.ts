@@ -37,6 +37,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return Number(settings?.cardEnabled ?? 1) === 1;
   };
 
+  const isCashPaymentEnabled = async () => {
+    const settings = await storage.getPaymentSettings();
+    return Number(settings?.cashEnabled ?? 1) === 1;
+  };
+
   const resolveDefaultBeepMode = (normalizedProfile: string): "off" | "bel" | "esc_b" | "esc_p" | "both" | "both_plus_p" => {
     if (
       normalizedProfile === "samsung_srp" ||
@@ -828,6 +833,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Card orders are created after Viva payment via /api/payments/viva/finalize.",
         });
       }
+      if (!(await isCashPaymentEnabled())) {
+        return res.status(403).json({ message: "Cash payment is currently disabled by admin." });
+      }
       const order = await storage.createOrder(orderInput);
       triggerEmbeddedPrinterTick();
       res.status(201).json(order);
@@ -842,11 +850,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/payments/provider", async (_req, res) => {
     const cardEnabled = await isCardPaymentEnabled();
+    const cashEnabled = await isCashPaymentEnabled();
     res.json({
       provider: "viva" as const,
       configured: hasVivaCredentials(),
       mode: "redirect" as const,
       cardEnabled,
+      cashEnabled,
     });
   });
 
@@ -885,6 +895,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(servedOrders);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch served order details" });
+    }
+  });
+
+  app.post("/api/admin/orders/clear-served", isAuthenticated, isPrinterOrAdmin, async (_req, res) => {
+    try {
+      const result = await storage.clearServedOrders();
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to clear served orders" });
     }
   });
 
@@ -1175,7 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/payment-settings", isAuthenticated, isAdmin, async (_req, res) => {
     try {
       const settings = await storage.getPaymentSettings();
-      return res.json(settings ?? { id: 1, cardEnabled: 1, updatedAt: Date.now() });
+      return res.json(settings ?? { id: 1, cardEnabled: 1, cashEnabled: 1, updatedAt: Date.now() });
     } catch (error) {
       return res.status(500).json({ message: "Failed to fetch payment settings" });
     }
