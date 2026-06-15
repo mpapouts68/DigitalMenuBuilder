@@ -42,8 +42,9 @@ export default function Login() {
         if (data.token) {
           auth.setToken(data.token);
         }
-        
-        window.location.href = "/";
+
+        const role = data.user?.role as string | undefined;
+        window.location.href = role === "printer" ? "/orders" : "/admin";
       } else {
         const data = await response.json();
         setError(data.message || "Login failed");
@@ -104,7 +105,7 @@ export default function Login() {
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-gray-500">
-            <p>Admin login. Printer terminal uses the dedicated `/printer` route.</p>
+            <p>Admin: use your admin credentials. Printer staff: sign in to manage orders at `/orders`.</p>
           </div>
         </CardContent>
       </Card>

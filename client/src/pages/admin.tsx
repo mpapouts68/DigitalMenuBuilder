@@ -144,9 +144,12 @@ export default function AdminPage() {
               <Button onClick={() => setLocation("/menu?admin=1")} variant="default">
                 Manage menu (edit/import/export)
               </Button>
-              <Button onClick={() => setLocation("/printer")} className="gap-2">
-                Printing / Orders Page
+              <Button onClick={() => setLocation("/orders")} className="gap-2">
+                Orders
                 <Badge variant={pendingJobs.length > 0 ? "destructive" : "secondary"}>{pendingJobs.length}</Badge>
+              </Button>
+              <Button variant="outline" onClick={() => setLocation("/printer")}>
+                Print monitor
               </Button>
               <Button variant="outline" onClick={() => setSettingsOpen(true)}>
                 Company settings
@@ -159,7 +162,7 @@ export default function AdminPage() {
             {pendingJobs.length > 0 ? (
               <Alert className="border-amber-300 bg-amber-50 animate-pulse">
                 <AlertDescription>
-                  {pendingJobs.length} pending print job(s). Open Printing / Orders page now.
+                  {pendingJobs.length} pending print job(s). Check Print monitor or confirm the tray app is running.
                 </AlertDescription>
               </Alert>
             ) : (

@@ -8,6 +8,7 @@ import Menu from "@/pages/menu";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import PrinterPage from "@/pages/printer";
+import OrdersPage from "@/pages/orders";
 import AdminPage from "@/pages/admin";
 import PaymentSuccessPage from "@/pages/payment-success";
 import PaymentFailedPage from "@/pages/payment-failed";
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/" component={Menu} />
       <Route path="/menu" component={Menu} />
       <Route path="/login" component={Login} />
+      <Route path="/orders" component={OrdersPage} />
       <Route path="/printer" component={PrinterPage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/payment/success" component={PaymentSuccessPage} />

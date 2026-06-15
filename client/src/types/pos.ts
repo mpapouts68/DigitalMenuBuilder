@@ -176,6 +176,39 @@ export interface AdminOrder {
   createdAt: number;
 }
 
+export interface StaffOrderItem {
+  id: number;
+  productName: string;
+  quantity: number;
+  lineTotal: number;
+  notes?: string | null;
+  modifiers?: Array<{ modifierName?: string; priceDelta?: number }>;
+}
+
+export interface StaffOrderDetails {
+  order: {
+    id: number;
+    orderNumber: string;
+    status: string;
+    printStatus: string;
+    paymentStatus?: string | null;
+    paymentProvider?: string | null;
+    serviceMode?: string | null;
+    tableCode?: string | null;
+    tableLabel?: string | null;
+    pickupPoint?: string | null;
+    customerName?: string | null;
+    customerPhone?: string | null;
+    total: number;
+    notes?: string | null;
+    createdAt?: number;
+  };
+  items: StaffOrderItem[];
+}
+
+export type StaffOrderPaymentFilter = "all" | "cash" | "card" | "unpaid_cash";
+export type StaffOrderServiceFilter = "all" | "table" | "pickup";
+
 export interface PendingPrintJob {
   id: number;
   orderId: number;
