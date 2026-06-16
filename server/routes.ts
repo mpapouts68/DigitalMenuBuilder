@@ -451,29 +451,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const modifierOptionSchema = z.object({
     name: z.string().min(1),
-    priceDelta: z.number().default(0),
-    sortOrder: z.number().int().optional(),
-    isActive: z.number().int().min(0).max(1).optional(),
-    isDefault: z.number().int().min(0).max(1).optional(),
+    priceDelta: z.coerce.number().default(0),
+    sortOrder: z.coerce.number().int().optional(),
+    isActive: z.coerce.number().int().min(0).max(1).optional(),
+    isDefault: z.coerce.number().int().min(0).max(1).optional(),
     imageUrl: z.string().max(12_000_000).optional().nullable(),
   });
 
   const modifierGroupSchema = z.object({
     name: z.string().min(1),
-    isRequired: z.number().int().min(0).max(1).optional(),
-    sortOrder: z.number().int().optional(),
-    isActive: z.number().int().min(0).max(1).optional(),
+    isRequired: z.coerce.number().int().min(0).max(1).optional(),
+    sortOrder: z.coerce.number().int().optional(),
+    isActive: z.coerce.number().int().min(0).max(1).optional(),
     options: z.array(modifierOptionSchema),
   });
 
   const modifierExtraSchema = z.object({
     name: z.string().min(1),
-    priceDelta: z.number().default(0),
-    sortOrder: z.number().int().optional(),
-    isActive: z.number().int().min(0).max(1).optional(),
+    priceDelta: z.coerce.number().default(0),
+    sortOrder: z.coerce.number().int().optional(),
+    isActive: z.coerce.number().int().min(0).max(1).optional(),
     imageUrl: z.string().max(12_000_000).optional().nullable(),
     groupName: z.string().max(120).optional().nullable(),
-    maxQuantity: z.number().int().min(1).max(99).optional(),
+    maxQuantity: z.coerce.number().int().min(1).max(99).optional(),
   });
 
   const updateModifiersSchema = z.object({
@@ -756,10 +756,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid modifier payload", errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Failed to update modifiers" });
+        return res.status(400).json({ message: "Invalid modifier payload", errors: error.errors });
       }
+      const message = error instanceof Error ? error.message : "Failed to update modifiers";
+      console.error("Failed to update product modifiers:", message);
+      return res.status(500).json({ message });
     }
   });
 

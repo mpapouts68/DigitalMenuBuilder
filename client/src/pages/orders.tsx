@@ -43,6 +43,17 @@ function paymentLabel(entry: StaffOrderDetails): string {
   return entry.order.paymentProvider || "—";
 }
 
+function isOrderPaid(entry: StaffOrderDetails): boolean {
+  const status = entry.order.paymentStatus;
+  return status === "succeeded" || status === "not_required";
+}
+
+function paymentStatusBadgeLabel(entry: StaffOrderDetails): string {
+  if (isOrderPaid(entry)) return "Paid";
+  if (entry.order.paymentStatus === "pending") return "Unpaid";
+  return entry.order.paymentStatus || "—";
+}
+
 function matchesPaymentFilter(entry: StaffOrderDetails, filter: StaffOrderPaymentFilter): boolean {
   if (filter === "all") return true;
   if (filter === "cash") return entry.order.paymentProvider === "cash_counter";
@@ -234,8 +245,7 @@ export default function OrdersPage() {
   const renderOrderCard = (entry: StaffOrderDetails, showWorkflowActions: boolean) => {
     const isUnpaidCash =
       entry.order.paymentProvider === "cash_counter" && entry.order.paymentStatus === "pending";
-    const isPaid =
-      entry.order.paymentStatus === "succeeded" || entry.order.paymentStatus === "not_required";
+    const paid = isOrderPaid(entry);
 
     return (
       <div key={entry.order.id} className="border rounded-lg p-3 bg-white shadow-sm">
@@ -263,15 +273,10 @@ export default function OrdersPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">{paymentLabel(entry)}</Badge>
             <Badge
-              variant={
-                entry.order.paymentStatus === "succeeded"
-                  ? "default"
-                  : entry.order.paymentStatus === "pending"
-                    ? "secondary"
-                    : "outline"
-              }
+              variant={paid ? "default" : entry.order.paymentStatus === "pending" ? "secondary" : "outline"}
+              className={paid ? "bg-emerald-600 hover:bg-emerald-600" : undefined}
             >
-              {entry.order.paymentStatus || "not_required"}
+              {paymentStatusBadgeLabel(entry)}
             </Badge>
             <Badge variant={entry.order.printStatus === "printed" ? "default" : "secondary"}>
               print: {entry.order.printStatus}
@@ -283,59 +288,56 @@ export default function OrdersPage() {
             >
               {entry.order.status}
             </Badge>
-            {isUnpaidCash && <Badge variant="destructive">Awaiting cash</Badge>}
+            {isUnpaidCash && <Badge variant="destructive">PAYMENT ALERT</Badge>}
+            {showWorkflowActions && isUnpaidCash && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  if (window.confirm(`Confirm cash payment received for ${entry.order.orderNumber}?`)) {
+                    markOrderPaidMutation.mutate(entry.order.id);
+                  }
+                }}
+                disabled={markOrderPaidMutation.isPending}
+              >
+                Paid
+              </Button>
+            )}
           </div>
 
-          {showWorkflowActions && (
+          {showWorkflowActions && paid && (
             <div className="flex flex-wrap gap-2 pt-1">
-              {isUnpaidCash ? (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    if (window.confirm(`Confirm cash payment received for ${entry.order.orderNumber}?`)) {
-                      markOrderPaidMutation.mutate(entry.order.id);
-                    }
-                  }}
-                  disabled={markOrderPaidMutation.isPending}
-                >
-                  Mark paid
-                </Button>
-              ) : isPaid ? (
-                <>
-                  <Button
-                    size="sm"
-                    variant={entry.order.status === "preparing" ? "default" : "outline"}
-                    onClick={() =>
-                      updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "preparing" })
-                    }
-                    disabled={updateOrderStatusMutation.isPending}
-                  >
-                    Preparing
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={entry.order.status === "ready" ? "default" : "outline"}
-                    onClick={() =>
-                      updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "ready" })
-                    }
-                    disabled={updateOrderStatusMutation.isPending}
-                  >
-                    Ready
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      if (window.confirm(`Mark order ${entry.order.orderNumber} as served?`)) {
-                        updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "served" });
-                      }
-                    }}
-                    disabled={updateOrderStatusMutation.isPending}
-                  >
-                    Served
-                  </Button>
-                </>
-              ) : null}
+              <Button
+                size="sm"
+                variant={entry.order.status === "preparing" ? "default" : "outline"}
+                onClick={() =>
+                  updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "preparing" })
+                }
+                disabled={updateOrderStatusMutation.isPending}
+              >
+                Preparing
+              </Button>
+              <Button
+                size="sm"
+                variant={entry.order.status === "ready" ? "default" : "outline"}
+                onClick={() =>
+                  updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "ready" })
+                }
+                disabled={updateOrderStatusMutation.isPending}
+              >
+                Ready
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (window.confirm(`Mark order ${entry.order.orderNumber} as served?`)) {
+                    updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "served" });
+                  }
+                }}
+                disabled={updateOrderStatusMutation.isPending}
+              >
+                Served
+              </Button>
             </div>
           )}
         </div>

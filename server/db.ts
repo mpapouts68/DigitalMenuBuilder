@@ -71,6 +71,7 @@ export async function initializeDatabase() {
     
     // Enable WAL mode for better performance
     sqlite.pragma('journal_mode = WAL');
+    sqlite.pragma('busy_timeout = 10000');
     
     // Initialize Drizzle
     db = drizzle(sqlite, { schema });
@@ -95,6 +96,7 @@ export async function initializeDatabase() {
 const dbPath = resolveDatabasePath();
 sqlite = new Database(dbPath);
 sqlite.pragma('journal_mode = WAL');
+sqlite.pragma('busy_timeout = 10000');
 db = drizzle(sqlite, { schema });
 
 // Export for backward compatibility

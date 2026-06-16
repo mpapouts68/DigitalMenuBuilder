@@ -53,6 +53,7 @@ export async function apiRequest(
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
+    signal: data ? AbortSignal.timeout(120_000) : undefined,
   });
 
   await throwIfResNotOk(res);

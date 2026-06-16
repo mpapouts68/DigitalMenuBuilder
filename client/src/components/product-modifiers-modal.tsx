@@ -22,6 +22,17 @@ interface ProductModifiersModalProps {
 const emptyFlavourGroups = () => [{ clientKey: nanoid(), name: "", extras: [] }];
 const emptyAddonGroups = () => [{ clientKey: nanoid(), name: "", extras: [] }];
 
+function asFlag(value: unknown, fallback = 1): number {
+  if (value === true || value === 1 || value === "1") return 1;
+  if (value === false || value === 0 || value === "0") return 0;
+  return fallback;
+}
+
+function asNumber(value: unknown, fallback = 0): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 export function ProductModifiersModal({ open, onOpenChange, product }: ProductModifiersModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -79,34 +90,57 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
       const cleanedOptionGroups = payload.optionGroups
         .map((group) => ({
           ...group,
+          isRequired: asFlag(group.isRequired, 0),
+          isActive: asFlag(group.isActive, 1),
           options: group.options.filter((option) => option.name.trim().length > 0),
         }))
         .map((group) => {
-          const explicitDefaultIndex = group.options.findIndex((option) => option.isDefault);
+          const explicitDefaultIndex = group.options.findIndex((option) => asFlag(option.isDefault, 0) === 1);
           return {
-            ...group,
-            options: group.options.map((option, index) => ({
-              ...option,
-              imageUrl: option.imageUrl?.trim() || undefined,
-              isDefault:
-                explicitDefaultIndex >= 0 ? (index === explicitDefaultIndex ? 1 : 0) : index === 0 ? 1 : 0,
-            })),
+            name: group.name.trim(),
+            isRequired: group.isRequired,
+            isActive: group.isActive,
+            sortOrder: group.sortOrder,
+            options: group.options.map((option, index) => {
+              const imageUrl = option.imageUrl?.trim();
+              return {
+                name: option.name.trim(),
+                priceDelta: asNumber(option.priceDelta, 0),
+                sortOrder: option.sortOrder,
+                isActive: asFlag(option.isActive, 1),
+                isDefault:
+                  explicitDefaultIndex >= 0 ? (index === explicitDefaultIndex ? 1 : 0) : index === 0 ? 1 : 0,
+                imageUrl: imageUrl || undefined,
+              };
+            }),
           };
         })
-        .filter((group) => group.name.trim().length > 0);
+        .filter((group) => group.name.length > 0);
 
-      const flavourFlat = flattenExtraGroupsForApi(payload.flavourExtraGroups, 0);
-      const addonFlat = flattenExtraGroupsForApi(payload.addonExtraGroups, 500);
-      await apiRequest("PUT", `/api/products/${product!.id}/modifiers`, {
+      const flavourFlat = flattenExtraGroupsForApi(payload.flavourExtraGroups, 0).map((extra) => ({
+        ...extra,
+        priceDelta: asNumber(extra.priceDelta, 0),
+        isActive: asFlag(extra.isActive, 1),
+        maxQuantity: Math.max(1, Math.min(99, asNumber(extra.maxQuantity, 1))),
+      }));
+      const addonFlat = flattenExtraGroupsForApi(payload.addonExtraGroups, 500).map((extra) => ({
+        ...extra,
+        priceDelta: asNumber(extra.priceDelta, 0),
+        isActive: asFlag(extra.isActive, 1),
+        maxQuantity: Math.max(1, Math.min(99, asNumber(extra.maxQuantity, 1))),
+      }));
+
+      const response = await apiRequest("PUT", `/api/products/${product!.id}/modifiers`, {
         optionGroups: cleanedOptionGroups,
         extras: [...flavourFlat, ...addonFlat],
-        maxFlavourSelections: payload.maxFlavourSelections ?? 0,
-        maxAddonSelections: payload.maxAddonSelections ?? 0,
+        maxFlavourSelections: Math.max(0, Math.min(50, asNumber(payload.maxFlavourSelections, 0))),
+        maxAddonSelections: Math.max(0, Math.min(50, asNumber(payload.maxAddonSelections, 0))),
         flavourSectionTitle: payload.flavourSectionTitle ?? "",
         flavourSectionDescription: payload.flavourSectionDescription ?? "",
         addonSectionTitle: payload.addonSectionTitle ?? "",
         addonSectionDescription: payload.addonSectionDescription ?? "",
       });
+      await response.json();
     },
     onSuccess: () => {
       toast({
@@ -117,10 +151,11 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       onOpenChange(false);
     },
-    onError: () => {
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Could not save product modifiers.";
       toast({
         title: "Update failed",
-        description: "Could not save product modifiers.",
+        description: message,
         variant: "destructive",
       });
     },
