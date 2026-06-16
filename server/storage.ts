@@ -52,15 +52,15 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
 
   // Categories
-  getCategories(): Promise<Category[]>;
+  getCategories(activeOnly?: boolean): Promise<Category[]>;
   getCategory(id: number): Promise<Category | undefined>;
   createCategory(category: InsertCategory): Promise<Category>;
   updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category | undefined>;
   deleteCategory(id: number): Promise<boolean>;
 
   // Products
-  getProducts(): Promise<Product[]>;
-  getProductsByCategory(categoryId: number): Promise<Product[]>;
+  getProducts(activeOnly?: boolean): Promise<Product[]>;
+  getProductsByCategory(categoryId: number, activeOnly?: boolean): Promise<Product[]>;
   getProduct(id: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
@@ -80,7 +80,7 @@ export interface IStorage {
   deleteBanner(id: number): Promise<boolean>;
 
   // Product modifiers
-  getProductModifiers(productId: number): Promise<ProductModifierConfig>;
+  getProductModifiers(productId: number, activeOnly?: boolean): Promise<ProductModifierConfig>;
   replaceProductModifiers(
     productId: number,
     optionGroups: ModifierOptionGroupInput[],
@@ -143,6 +143,7 @@ export interface ModifierOptionGroupInput {
   name: string;
   isRequired?: number;
   sortOrder?: number;
+  isActive?: number;
   options: ModifierOptionInput[];
 }
 
@@ -257,7 +258,10 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getCategories(): Promise<Category[]> {
+  async getCategories(activeOnly = false): Promise<Category[]> {
+    if (activeOnly) {
+      return await db.select().from(categories).where(eq(categories.isActive, 1)).orderBy(categories.order);
+    }
     return await db.select().from(categories).orderBy(categories.order);
   }
 
@@ -318,11 +322,20 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  async getProducts(): Promise<Product[]> {
+  async getProducts(activeOnly = false): Promise<Product[]> {
+    if (activeOnly) {
+      return await db.select().from(products).where(eq(products.isActive, 1));
+    }
     return await db.select().from(products);
   }
 
-  async getProductsByCategory(categoryId: number): Promise<Product[]> {
+  async getProductsByCategory(categoryId: number, activeOnly = false): Promise<Product[]> {
+    if (activeOnly) {
+      return await db
+        .select()
+        .from(products)
+        .where(and(eq(products.categoryId, categoryId), eq(products.isActive, 1)));
+    }
     return await db.select().from(products).where(eq(products.categoryId, categoryId));
   }
 
@@ -411,7 +424,7 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  async getProductModifiers(productId: number): Promise<ProductModifierConfig> {
+  async getProductModifiers(productId: number, activeOnly = false): Promise<ProductModifierConfig> {
     const groups = await db
       .select()
       .from(productOptionGroups)
@@ -438,7 +451,22 @@ export class DatabaseStorage implements IStorage {
       options: options.filter((option) => option.groupId === group.id),
     }));
 
-    return { optionGroups: groupedOptions, extras };
+    return this.filterProductModifiers({ optionGroups: groupedOptions, extras }, activeOnly);
+  }
+
+  private filterProductModifiers(config: ProductModifierConfig, activeOnly: boolean): ProductModifierConfig {
+    if (!activeOnly) {
+      return config;
+    }
+    const optionGroups = config.optionGroups
+      .filter((group) => Number(group.isActive ?? 1) === 1)
+      .map((group) => ({
+        ...group,
+        options: group.options.filter((option) => Number(option.isActive ?? 1) === 1),
+      }))
+      .filter((group) => group.options.length > 0);
+    const extras = config.extras.filter((extra) => Number(extra.isActive ?? 1) === 1);
+    return { optionGroups, extras };
   }
 
   async replaceProductModifiers(
@@ -466,6 +494,7 @@ export class DatabaseStorage implements IStorage {
           name: group.name,
           isRequired: group.isRequired ?? 0,
           sortOrder: group.sortOrder ?? groupIndex,
+          isActive: group.isActive ?? 1,
         };
         const [newGroup] = await tx.insert(productOptionGroups).values(groupPayload).returning();
 
@@ -519,8 +548,9 @@ export class DatabaseStorage implements IStorage {
     catalog: ProductModifierConfig,
     selectedOptions: NonNullable<CreateOrderInput["items"][number]["selectedOptions"]>,
   ) {
+    const activeGroups = catalog.optionGroups.filter((group) => Number(group.isActive ?? 1) === 1);
     const groupsByName = new Map(
-      catalog.optionGroups.map((g) => [g.name.trim(), g] as const),
+      activeGroups.map((g) => [g.name.trim(), g] as const),
     );
     const pickedByGroup = new Map<string, (typeof selectedOptions)[number]>();
     for (const sel of selectedOptions) {
@@ -534,9 +564,10 @@ export class DatabaseStorage implements IStorage {
       pickedByGroup.set(key, sel);
     }
 
-    for (const group of catalog.optionGroups) {
+    for (const group of activeGroups) {
       const gname = group.name.trim();
-      if (Number(group.isRequired) === 1 && !pickedByGroup.has(gname)) {
+      const hasActiveOptions = group.options.some((option) => Number(option.isActive ?? 1) === 1);
+      if (Number(group.isRequired) === 1 && hasActiveOptions && !pickedByGroup.has(gname)) {
         throw new Error(`Required option group not selected: "${group.name}".`);
       }
     }
@@ -571,8 +602,9 @@ export class DatabaseStorage implements IStorage {
 
     if (extrasDef.length > 0) {
       for (const sel of selectedExtras) {
-        if (!extrasDef.some((e) => e.name === sel.name)) {
-          throw new Error(`Unknown extra "${sel.name}" for this product.`);
+        const row = extrasDef.find((e) => e.name === sel.name);
+        if (!row || Number(row.isActive ?? 1) !== 1) {
+          throw new Error(`Extra "${sel.name}" is not available for this product.`);
         }
       }
     }
@@ -660,6 +692,9 @@ export class DatabaseStorage implements IStorage {
         const selectedProduct = product[0];
         if (!selectedProduct) {
           throw new Error(`Product not found: ${orderItemInput.productId}`);
+        }
+        if (Number((selectedProduct as { isActive?: number }).isActive ?? 1) !== 1) {
+          throw new Error(`Product is not available: ${selectedProduct.name}`);
         }
 
         const selectedOptions = orderItemInput.selectedOptions ?? [];

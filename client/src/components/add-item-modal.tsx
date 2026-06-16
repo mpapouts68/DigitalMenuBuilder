@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ActiveToggle } from "@/components/active-toggle";
 import { Upload, X, ImageIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +57,7 @@ export function AddItemModal({
       maxAddonSelections: (editingItem as { maxAddonSelections?: number })?.maxAddonSelections ?? 0,
       preventRemoveFromCart: (editingItem as { preventRemoveFromCart?: number })?.preventRemoveFromCart ?? 0,
       disableQuantityControl: (editingItem as { disableQuantityControl?: number })?.disableQuantityControl ?? 0,
+      isActive: (editingItem as { isActive?: number })?.isActive ?? 1,
     },
   });
 
@@ -172,6 +174,7 @@ export function AddItemModal({
         maxAddonSelections: (editingItem as { maxAddonSelections?: number })?.maxAddonSelections ?? 0,
         preventRemoveFromCart: (editingItem as { preventRemoveFromCart?: number })?.preventRemoveFromCart ?? 0,
         disableQuantityControl: (editingItem as { disableQuantityControl?: number })?.disableQuantityControl ?? 0,
+        isActive: (editingItem as { isActive?: number })?.isActive ?? 1,
       };
       form.reset(values);
       setImagePreview(editingItem?.imageUrl || null);
@@ -237,6 +240,25 @@ export function AddItemModal({
                     />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="isActive"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+                    <div>
+                      <FormLabel className="text-sm font-medium">Menu visibility</FormLabel>
+                      <p className="text-xs text-slate-500">Inactive items are hidden from guests.</p>
+                    </div>
+                    <ActiveToggle
+                      checked={field.value === 1}
+                      onCheckedChange={(checked) => field.onChange(checked ? 1 : 0)}
+                    />
+                  </div>
                 </FormItem>
               )}
             />

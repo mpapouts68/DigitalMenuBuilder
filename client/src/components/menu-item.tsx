@@ -5,6 +5,8 @@ import { Edit, Eye, ImageIcon, Minus, Plus, Settings2, Trash2 } from "lucide-rea
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { ActiveToggle } from "@/components/active-toggle";
+import { cn } from "@/lib/utils";
 import type { Product } from "@shared/schema";
 
 interface MenuItemProps {
@@ -32,6 +34,7 @@ export function MenuItem({
 }: MenuItemProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isInactive = Number((product as { isActive?: number }).isActive ?? 1) === 0;
   const hasDiscount =
     Number(product.isSpecialOffer ?? 0) === 1 &&
     Math.max(0, Math.min(100, Math.round(Number(product.specialOfferDiscountPercent ?? 0)))) > 0;
@@ -64,6 +67,22 @@ export function MenuItem({
     },
   });
 
+  const toggleActiveMutation = useMutation({
+    mutationFn: async (nextActive: boolean) => {
+      await apiRequest("PUT", `/api/products/${product.id}`, { isActive: nextActive ? 1 : 0 });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    },
+    onError: () => {
+      toast({
+        title: "Update failed",
+        description: "Could not update item visibility.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDeleteProduct = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm(`Are you sure you want to delete "${product.name}"? This cannot be undone.`)) {
@@ -73,7 +92,10 @@ export function MenuItem({
 
   return (
     <Card 
-      className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:transform hover:scale-[1.02] bg-white border-0 shadow-sm"
+      className={cn(
+        "cursor-pointer hover:shadow-lg transition-all duration-300 hover:transform hover:scale-[1.02] bg-white border-0 shadow-sm",
+        isAdminMode && isInactive && "opacity-60 ring-1 ring-dashed ring-slate-300",
+      )}
       onClick={onViewDetails}
     >
       <CardContent className="p-[21px]">
@@ -123,6 +145,11 @@ export function MenuItem({
               <h3 className="font-semibold text-slate-900 text-base leading-tight pr-1 min-w-0">
                 {product.name}
               </h3>
+              {isAdminMode && isInactive && (
+                <Badge variant="outline" className="text-[10px] uppercase tracking-wide shrink-0">
+                  Hidden
+                </Badge>
+              )}
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 {hasDiscount && (
                   <span className="text-[11px] text-slate-500 line-through tabular-nums">
@@ -143,7 +170,14 @@ export function MenuItem({
             </p>
             
             {isAdminMode ? (
-              <div className="flex gap-2 pt-2 border-t border-slate-100 flex-wrap">
+              <div className="flex gap-2 pt-2 border-t border-slate-100 flex-wrap items-center">
+                <ActiveToggle
+                  checked={!isInactive}
+                  disabled={toggleActiveMutation.isPending}
+                  compact
+                  onClick={(event) => event.stopPropagation()}
+                  onCheckedChange={(checked) => toggleActiveMutation.mutate(checked)}
+                />
                 <Button
                   onClick={handleDeleteProduct}
                   variant="destructive"

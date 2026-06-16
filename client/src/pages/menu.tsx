@@ -80,8 +80,18 @@ export default function Menu() {
     queryKey: ["/api/branding"],
   });
 
+  const catalogCategories = useMemo(() => {
+    if (isAdminMode) return categories;
+    return categories.filter((category) => Number((category as { isActive?: number }).isActive ?? 1) === 1);
+  }, [categories, isAdminMode]);
+
+  const catalogProducts = useMemo(() => {
+    if (isAdminMode) return products;
+    return products.filter((product) => Number((product as { isActive?: number }).isActive ?? 1) === 1);
+  }, [products, isAdminMode]);
+
   // Filter products based on search and category
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = catalogProducts.filter((product) => {
     const q = searchTerm.toLowerCase();
     const name = (product.name ?? "").toLowerCase();
     const desc = (product.description ?? "").toLowerCase();
@@ -91,7 +101,7 @@ export default function Menu() {
   });
 
   // Filter categories based on active selection and search
-  const filteredCategories = categories.filter(category => {
+  const filteredCategories = catalogCategories.filter(category => {
     if (activeCategory === "all") {
       // Show all categories that have matching products or in admin mode
       const categoryProducts = filteredProducts.filter(product => product.categoryId === category.id);
@@ -102,7 +112,7 @@ export default function Menu() {
   });
 
   // Group filtered products by category
-  const groupedProducts = categories.reduce((acc, category) => {
+  const groupedProducts = catalogCategories.reduce((acc, category) => {
     acc[category.id] = filteredProducts.filter(product => product.categoryId === category.id);
     return acc;
   }, {} as Record<number, Product[]>);

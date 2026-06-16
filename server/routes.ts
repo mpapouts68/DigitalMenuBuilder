@@ -22,6 +22,7 @@ import {
   logout,
   updateAdminPasscode,
   verifyAdminPasscode,
+  canViewInactiveCatalog,
 } from "./auth";
 import { z } from "zod";
 import { hasVivaCredentials } from "./viva/config";
@@ -461,6 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: z.string().min(1),
     isRequired: z.number().int().min(0).max(1).optional(),
     sortOrder: z.number().int().optional(),
+    isActive: z.number().int().min(0).max(1).optional(),
     options: z.array(modifierOptionSchema),
   });
 
@@ -596,7 +598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Categories (public read, protected write)
   app.get("/api/categories", async (req, res) => {
     try {
-      const categories = await storage.getCategories();
+      const categories = await storage.getCategories(!canViewInactiveCatalog(req));
       res.json(categories);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch categories" });
@@ -653,7 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products (public read, protected write)
   app.get("/api/products", async (req, res) => {
     try {
-      const products = await storage.getProducts();
+      const products = await storage.getProducts(!canViewInactiveCatalog(req));
       res.json(products);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch products" });
@@ -663,7 +665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/category/:categoryId", async (req, res) => {
     try {
       const categoryId = parseInt(req.params.categoryId);
-      const products = await storage.getProductsByCategory(categoryId);
+      const products = await storage.getProductsByCategory(categoryId, !canViewInactiveCatalog(req));
       res.json(products);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch products" });
@@ -674,8 +676,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/:productId/modifiers", async (req, res) => {
     try {
       const productId = parseInt(req.params.productId, 10);
-      const modifiers = await storage.getProductModifiers(productId);
+      const activeOnly = !canViewInactiveCatalog(req);
+      const modifiers = await storage.getProductModifiers(productId, activeOnly);
       const product = await storage.getProduct(productId);
+      if (activeOnly && product && Number((product as { isActive?: number }).isActive ?? 1) !== 1) {
+        return res.json({
+          optionGroups: [],
+          extras: [],
+          maxFlavourSelections: 0,
+          maxAddonSelections: 0,
+          flavourSectionTitle: null,
+          flavourSectionDescription: null,
+          addonSectionTitle: null,
+          addonSectionDescription: null,
+        });
+      }
       const maxFlavourSelections = product
         ? Math.max(0, Math.round(Number((product as any).maxFlavourSelections ?? 0)))
         : 0;

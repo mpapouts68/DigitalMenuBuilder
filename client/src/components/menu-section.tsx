@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MenuItem } from "@/components/menu-item";
+import { ActiveToggle } from "@/components/active-toggle";
 import { Edit, Trash2, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -56,8 +59,8 @@ export function MenuSection({
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: async (payload: { id: number; name: string }) => {
-      await apiRequest("PUT", `/api/categories/${payload.id}`, { name: payload.name.trim() });
+    mutationFn: async (payload: { id: number; name?: string; isActive?: number }) => {
+      await apiRequest("PUT", `/api/categories/${payload.id}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
@@ -89,12 +92,29 @@ export function MenuSection({
     updateCategoryMutation.mutate({ id: category.id, name: nextName });
   };
 
+  const isCategoryInactive = Number((category as { isActive?: number }).isActive ?? 1) === 0;
+
   return (
-    <section className="animate-fade-in">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-xl font-semibold text-slate-800">{category.name}</h2>
+    <section className={cn("animate-fade-in", isAdminMode && isCategoryInactive && "opacity-60")}>
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="text-xl font-semibold text-slate-800 truncate">{category.name}</h2>
+          {isAdminMode && isCategoryInactive && (
+            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+              Inactive
+            </Badge>
+          )}
+        </div>
         {isAdminMode && (
-          <div className="flex space-x-2">
+          <div className="flex items-center gap-2 shrink-0">
+            <ActiveToggle
+              checked={!isCategoryInactive}
+              disabled={updateCategoryMutation.isPending}
+              compact
+              onCheckedChange={(checked) =>
+                updateCategoryMutation.mutate({ id: category.id, isActive: checked ? 1 : 0 })
+              }
+            />
             <Button
               variant="ghost"
               size="icon"

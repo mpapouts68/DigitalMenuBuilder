@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ActiveToggle } from "@/components/active-toggle";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertCategorySchema } from "@shared/schema";
@@ -26,6 +27,7 @@ export function AddCategoryModal({ open, onOpenChange, existingCategories }: Add
     defaultValues: {
       name: "",
       order: existingCategories.length + 1,
+      isActive: 1,
     },
   });
 
@@ -42,7 +44,8 @@ export function AddCategoryModal({ open, onOpenChange, existingCategories }: Add
       onOpenChange(false);
       form.reset({
         name: "",
-        order: existingCategories.length + 2, // Update for next category
+        order: existingCategories.length + 2,
+        isActive: 1,
       });
     },
     onError: () => {
@@ -64,6 +67,7 @@ export function AddCategoryModal({ open, onOpenChange, existingCategories }: Add
       form.reset({
         name: "",
         order: existingCategories.length + 1,
+        isActive: 1,
       });
     }
   }, [open, existingCategories.length, form]);
@@ -105,6 +109,25 @@ export function AddCategoryModal({ open, onOpenChange, existingCategories }: Add
                     />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="isActive"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+                    <div>
+                      <FormLabel>Category visibility</FormLabel>
+                      <p className="text-xs text-slate-500">Inactive categories are hidden from guests.</p>
+                    </div>
+                    <ActiveToggle
+                      checked={field.value === 1}
+                      onCheckedChange={(checked) => field.onChange(checked ? 1 : 0)}
+                    />
+                  </div>
                 </FormItem>
               )}
             />

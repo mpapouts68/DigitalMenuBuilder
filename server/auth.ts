@@ -220,6 +220,26 @@ export const isPrinterOrAdmin = (req: Request, res: Response, next: NextFunction
   next();
 };
 
+type AuthUser = { username: string; role: UserRole };
+
+export function getOptionalAuthUser(req: Request): AuthUser | null {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return null;
+    }
+    const decoded = jwt.verify(authHeader.substring(7), JWT_SECRET) as { username: string; role?: UserRole };
+    const mappedRole = decoded.role || users.get(decoded.username)?.role || "admin";
+    return { username: decoded.username, role: mappedRole };
+  } catch {
+    return null;
+  }
+}
+
+export function canViewInactiveCatalog(req: Request): boolean {
+  return getOptionalAuthUser(req)?.role === "admin";
+}
+
 // Register endpoint (optional - for adding more users)
 export const register = async (req: Request, res: Response) => {
   try {

@@ -12,6 +12,7 @@ export const categories = sqliteTable("categories", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   order: integer("order").notNull(),
+  isActive: integer("is_active").notNull().default(1),
 });
 
 export const products = sqliteTable("products", {
@@ -37,6 +38,7 @@ export const products = sqliteTable("products", {
   preventRemoveFromCart: integer("prevent_remove_from_cart").notNull().default(0),
   /** 1 = quantity stays 1; no +/- in customizer */
   disableQuantityControl: integer("disable_quantity_control").notNull().default(0),
+  isActive: integer("is_active").notNull().default(1),
 });
 
 export const productOptionGroups = sqliteTable("product_option_groups", {
@@ -45,6 +47,7 @@ export const productOptionGroups = sqliteTable("product_option_groups", {
   name: text("name").notNull(),
   isRequired: integer("is_required").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
+  isActive: integer("is_active").notNull().default(1),
 });
 
 export const productOptions = sqliteTable("product_options", {
@@ -267,6 +270,8 @@ export const users = sqliteTable("users", {
 
 export const insertCategorySchema = createInsertSchema(categories).omit({
   id: true,
+}).extend({
+  isActive: z.number().min(0).max(1).default(1),
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({
@@ -285,6 +290,7 @@ export const insertProductSchema = createInsertSchema(products).omit({
   addonSectionDescription: z.string().max(240).optional().or(z.literal("")),
   preventRemoveFromCart: z.number().min(0).max(1).default(0),
   disableQuantityControl: z.number().min(0).max(1).default(0),
+  isActive: z.number().min(0).max(1).default(1),
 });
 
 export const insertBannerSchema = createInsertSchema(banners).omit({
@@ -298,6 +304,7 @@ export const insertProductOptionGroupSchema = createInsertSchema(productOptionGr
   id: true,
 }).extend({
   isRequired: z.number().min(0).max(1).default(0),
+  isActive: z.number().min(0).max(1).default(1),
 });
 
 export const insertProductOptionSchema = createInsertSchema(productOptions).omit({

@@ -17,6 +17,7 @@ export interface ModifierOptionGroup {
   name: string;
   isRequired: number;
   sortOrder: number;
+  isActive?: number;
   options: ModifierOption[];
 }
 
@@ -132,6 +133,7 @@ export interface EditableModifierGroup {
   name: string;
   isRequired?: number;
   sortOrder?: number;
+  isActive?: number;
   options: EditableModifierOption[];
 }
 

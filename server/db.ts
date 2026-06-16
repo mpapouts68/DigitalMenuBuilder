@@ -25,6 +25,21 @@ function ensurePaymentSettingsCashEnabled(database: Database.Database) {
   }
 }
 
+function ensureCatalogActiveColumns(database: Database.Database) {
+  const categoryColumns = database.prepare("PRAGMA table_info(categories)").all() as Array<{ name: string }>;
+  if (!categoryColumns.some((column) => column.name === "is_active")) {
+    database.exec(`ALTER TABLE categories ADD COLUMN is_active integer NOT NULL DEFAULT 1;`);
+  }
+  const productColumns = database.prepare("PRAGMA table_info(products)").all() as Array<{ name: string }>;
+  if (!productColumns.some((column) => column.name === "is_active")) {
+    database.exec(`ALTER TABLE products ADD COLUMN is_active integer NOT NULL DEFAULT 1;`);
+  }
+  const groupColumns = database.prepare("PRAGMA table_info(product_option_groups)").all() as Array<{ name: string }>;
+  if (!groupColumns.some((column) => column.name === "is_active")) {
+    database.exec(`ALTER TABLE product_option_groups ADD COLUMN is_active integer NOT NULL DEFAULT 1;`);
+  }
+}
+
 /** Safety net if a SQL file was deployed before it was added to the Drizzle journal. */
 function ensurePendingCheckoutsTable(database: Database.Database) {
   database.exec(`
@@ -64,6 +79,7 @@ export async function initializeDatabase() {
     migrate(db, { migrationsFolder });
     ensurePendingCheckoutsTable(sqlite);
     ensurePaymentSettingsCashEnabled(sqlite);
+    ensureCatalogActiveColumns(sqlite);
 
     console.log('SQLite database initialized successfully');
     console.log(`Database file: ${dbPath}`);

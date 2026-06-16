@@ -253,6 +253,27 @@
       "when": 1778550000000,
       "tag": "0035_payment_settings_cash_enabled",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1778560000000,
+      "tag": "0036_catalog_active_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "6",
+      "when": 1778561000000,
+      "tag": "0037_products_is_active",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1778562000000,
+      "tag": "0038_option_groups_is_active",
+      "breakpoints": true
     }
   ]
 }

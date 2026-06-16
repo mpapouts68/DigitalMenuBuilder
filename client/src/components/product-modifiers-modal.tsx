@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
 import type { EditableProductModifiers, ProductModifiersResponse } from "@/types/pos";
 import { ModifierChoiceImage } from "@/components/modifier-choice-image";
+import { ActiveToggle } from "@/components/active-toggle";
 import { extrasToEditableGroups, flattenExtraGroupsForApi } from "@/lib/extra-groups";
 import { nanoid } from "nanoid";
 
@@ -52,6 +53,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
         name: group.name,
         isRequired: group.isRequired,
         sortOrder: group.sortOrder,
+        isActive: group.isActive ?? 1,
         options: group.options.map((option) => ({
           name: option.name,
           priceDelta: option.priceDelta,
@@ -268,22 +270,20 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                     }
                   />
                 </div>
-                <select
-                  className="h-10 rounded-md border px-3 text-sm min-w-[100px]"
-                  value={extra.isActive ? "1" : "0"}
-                  onChange={(event) =>
+                <ActiveToggle
+                  id={`${sectionKey}-${groupIndex}-${extraIndex}-active`}
+                  checked={Number(extra.isActive ?? 1) === 1}
+                  onCheckedChange={(checked) =>
                     setDraft((prev) => {
                       const groups = [...prev[sectionKey]];
                       const ex = [...groups[groupIndex].extras];
-                      ex[extraIndex] = { ...ex[extraIndex], isActive: Number(event.target.value) };
+                      ex[extraIndex] = { ...ex[extraIndex], isActive: checked ? 1 : 0 };
                       groups[groupIndex] = { ...groups[groupIndex], extras: ex };
                       return { ...prev, [sectionKey]: groups };
                     })
                   }
-                >
-                  <option value="1">Active</option>
-                  <option value="0">Inactive</option>
-                </select>
+                  compact
+                />
                 <Button
                   type="button"
                   variant="ghost"
@@ -436,7 +436,8 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                       {
                         name: "",
                         isRequired: 0,
-                        options: [{ name: "", priceDelta: 0, isDefault: 1, imageUrl: "" }],
+                        isActive: 1,
+                        options: [{ name: "", priceDelta: 0, isDefault: 1, isActive: 1, imageUrl: "" }],
                       },
                     ],
                   }))
@@ -447,7 +448,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
             </div>
             {draft.optionGroups.map((group, groupIndex) => (
               <div key={`group-${groupIndex}`} className="border rounded-lg p-3 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
                   <Input
                     placeholder="Group name"
                     value={group.name}
@@ -473,6 +474,18 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                     <option value="0">Optional</option>
                     <option value="1">Required</option>
                   </select>
+                  <ActiveToggle
+                    id={`option-group-${groupIndex}-active`}
+                    checked={Number(group.isActive ?? 1) === 1}
+                    onCheckedChange={(checked) =>
+                      setDraft((prev) => {
+                        const next = [...prev.optionGroups];
+                        next[groupIndex] = { ...next[groupIndex], isActive: checked ? 1 : 0 };
+                        return { ...prev, optionGroups: next };
+                      })
+                    }
+                    compact
+                  />
                   <Button
                     type="button"
                     variant="ghost"
@@ -563,6 +576,23 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                         <option value="0">Not default</option>
                         <option value="1">Default</option>
                       </select>
+                      <ActiveToggle
+                        id={`option-${groupIndex}-${optionIndex}-active`}
+                        checked={Number(option.isActive ?? 1) === 1}
+                        onCheckedChange={(checked) =>
+                          setDraft((prev) => {
+                            const groups = [...prev.optionGroups];
+                            const groupOptions = [...groups[groupIndex].options];
+                            groupOptions[optionIndex] = {
+                              ...groupOptions[optionIndex],
+                              isActive: checked ? 1 : 0,
+                            };
+                            groups[groupIndex] = { ...groups[groupIndex], options: groupOptions };
+                            return { ...prev, optionGroups: groups };
+                          })
+                        }
+                        compact
+                      />
                       <Button
                         type="button"
                         variant="ghost"
@@ -600,6 +630,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                             name: "",
                             priceDelta: 0,
                             isDefault: 0,
+                            isActive: 1,
                             imageUrl: "",
                           },
                         ],

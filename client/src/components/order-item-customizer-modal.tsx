@@ -64,7 +64,13 @@ export function OrderItemCustomizerModal({
     setSelectedExtraQty({});
   }, [initialQuantity, open, product?.id, (product as { disableQuantityControl?: number } | null)?.disableQuantityControl]);
 
-  const optionGroups = data?.optionGroups ?? [];
+  const optionGroups = useMemo(
+    () =>
+      (data?.optionGroups ?? []).filter(
+        (group) => Number(group.isActive ?? 1) === 1 && group.options.some((option) => option.isActive),
+      ),
+    [data?.optionGroups],
+  );
   const extras = data?.extras ?? [];
   const maxFlavourSelections = Math.max(
     0,
