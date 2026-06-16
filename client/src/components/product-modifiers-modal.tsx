@@ -108,8 +108,7 @@ export function ProductModifiersModal({ open, onOpenChange, product }: ProductMo
                 priceDelta: asNumber(option.priceDelta, 0),
                 sortOrder: option.sortOrder,
                 isActive: asFlag(option.isActive, 1),
-                isDefault:
-                  explicitDefaultIndex >= 0 ? (index === explicitDefaultIndex ? 1 : 0) : index === 0 ? 1 : 0,
+                isDefault: explicitDefaultIndex >= 0 ? (index === explicitDefaultIndex ? 1 : 0) : 0,
                 imageUrl: imageUrl || undefined,
               };
             }),
