@@ -15,6 +15,7 @@ import { useNewOrderAlarm } from "@/hooks/use-new-order-alarm";
 import {
   playOrderAlarm,
   readOrderAlarmEnabled,
+  requestOrderNotificationPermission,
   unlockOrderAlarmAudio,
   writeOrderAlarmEnabled,
 } from "@/lib/order-alarm";
@@ -110,6 +111,7 @@ export default function OrdersPage() {
     queryKey: ["/api/admin/open-orders/details", ORDERS_QUERY_SCOPE],
     enabled: !!user,
     refetchInterval: 3000,
+    refetchIntervalInBackground: true,
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/admin/open-orders/details");
       return response.json();
@@ -177,6 +179,18 @@ export default function OrdersPage() {
     document.title = title ? `${title} - Orders` : "Orders";
   }, [branding?.headerTitle]);
 
+  useEffect(() => {
+    const resumeAlarmOnFocus = () => {
+      if (document.visibilityState !== "visible" || !orderAlarmEnabled || unacknowledgedCount === 0) {
+        return;
+      }
+      unlockOrderAlarmAudio();
+      void playOrderAlarm();
+    };
+    document.addEventListener("visibilitychange", resumeAlarmOnFocus);
+    return () => document.removeEventListener("visibilitychange", resumeAlarmOnFocus);
+  }, [orderAlarmEnabled, unacknowledgedCount]);
+
   const filteredOpenOrders = useMemo(
     () =>
       openOrders.filter(
@@ -206,6 +220,7 @@ export default function OrdersPage() {
     event.preventDefault();
     setLoginError("");
     unlockOrderAlarmAudio();
+    void requestOrderNotificationPermission();
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -230,10 +245,14 @@ export default function OrdersPage() {
     const next = !orderAlarmEnabled;
     setOrderAlarmEnabled(next);
     writeOrderAlarmEnabled(next);
+    if (next) {
+      void requestOrderNotificationPermission();
+    }
   };
 
   const testOrderAlarm = () => {
     unlockOrderAlarmAudio();
+    void requestOrderNotificationPermission();
     void playOrderAlarm();
   };
 
@@ -426,6 +445,9 @@ export default function OrdersPage() {
               <CardTitle>Orders</CardTitle>
               <CardDescription>
                 All active and served orders — cash and card. Printing is handled by the local printer app.
+                {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted"
+                  ? " Allow browser notifications so new orders alert you when this tab is in the background."
+                  : ""}
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2 shrink-0">

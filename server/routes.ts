@@ -220,6 +220,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `Order: ${o.orderNumber || o.id}`,
         `Time: ${new Date(o.createdAt || Date.now()).toLocaleString()}`,
         `Service: ${String(o.serviceMode || "pickup").toUpperCase()}`,
+      ];
+      if (o.serviceMode === "table") {
+        if (o.tableCode) lines.push(`Table: ${o.tableCode}`);
+        if (o.tableLabel) lines.push(`Table label: ${o.tableLabel}`);
+      } else {
+        lines.push(`Pickup: ${o.pickupPoint || "bar"}`);
+      }
+      lines.push(
         `Total: EUR ${Number(o.total || 0).toFixed(2)}`,
         "",
         "AWAITING PAYMENT",
@@ -227,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "at the Shisha bar.",
         "Press PAID to release order print.",
         "",
-      ];
+      );
       const titleAlignOn = profileDefaults.centerTitle ? alignCenter : alignLeft;
       const titleAlignOff = alignLeft;
       const titleWeightOn = boldOn;

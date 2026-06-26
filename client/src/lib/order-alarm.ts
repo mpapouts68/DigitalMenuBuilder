@@ -1,6 +1,8 @@
 let audioContext: AudioContext | null = null;
 let repeatTimer: ReturnType<typeof setInterval> | null = null;
 let repeatingActive = false;
+let titleFlashTimer: ReturnType<typeof setInterval> | null = null;
+let savedDocumentTitle: string | null = null;
 
 export function unlockOrderAlarmAudio(): void {
   if (typeof window === "undefined") {
@@ -98,4 +100,69 @@ export function writeOrderAlarmEnabled(enabled: boolean): void {
     return;
   }
   localStorage.setItem(STORAGE_KEY, enabled ? "1" : "0");
+}
+
+export async function requestOrderNotificationPermission(): Promise<NotificationPermission | "unsupported"> {
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return "unsupported";
+  }
+  if (Notification.permission === "granted" || Notification.permission === "denied") {
+    return Notification.permission;
+  }
+  return Notification.requestPermission();
+}
+
+export interface NewOrderNotificationEntry {
+  orderId: number;
+  orderNumber: string;
+  summary: string;
+}
+
+export function showNewOrderNotifications(entries: NewOrderNotificationEntry[]): void {
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return;
+  }
+  if (Notification.permission !== "granted" || entries.length === 0) {
+    return;
+  }
+
+  if (entries.length === 1) {
+    const entry = entries[0];
+    new Notification("New order received", {
+      body: `${entry.orderNumber} · ${entry.summary}`,
+      tag: `order-${entry.orderId}`,
+      requireInteraction: true,
+    });
+    return;
+  }
+
+  new Notification(`${entries.length} new orders received`, {
+    body: entries.map((entry) => `${entry.orderNumber} · ${entry.summary}`).join("\n"),
+    tag: "orders-batch",
+    requireInteraction: true,
+  });
+}
+
+export function startTitleAlert(message: string): void {
+  if (typeof document === "undefined") {
+    return;
+  }
+  stopTitleAlert();
+  savedDocumentTitle = document.title;
+  let showAlert = true;
+  titleFlashTimer = setInterval(() => {
+    document.title = showAlert ? message : savedDocumentTitle ?? message;
+    showAlert = !showAlert;
+  }, 1000);
+}
+
+export function stopTitleAlert(): void {
+  if (titleFlashTimer) {
+    clearInterval(titleFlashTimer);
+    titleFlashTimer = null;
+  }
+  if (savedDocumentTitle !== null && typeof document !== "undefined") {
+    document.title = savedDocumentTitle;
+    savedDocumentTitle = null;
+  }
 }
