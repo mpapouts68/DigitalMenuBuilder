@@ -121,6 +121,10 @@ export interface IStorage {
   hasValidPrinterLock(lockToken: string): Promise<boolean>;
   getPaymentSettings(): Promise<PaymentSettings | undefined>;
   upsertPaymentSettings(settings: InsertPaymentSettings): Promise<PaymentSettings>;
+  resolvePaymentMethods(context?: {
+    pickupPoint?: string | null;
+    serviceMode?: string | null;
+  }): Promise<ResolvedPaymentMethods>;
 
   // QR groups
   getQrGroups(): Promise<QrGroup[]>;
@@ -198,6 +202,11 @@ export interface DailyRevenueStats {
   openOrders: number;
 }
 
+export interface ResolvedPaymentMethods {
+  cardEnabled: boolean;
+  cashEnabled: boolean;
+}
+
 export class DatabaseStorage implements IStorage {
   private orderColumnsCache: Set<string> | null = null;
 
@@ -214,6 +223,21 @@ export class DatabaseStorage implements IStorage {
   private formatOrderNumber(timestamp: number, orderId: number): string {
     const datePrefix = new Date(timestamp).toISOString().slice(0, 10).replace(/-/g, "");
     return `${datePrefix}-${String(orderId).padStart(5, "0")}`;
+  }
+
+  private normalizePickupPoint(value?: string | null): string {
+    return (value || "bar").trim().toLowerCase();
+  }
+
+  private isStaffVisibleOrder(order: Order): boolean {
+    const orderNumber = String(order.orderNumber || "");
+    if (!orderNumber || orderNumber.startsWith("TMP-")) {
+      return false;
+    }
+    if (Number(order.total) <= 0) {
+      return false;
+    }
+    return true;
   }
 
   private getOrderColumns(): Set<string> {
@@ -767,12 +791,23 @@ export class DatabaseStorage implements IStorage {
       }
 
       const total = this.roundMoney(subtotal + extrasTotal);
+      if (total <= 0) {
+        throw new Error("Order total must be greater than zero.");
+      }
+      if (createdItems.length === 0) {
+        throw new Error("Order must include at least one item.");
+      }
+
       const orderNumber = this.formatOrderNumber(now, createdOrder.id);
       const [updatedOrder] = await tx
         .update(orders)
         .set({ orderNumber, subtotal, extrasTotal, total })
         .where(eq(orders.id, createdOrder.id))
         .returning();
+
+      if (!updatedOrder || String(updatedOrder.orderNumber).startsWith("TMP-")) {
+        throw new Error("Failed to finalize order.");
+      }
 
       const shouldQueuePrintImmediately =
         (updatedOrder as any).paymentStatus === "succeeded" ||
@@ -842,6 +877,9 @@ export class DatabaseStorage implements IStorage {
 
     const results: OrderDetails[] = [];
     for (const order of openOrders) {
+      if (!this.isStaffVisibleOrder(order)) {
+        continue;
+      }
       const details = await this.getOrderDetails(order.id);
       if (details) {
         results.push(details);
@@ -860,6 +898,9 @@ export class DatabaseStorage implements IStorage {
 
     const results: OrderDetails[] = [];
     for (const order of servedOrders) {
+      if (!this.isStaffVisibleOrder(order)) {
+        continue;
+      }
       const details = await this.getOrderDetails(order.id);
       if (details) {
         results.push(details);
@@ -1383,6 +1424,40 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  async resolvePaymentMethods(context?: {
+    pickupPoint?: string | null;
+    serviceMode?: string | null;
+  }): Promise<ResolvedPaymentMethods> {
+    const global = await this.getPaymentSettings();
+    const globalCard = Number(global?.cardEnabled ?? 1) === 1;
+    const globalCash = Number(global?.cashEnabled ?? 1) === 1;
+
+    const serviceMode = context?.serviceMode === "table" ? "table" : "pickup";
+    if (serviceMode !== "pickup") {
+      return { cardEnabled: globalCard, cashEnabled: globalCash };
+    }
+
+    const normalizedPoint = this.normalizePickupPoint(context?.pickupPoint);
+    const groups = await db.select().from(qrGroups);
+    const group = groups.find(
+      (entry) => this.normalizePickupPoint(entry.pickupPoint) === normalizedPoint,
+    );
+    if (!group) {
+      return { cardEnabled: globalCard, cashEnabled: globalCash };
+    }
+
+    const cardEnabled =
+      group.cardEnabled === null || group.cardEnabled === undefined
+        ? globalCard
+        : Number(group.cardEnabled) === 1;
+    const cashEnabled =
+      group.cashEnabled === null || group.cashEnabled === undefined
+        ? globalCash
+        : Number(group.cashEnabled) === 1;
+
+    return { cardEnabled, cashEnabled };
+  }
+
   async getQrGroups(): Promise<QrGroup[]> {
     return db.select().from(qrGroups).orderBy(desc(qrGroups.updatedAt), desc(qrGroups.id));
   }
@@ -1404,6 +1479,8 @@ export class DatabaseStorage implements IStorage {
         tableStart: Math.max(1, group.tableStart ?? 1),
         tableEnd: Math.max(group.tableStart ?? 1, group.tableEnd ?? 20),
         tableLabelsText: group.tableLabelsText ?? "",
+        cardEnabled: group.cardEnabled ?? null,
+        cashEnabled: group.cashEnabled ?? null,
         createdAt: now,
         updatedAt: now,
       })

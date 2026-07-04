@@ -33,15 +33,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     process.env.EMBEDDED_PRINTER_ENABLED === "1" ||
     (process.env.EMBEDDED_PRINTER_ENABLED !== "0" && process.env.NODE_ENV !== "production");
 
-  const isCardPaymentEnabled = async () => {
-    const settings = await storage.getPaymentSettings();
-    return Number(settings?.cardEnabled ?? 1) === 1;
-  };
-
-  const isCashPaymentEnabled = async () => {
-    const settings = await storage.getPaymentSettings();
-    return Number(settings?.cashEnabled ?? 1) === 1;
-  };
+  const resolvePaymentMethods = async (context?: {
+    pickupPoint?: string | null;
+    serviceMode?: string | null;
+  }) => storage.resolvePaymentMethods(context);
 
   const resolveDefaultBeepMode = (normalizedProfile: string): "off" | "bel" | "esc_b" | "esc_p" | "both" | "both_plus_p" => {
     if (
@@ -857,8 +852,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Card orders are created after Viva payment via /api/payments/viva/finalize.",
         });
       }
-      if (!(await isCashPaymentEnabled())) {
-        return res.status(403).json({ message: "Cash payment is currently disabled by admin." });
+      const paymentMethods = await resolvePaymentMethods({
+        pickupPoint: orderInput.pickupPoint,
+        serviceMode: orderInput.serviceMode,
+      });
+      if (!paymentMethods.cashEnabled) {
+        return res.status(403).json({ message: "Cash payment is not available at this location." });
       }
       const order = await storage.createOrder(orderInput);
       triggerEmbeddedPrinterTick();
@@ -866,15 +865,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Invalid order payload", errors: error.errors });
+      } else if (error instanceof Error && error.message) {
+        res.status(400).json({ message: error.message });
       } else {
         res.status(500).json({ message: "Failed to create order" });
       }
     }
   });
 
-  app.get("/api/payments/provider", async (_req, res) => {
-    const cardEnabled = await isCardPaymentEnabled();
-    const cashEnabled = await isCashPaymentEnabled();
+  app.get("/api/payments/provider", async (req, res) => {
+    const pickupPoint = typeof req.query.pickupPoint === "string" ? req.query.pickupPoint : undefined;
+    const serviceMode =
+      req.query.serviceMode === "table" || req.query.serviceMode === "pickup"
+        ? req.query.serviceMode
+        : undefined;
+    const { cardEnabled, cashEnabled } = await resolvePaymentMethods({ pickupPoint, serviceMode });
     res.json({
       provider: "viva" as const,
       configured: hasVivaCredentials(),
@@ -887,7 +892,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerVivaPaymentRoutes(app, {
     storage,
     createOrderSchema,
-    isCardPaymentEnabled,
+    resolvePaymentMethods,
     triggerEmbeddedPrinterTick,
   });
 

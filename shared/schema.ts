@@ -222,6 +222,9 @@ export const qrGroups = sqliteTable("qr_groups", {
   tableStart: integer("table_start").notNull().default(1),
   tableEnd: integer("table_end").notNull().default(20),
   tableLabelsText: text("table_labels_text").notNull().default(""),
+  /** null = inherit site default payment settings */
+  cardEnabled: integer("card_enabled"),
+  cashEnabled: integer("cash_enabled"),
   createdAt: integer("created_at").notNull().default(Date.now()),
   updatedAt: integer("updated_at").notNull().default(Date.now()),
 });
@@ -238,6 +241,8 @@ export const insertQrGroupSchema = createInsertSchema(qrGroups).omit({
   tableStart: z.number().int().min(1).max(999).default(1),
   tableEnd: z.number().int().min(1).max(999).default(20),
   tableLabelsText: z.string().max(20000).default(""),
+  cardEnabled: z.number().min(0).max(1).nullable().optional(),
+  cashEnabled: z.number().min(0).max(1).nullable().optional(),
 });
 
 // Session storage table.

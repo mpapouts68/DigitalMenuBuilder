@@ -47,6 +47,13 @@ export function OrderCartSheet({
   const [pickupPoint, setPickupPoint] = useState(sourceContext?.pickupPoint ?? "bar");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
   const shownCashInfoToastRef = useRef(false);
+  const submitLockRef = useRef(false);
+
+  const paymentContextQuery = useMemo(() => {
+    const mode = serviceMode;
+    const point = mode === "pickup" ? pickupPoint.trim() || "bar" : "";
+    return { serviceMode: mode, pickupPoint: point };
+  }, [serviceMode, pickupPoint]);
 
   const isTableOrderByQr = sourceContext?.serviceMode === "table" && !!sourceContext.tableCode;
 
@@ -104,9 +111,19 @@ export function OrderCartSheet({
     cardEnabled?: boolean;
     cashEnabled?: boolean;
   }>({
-    queryKey: ["/api/payments/provider"],
+    queryKey: [
+      "/api/payments/provider",
+      paymentContextQuery.serviceMode,
+      paymentContextQuery.pickupPoint,
+    ],
+    enabled: open,
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/payments/provider");
+      const params = new URLSearchParams();
+      params.set("serviceMode", paymentContextQuery.serviceMode);
+      if (paymentContextQuery.serviceMode === "pickup") {
+        params.set("pickupPoint", paymentContextQuery.pickupPoint);
+      }
+      const response = await apiRequest("GET", `/api/payments/provider?${params.toString()}`);
       return response.json();
     },
   });
@@ -494,10 +511,29 @@ export function OrderCartSheet({
             </Button>
             <Button
               className="flex-1 h-9"
-              onClick={() => createOrderMutation.mutate()}
+              onClick={() => {
+                if (submitLockRef.current || createOrderMutation.isPending) {
+                  return;
+                }
+                if (totals.grandTotal <= 0) {
+                  toast({
+                    title: "Cannot place order",
+                    description: "Order total must be greater than zero.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                submitLockRef.current = true;
+                createOrderMutation.mutate(undefined, {
+                  onSettled: () => {
+                    submitLockRef.current = false;
+                  },
+                });
+              }}
               disabled={
                 cartItems.length === 0 ||
                 createOrderMutation.isPending ||
+                totals.grandTotal <= 0 ||
                 (serviceMode === "table" && !tableCode.trim()) ||
                 (paymentMethod === "card" && !cardEnabled) ||
                 (paymentMethod === "cash" && !cashEnabled)

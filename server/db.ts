@@ -40,6 +40,16 @@ function ensureCatalogActiveColumns(database: Database.Database) {
   }
 }
 
+function ensureQrGroupsPaymentColumns(database: Database.Database) {
+  const columns = database.prepare("PRAGMA table_info(qr_groups)").all() as Array<{ name: string }>;
+  if (!columns.some((column) => column.name === "card_enabled")) {
+    database.exec(`ALTER TABLE qr_groups ADD COLUMN card_enabled integer;`);
+  }
+  if (!columns.some((column) => column.name === "cash_enabled")) {
+    database.exec(`ALTER TABLE qr_groups ADD COLUMN cash_enabled integer;`);
+  }
+}
+
 /** Safety net if a SQL file was deployed before it was added to the Drizzle journal. */
 function ensurePendingCheckoutsTable(database: Database.Database) {
   database.exec(`
@@ -81,6 +91,7 @@ export async function initializeDatabase() {
     ensurePendingCheckoutsTable(sqlite);
     ensurePaymentSettingsCashEnabled(sqlite);
     ensureCatalogActiveColumns(sqlite);
+    ensureQrGroupsPaymentColumns(sqlite);
 
     console.log('SQLite database initialized successfully');
     console.log(`Database file: ${dbPath}`);

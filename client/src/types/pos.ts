@@ -334,6 +334,8 @@ export interface QrGroup {
   tableStart: number;
   tableEnd: number;
   tableLabelsText: string;
+  cardEnabled?: number | null;
+  cashEnabled?: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -346,7 +348,11 @@ export interface QrGroupPayload {
   tableStart: number;
   tableEnd: number;
   tableLabelsText: string;
+  cardEnabled?: number | null;
+  cashEnabled?: number | null;
 }
+
+export type QrPaymentMode = "inherit" | CustomerPaymentMode;
 
 export interface ProductForOrdering extends Product {
   categoryName?: string;

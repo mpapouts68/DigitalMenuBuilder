@@ -19,7 +19,10 @@ export function registerVivaPaymentRoutes(
   deps: {
     storage: DatabaseStorage;
     createOrderSchema: z.ZodTypeAny;
-    isCardPaymentEnabled: () => Promise<boolean>;
+    resolvePaymentMethods: (context?: {
+      pickupPoint?: string | null;
+      serviceMode?: string | null;
+    }) => Promise<{ cardEnabled: boolean; cashEnabled: boolean }>;
     triggerEmbeddedPrinterTick: () => void;
   },
 ): void {
@@ -37,16 +40,6 @@ export function registerVivaPaymentRoutes(
 
   app.post("/api/payments/viva/start", async (req, res) => {
     try {
-      if (!(await deps.isCardPaymentEnabled())) {
-        return res.status(403).json({ message: "Card payment is currently disabled by admin." });
-      }
-      if (!hasVivaCredentials()) {
-        return res.status(503).json({
-          message:
-            "Viva is not configured. Set VIVA_CLIENT_ID, VIVA_CLIENT_SECRET, and VIVA_SOURCE_CODE.",
-        });
-      }
-
       const body = z
         .object({
           amount: z.number().positive(),
@@ -71,6 +64,20 @@ export function registerVivaPaymentRoutes(
             .min(1),
         })
         .parse(req.body);
+
+      const paymentMethods = await deps.resolvePaymentMethods({
+        pickupPoint: body.pickupPoint,
+        serviceMode: body.serviceMode,
+      });
+      if (!paymentMethods.cardEnabled) {
+        return res.status(403).json({ message: "Card payment is not available at this location." });
+      }
+      if (!hasVivaCredentials()) {
+        return res.status(503).json({
+          message:
+            "Viva is not configured. Set VIVA_CLIENT_ID, VIVA_CLIENT_SECRET, and VIVA_SOURCE_CODE.",
+        });
+      }
 
       const cartForOrder = deps.createOrderSchema.parse({
         customerName: body.customerName,
@@ -137,10 +144,6 @@ export function registerVivaPaymentRoutes(
 
   app.post("/api/payments/viva/finalize", async (req, res) => {
     try {
-      if (!(await deps.isCardPaymentEnabled())) {
-        return res.status(403).json({ message: "Card payment is currently disabled by admin." });
-      }
-
       const body = z
         .object({
           paymentIntentId: z.string().min(6).optional(),
@@ -153,6 +156,7 @@ export function registerVivaPaymentRoutes(
         {
           storage: deps.storage,
           createOrderSchema: deps.createOrderSchema,
+          resolvePaymentMethods: deps.resolvePaymentMethods,
           triggerEmbeddedPrinterTick: deps.triggerEmbeddedPrinterTick,
           vivaClient,
         },
@@ -274,6 +278,7 @@ export function registerVivaPaymentRoutes(
           {
             storage: deps.storage,
             createOrderSchema: deps.createOrderSchema,
+            resolvePaymentMethods: deps.resolvePaymentMethods,
             triggerEmbeddedPrinterTick: deps.triggerEmbeddedPrinterTick,
             vivaClient,
           },

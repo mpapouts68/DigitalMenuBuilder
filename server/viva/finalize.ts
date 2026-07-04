@@ -64,6 +64,10 @@ export async function finalizeVivaPayment(
   deps: {
     storage: DatabaseStorage;
     createOrderSchema: CreateOrderSchema;
+    resolvePaymentMethods: (context?: {
+      pickupPoint?: string | null;
+      serviceMode?: string | null;
+    }) => Promise<{ cardEnabled: boolean; cashEnabled: boolean }>;
     triggerEmbeddedPrinterTick: () => void;
     vivaClient?: VivaClient;
   },
@@ -150,6 +154,18 @@ export async function finalizeVivaPayment(
   }
 
   const cartPayload = deps.createOrderSchema.parse(JSON.parse(pending.cartJson));
+  const paymentMethods = await deps.resolvePaymentMethods({
+    pickupPoint: cartPayload.pickupPoint,
+    serviceMode: cartPayload.serviceMode,
+  });
+  if (!paymentMethods.cardEnabled) {
+    return {
+      status: "failed",
+      paymentIntentId: pending.id,
+      message: "Card payment is not available at this location.",
+    };
+  }
+
   const orderDetails = await deps.storage.createOrder({
     ...cartPayload,
     payment: {

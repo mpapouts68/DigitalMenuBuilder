@@ -22,6 +22,7 @@ import type {
   PrinterSettingsResponse,
   QrGroup,
   QrGroupPayload,
+  QrPaymentMode,
 } from "@/types/pos";
 
 interface AdminOperationsModalProps {
@@ -62,6 +63,31 @@ function customerPaymentModeLabel(mode: CustomerPaymentMode): string {
   if (mode === "card_only") return "Card only (cash disabled for customers).";
   if (mode === "cash_only") return "Cash only (card disabled for customers).";
   return "Cash and card are available.";
+}
+
+function qrPaymentModeFromGroup(
+  cardEnabled?: number | null,
+  cashEnabled?: number | null,
+): QrPaymentMode {
+  if (cardEnabled == null && cashEnabled == null) {
+    return "inherit";
+  }
+  return customerPaymentModeFromSettings(cardEnabled ?? 1, cashEnabled ?? 1);
+}
+
+function qrPaymentModeToSettings(mode: QrPaymentMode): {
+  cardEnabled: number | null;
+  cashEnabled: number | null;
+} {
+  if (mode === "inherit") {
+    return { cardEnabled: null, cashEnabled: null };
+  }
+  return customerPaymentModeToSettings(mode);
+}
+
+function qrPaymentModeLabel(mode: QrPaymentMode): string {
+  if (mode === "inherit") return "Uses site default payment methods.";
+  return customerPaymentModeLabel(mode);
 }
 
 export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModalProps) {
@@ -106,6 +132,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
   const [tableStart, setTableStart] = useState(1);
   const [tableEnd, setTableEnd] = useState(20);
   const [pickupPoint, setPickupPoint] = useState("bar");
+  const [qrPaymentMode, setQrPaymentMode] = useState<QrPaymentMode>("inherit");
   const [tableLabelsText, setTableLabelsText] = useState("");
   const [qrGroupName, setQrGroupName] = useState("Default group");
   const [selectedQrGroupId, setSelectedQrGroupId] = useState<number | null>(null);
@@ -752,6 +779,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
   });
   const saveQrGroupMutation = useMutation({
     mutationFn: async () => {
+      const paymentSettings = qrPaymentModeToSettings(qrPaymentMode);
       const payload: QrGroupPayload = {
         name: qrGroupName.trim(),
         baseUrl: qrBaseUrl.trim(),
@@ -760,6 +788,8 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
         tableStart: Math.max(1, tableStart),
         tableEnd: Math.max(tableStart, tableEnd),
         tableLabelsText,
+        cardEnabled: paymentSettings.cardEnabled,
+        cashEnabled: paymentSettings.cashEnabled,
       };
       if (selectedQrGroupId) {
         const response = await apiRequest("PUT", `/api/admin/qr-groups/${selectedQrGroupId}`, payload);
@@ -771,11 +801,13 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
     onSuccess: (savedGroup) => {
       setSelectedQrGroupId(savedGroup.id);
       setQrGroupName(savedGroup.name);
+      setQrPaymentMode(qrPaymentModeFromGroup(savedGroup.cardEnabled, savedGroup.cashEnabled));
       toast({
         title: "QR group saved",
         description: `Saved "${savedGroup.name}" for reuse.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/qr-groups"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payments/provider"] });
     },
     onError: () => {
       toast({
@@ -1107,7 +1139,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
             <div className="rounded-lg border p-3 space-y-3">
               <h3 className="font-semibold">Payment methods (customer checkout)</h3>
               <div className="space-y-1">
-                <Label>Available methods</Label>
+                <Label>Site default</Label>
                 <select
                   className="h-10 rounded-md border px-3 text-sm w-full"
                   value={customerPaymentModeFromSettings(
@@ -1131,8 +1163,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
                 {savePaymentSettingsMutation.isPending ? "Saving..." : "Save payment settings"}
               </Button>
               <p className="text-xs text-slate-500">
-                Use <strong>Card only</strong> when you want customers to pay online only. Use{" "}
-                <strong>Cash only</strong> if the card gateway is unavailable.
+                This is the default for all locations. Override per pickup point under the QR tab.
               </p>
             </div>
 
@@ -1427,7 +1458,10 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
                     const nextId = Number(event.target.value) || null;
                     setSelectedQrGroupId(nextId);
                     const selected = qrGroups.find((group) => group.id === nextId);
-                    if (!selected) return;
+                    if (!selected) {
+                      setQrPaymentMode("inherit");
+                      return;
+                    }
                     setQrGroupName(selected.name);
                     setQrBaseUrl(selected.baseUrl);
                     setPickupPoint(selected.pickupPoint);
@@ -1435,6 +1469,7 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
                     setTableStart(selected.tableStart);
                     setTableEnd(selected.tableEnd);
                     setTableLabelsText(selected.tableLabelsText || "");
+                    setQrPaymentMode(qrPaymentModeFromGroup(selected.cardEnabled, selected.cashEnabled));
                   }}
                 >
                   <option value="">New group</option>
@@ -1499,6 +1534,23 @@ export function AdminOperationsModal({ open, onOpenChange }: AdminOperationsModa
               <div className="space-y-2">
                 <Label>Pickup point name</Label>
                 <Input value={pickupPoint} onChange={(event) => setPickupPoint(event.target.value)} />
+                <p className="text-xs text-slate-500">
+                  Must match the <code>point=</code> value in printed pickup QRs.
+                </p>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Payment methods at this pickup point</Label>
+                <select
+                  className="h-10 rounded-md border px-3 text-sm w-full"
+                  value={qrPaymentMode}
+                  onChange={(event) => setQrPaymentMode(event.target.value as QrPaymentMode)}
+                >
+                  <option value="inherit">Use site default</option>
+                  <option value="both">Cash + card</option>
+                  <option value="card_only">Card only</option>
+                  <option value="cash_only">Cash only</option>
+                </select>
+                <p className="text-xs text-slate-500">{qrPaymentModeLabel(qrPaymentMode)}</p>
               </div>
               <div className="space-y-2">
                 <Label>Table prefix</Label>
