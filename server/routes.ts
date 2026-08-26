@@ -920,8 +920,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const parsedLimit = req.query.limit ? parseInt(String(req.query.limit), 10) : 100;
       const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 100;
-      const servedOrders = await storage.getServedOrderDetails(limit);
-      res.json(servedOrders);
+      const parsedBeforeId = req.query.beforeId ? parseInt(String(req.query.beforeId), 10) : undefined;
+      const beforeId = parsedBeforeId && Number.isFinite(parsedBeforeId) && parsedBeforeId > 0
+        ? parsedBeforeId
+        : undefined;
+      const servedPage = await storage.getServedOrderDetails(limit, beforeId);
+      res.json(servedPage);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch served order details" });
     }
@@ -946,6 +950,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(updated);
     } catch (error) {
       return res.status(500).json({ message: "Failed to mark order as served" });
+    }
+  });
+
+  app.post("/api/admin/orders/:id/cancel", isAuthenticated, isPrinterOrAdmin, async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id, 10);
+      const updated = await storage.cancelOrder(orderId);
+      if (!updated) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      return res.json(updated);
+    } catch (error) {
+      if ((error as { code?: string } | undefined)?.code === "ORDER_CLOSED") {
+        return res.status(409).json({ message: "Closed orders cannot be cancelled" });
+      }
+      return res.status(500).json({ message: "Failed to cancel order" });
     }
   });
 

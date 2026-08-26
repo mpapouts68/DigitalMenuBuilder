@@ -44,7 +44,7 @@ import {
   type UpsertUser,
 } from "@shared/schema";
 import { db, sqlite } from "./db";
-import { and, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, lt, ne, notLike, or, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -92,11 +92,12 @@ export interface IStorage {
   getOrders(status?: string): Promise<Order[]>;
   getOrderDetails(orderId: number): Promise<OrderDetails | undefined>;
   getOpenOrderDetails(): Promise<OrderDetails[]>;
-  getServedOrderDetails(limit?: number): Promise<OrderDetails[]>;
+  getServedOrderDetails(limit?: number, beforeId?: number): Promise<{ orders: OrderDetails[]; total: number }>;
   clearServedOrders(): Promise<{ deletedCount: number }>;
   markOrderPaid(orderId: number): Promise<Order | undefined>;
   updateOrderStatus(orderId: number, status: string): Promise<Order | undefined>;
   markOrderServed(orderId: number): Promise<Order | undefined>;
+  cancelOrder(orderId: number): Promise<Order | undefined>;
   createPrintJobForOrder(orderId: number): Promise<PrintJob | undefined>;
   getPendingPrintJobs(limit?: number): Promise<PrintJob[]>;
   getDispatchablePrintJobs(limit?: number): Promise<PrintJob[]>;
@@ -238,6 +239,59 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
     return true;
+  }
+
+  private staffVisibleOrderSql() {
+    return and(
+      sql`trim(coalesce(${orders.orderNumber}, '')) != ''`,
+      notLike(orders.orderNumber, "TMP-%"),
+      gt(orders.total, 0),
+    );
+  }
+
+  private async hydrateOrderDetails(orderList: Order[]): Promise<OrderDetails[]> {
+    if (orderList.length === 0) {
+      return [];
+    }
+
+    const chunkSize = 400;
+    const orderIds = orderList.map((order) => order.id);
+    const items: OrderItem[] = [];
+    for (let index = 0; index < orderIds.length; index += chunkSize) {
+      const chunk = orderIds.slice(index, index + chunkSize);
+      const rows = await db.select().from(orderItems).where(inArray(orderItems.orderId, chunk));
+      items.push(...rows);
+    }
+
+    const itemIds = items.map((item) => item.id);
+    const modifiers: OrderItemModifier[] = [];
+    for (let index = 0; index < itemIds.length; index += chunkSize) {
+      const chunk = itemIds.slice(index, index + chunkSize);
+      const rows = await db
+        .select()
+        .from(orderItemModifiers)
+        .where(inArray(orderItemModifiers.orderItemId, chunk));
+      modifiers.push(...rows);
+    }
+
+    const modifiersByItemId = new Map<number, OrderItemModifier[]>();
+    for (const modifier of modifiers) {
+      const list = modifiersByItemId.get(modifier.orderItemId) ?? [];
+      list.push(modifier);
+      modifiersByItemId.set(modifier.orderItemId, list);
+    }
+
+    const itemsByOrderId = new Map<number, Array<OrderItem & { modifiers: OrderItemModifier[] }>>();
+    for (const item of items) {
+      const list = itemsByOrderId.get(item.orderId) ?? [];
+      list.push({ ...item, modifiers: modifiersByItemId.get(item.id) ?? [] });
+      itemsByOrderId.set(item.orderId, list);
+    }
+
+    return orderList.map((order) => ({
+      order,
+      items: itemsByOrderId.get(order.id) ?? [],
+    }));
   }
 
   private getOrderColumns(): Set<string> {
@@ -852,19 +906,8 @@ export class DatabaseStorage implements IStorage {
   async getOrderDetails(orderId: number): Promise<OrderDetails | undefined> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
     if (!order) return undefined;
-
-    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
-    const itemIds = items.map((item) => item.id);
-    const modifiers = itemIds.length > 0
-      ? await db.select().from(orderItemModifiers).where(inArray(orderItemModifiers.orderItemId, itemIds))
-      : [];
-
-    const itemDetails = items.map((item) => ({
-      ...item,
-      modifiers: modifiers.filter((modifier) => modifier.orderItemId === item.id),
-    }));
-
-    return { order, items: itemDetails };
+    const [details] = await this.hydrateOrderDetails([order]);
+    return details;
   }
 
   async getOpenOrderDetails(): Promise<OrderDetails[]> {
@@ -872,41 +915,37 @@ export class DatabaseStorage implements IStorage {
     const openOrders = await db
       .select()
       .from(orders)
-      .where(inArray(orders.status, [...openStatuses]))
+      .where(and(inArray(orders.status, [...openStatuses]), this.staffVisibleOrderSql()))
       .orderBy(desc(orders.id));
 
-    const results: OrderDetails[] = [];
-    for (const order of openOrders) {
-      if (!this.isStaffVisibleOrder(order)) {
-        continue;
-      }
-      const details = await this.getOrderDetails(order.id);
-      if (details) {
-        results.push(details);
-      }
-    }
-    return results;
+    return this.hydrateOrderDetails(openOrders.filter((order) => this.isStaffVisibleOrder(order)));
   }
 
-  async getServedOrderDetails(limit = 100): Promise<OrderDetails[]> {
+  async getServedOrderDetails(limit = 100, beforeId?: number): Promise<{ orders: OrderDetails[]; total: number }> {
+    const safeLimit = Math.max(1, Math.min(200, Number.isFinite(limit) ? limit : 100));
+    const visibility = this.staffVisibleOrderSql();
+    const servedWhere = and(
+      eq(orders.status, "served"),
+      visibility,
+      beforeId && Number.isFinite(beforeId) ? lt(orders.id, beforeId) : undefined,
+    );
+
+    const [countRow] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(orders)
+      .where(and(eq(orders.status, "served"), visibility));
+
     const servedOrders = await db
       .select()
       .from(orders)
-      .where(eq(orders.status, "served"))
+      .where(servedWhere)
       .orderBy(desc(orders.id))
-      .limit(limit);
+      .limit(safeLimit);
 
-    const results: OrderDetails[] = [];
-    for (const order of servedOrders) {
-      if (!this.isStaffVisibleOrder(order)) {
-        continue;
-      }
-      const details = await this.getOrderDetails(order.id);
-      if (details) {
-        results.push(details);
-      }
-    }
-    return results;
+    return {
+      orders: await this.hydrateOrderDetails(servedOrders.filter((order) => this.isStaffVisibleOrder(order))),
+      total: Number(countRow?.count ?? 0),
+    };
   }
 
   private async deleteOrdersByIds(orderIds: number[]): Promise<void> {
@@ -935,12 +974,51 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markOrderServed(orderId: number): Promise<Order | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+    if (!order || order.status === "cancelled" || order.status === "closed") {
+      return undefined;
+    }
     return this.updateOrderStatus(orderId, "served");
+  }
+
+  async cancelOrder(orderId: number): Promise<Order | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+    if (!order) return undefined;
+    if (order.status === "cancelled") {
+      return order;
+    }
+    if (order.status === "closed") {
+      throw Object.assign(new Error("Closed orders cannot be cancelled"), { code: "ORDER_CLOSED" });
+    }
+
+    const now = Date.now();
+    const [updated] = await db
+      .update(orders)
+      .set({
+        status: "cancelled",
+        printStatus: order.printStatus === "printed" ? order.printStatus : "cancelled",
+      })
+      .where(eq(orders.id, orderId))
+      .returning();
+
+    await db
+      .update(printJobs)
+      .set({
+        status: "cancelled",
+        lastError: "Order cancelled",
+        processedAt: now,
+      })
+      .where(and(eq(printJobs.orderId, orderId), inArray(printJobs.status, ["pending", "failed"])));
+
+    return updated;
   }
 
   async markOrderPaid(orderId: number): Promise<Order | undefined> {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
     if (!order) return undefined;
+    if (order.status === "cancelled" || order.status === "closed") {
+      return undefined;
+    }
 
     if ((order as any).paymentStatus === "succeeded") {
       return order;
@@ -967,6 +1045,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateOrderStatus(orderId: number, status: string): Promise<Order | undefined> {
+    const [existing] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+    if (!existing || existing.status === "cancelled" || existing.status === "closed") {
+      return undefined;
+    }
     const [updated] = await db
       .update(orders)
       .set({ status })
@@ -977,7 +1059,7 @@ export class DatabaseStorage implements IStorage {
 
   async createPrintJobForOrder(orderId: number): Promise<PrintJob | undefined> {
     const orderDetails = await this.getOrderDetails(orderId);
-    if (!orderDetails) {
+    if (!orderDetails || orderDetails.order.status === "cancelled") {
       return undefined;
     }
 
@@ -1121,7 +1203,9 @@ export class DatabaseStorage implements IStorage {
         grossRevenue: sql<number>`coalesce(sum(${orders.total}), 0)`,
       })
       .from(orders)
-      .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end)));
+      .where(
+        and(gte(orders.createdAt, start), lt(orders.createdAt, end), ne(orders.status, "cancelled")),
+      );
 
     const [openResult] = await db
       .select({
@@ -1155,6 +1239,7 @@ export class DatabaseStorage implements IStorage {
         and(
           gte(orders.createdAt, this.toDateWindow(businessDate).start),
           lt(orders.createdAt, this.toDateWindow(businessDate).end),
+          ne(orders.status, "cancelled"),
         ),
       );
 

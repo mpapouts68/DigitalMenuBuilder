@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, Volume2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
 import type {
   BrandingSettingsResponse,
   StaffOrderDetails,
+  ServedOrdersPage,
   StaffOrderPaymentFilter,
   StaffOrderServiceFilter,
 } from "@/types/pos";
@@ -32,6 +33,7 @@ interface AuthUser {
 }
 
 const ORDERS_QUERY_SCOPE = "orders-page";
+const SERVED_PAGE_SIZE = 100;
 
 function formatOrderTime(createdAt?: number): string {
   if (!createdAt) return "";
@@ -118,15 +120,46 @@ export default function OrdersPage() {
     },
   });
 
-  const { data: servedOrders = [] } = useQuery<StaffOrderDetails[]>({
+  const {
+    data: servedPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["/api/admin/served-orders/details", ORDERS_QUERY_SCOPE],
     enabled: !!user,
     refetchInterval: 5000,
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/admin/served-orders/details?limit=200");
-      return response.json();
+    initialPageParam: undefined as number | undefined,
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams({ limit: String(SERVED_PAGE_SIZE) });
+      if (pageParam) {
+        params.set("beforeId", String(pageParam));
+      }
+      const response = await apiRequest("GET", `/api/admin/served-orders/details?${params.toString()}`);
+      return response.json() as Promise<ServedOrdersPage>;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, page) => sum + page.orders.length, 0);
+      if (lastPage.orders.length === 0 || loaded >= lastPage.total) {
+        return undefined;
+      }
+      return lastPage.orders[lastPage.orders.length - 1]?.order.id;
     },
   });
+
+  const servedOrders = useMemo(() => {
+    const seen = new Set<number>();
+    const unique: StaffOrderDetails[] = [];
+    for (const page of servedPages?.pages ?? []) {
+      for (const entry of page.orders) {
+        if (seen.has(entry.order.id)) continue;
+        seen.add(entry.order.id);
+        unique.push(entry);
+      }
+    }
+    return unique;
+  }, [servedPages]);
+  const servedTotal = servedPages?.pages[0]?.total ?? servedOrders.length;
 
   const {
     unacknowledgedOrders,
@@ -171,6 +204,23 @@ export default function OrdersPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/open-orders/details", ORDERS_QUERY_SCOPE] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/served-orders/details", ORDERS_QUERY_SCOPE] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/print-jobs/pending"] });
+    },
+  });
+
+  const cancelOrderMutation = useMutation({
+    mutationFn: async (orderId: number) => {
+      await apiRequest("POST", `/api/admin/orders/${orderId}/cancel`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/open-orders/details", ORDERS_QUERY_SCOPE] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/served-orders/details", ORDERS_QUERY_SCOPE] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/print-jobs/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/print-jobs/failed"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/revenue/daily"] });
+    },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : "Failed to cancel order.");
     },
   });
 
@@ -324,41 +374,60 @@ export default function OrdersPage() {
             )}
           </div>
 
-          {showWorkflowActions && paid && (
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Button
-                size="sm"
-                variant={entry.order.status === "preparing" ? "default" : "outline"}
-                onClick={() =>
-                  updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "preparing" })
-                }
-                disabled={updateOrderStatusMutation.isPending}
-              >
-                Preparing
-              </Button>
-              <Button
-                size="sm"
-                variant={entry.order.status === "ready" ? "default" : "outline"}
-                onClick={() =>
-                  updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "ready" })
-                }
-                disabled={updateOrderStatusMutation.isPending}
-              >
-                Ready
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  if (window.confirm(`Mark order ${entry.order.orderNumber} as served?`)) {
-                    updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "served" });
+          <div className="flex flex-wrap gap-2 pt-1">
+            {showWorkflowActions && paid && (
+              <>
+                <Button
+                  size="sm"
+                  variant={entry.order.status === "preparing" ? "default" : "outline"}
+                  onClick={() =>
+                    updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "preparing" })
                   }
-                }}
-                disabled={updateOrderStatusMutation.isPending}
-              >
-                Served
-              </Button>
-            </div>
-          )}
+                  disabled={updateOrderStatusMutation.isPending}
+                >
+                  Preparing
+                </Button>
+                <Button
+                  size="sm"
+                  variant={entry.order.status === "ready" ? "default" : "outline"}
+                  onClick={() =>
+                    updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "ready" })
+                  }
+                  disabled={updateOrderStatusMutation.isPending}
+                >
+                  Ready
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (window.confirm(`Mark order ${entry.order.orderNumber} as served?`)) {
+                      updateOrderStatusMutation.mutate({ orderId: entry.order.id, status: "served" });
+                    }
+                  }}
+                  disabled={updateOrderStatusMutation.isPending}
+                >
+                  Served
+                </Button>
+              </>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-red-700 border-red-300 hover:bg-red-50"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `Cancel order ${entry.order.orderNumber}? It will be taken off the queue, will not be served, and will not count as revenue. The record stays in the database.`,
+                  )
+                ) {
+                  cancelOrderMutation.mutate(entry.order.id);
+                }
+              }}
+              disabled={cancelOrderMutation.isPending}
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
 
         <div className="mt-3 space-y-1.5 text-sm">
@@ -585,7 +654,7 @@ export default function OrdersPage() {
             <Tabs defaultValue="active" className="w-full">
               <TabsList className="mb-4 grid w-full grid-cols-2">
                 <TabsTrigger value="active">Active ({filteredOpenOrders.length})</TabsTrigger>
-                <TabsTrigger value="served">Served ({filteredServedOrders.length})</TabsTrigger>
+                <TabsTrigger value="served">Served ({servedTotal})</TabsTrigger>
               </TabsList>
 
               <TabsContent value="active" className="space-y-3">
@@ -598,16 +667,17 @@ export default function OrdersPage() {
               <TabsContent value="served" className="space-y-3">
                 <div className="flex items-center justify-between gap-2 pb-1">
                   <p className="text-xs text-slate-500">
-                    {servedOrders.length} served order{servedOrders.length === 1 ? "" : "s"} in history
+                    {servedTotal} served order{servedTotal === 1 ? "" : "s"} in history
+                    {servedOrders.length < servedTotal ? ` · showing ${servedOrders.length}` : ""}
                   </p>
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={servedOrders.length === 0 || clearServedOrdersMutation.isPending}
+                    disabled={servedTotal === 0 || clearServedOrdersMutation.isPending}
                     onClick={() => {
                       if (
                         window.confirm(
-                          `Remove all ${servedOrders.length} served order(s) from the list? This cannot be undone.`,
+                          `Remove all ${servedTotal} served order(s) from the list? This cannot be undone.`,
                         )
                       ) {
                         clearServedOrdersMutation.mutate();
@@ -621,6 +691,18 @@ export default function OrdersPage() {
                   <p className="text-sm text-slate-500 py-6 text-center">No served orders match the current filters.</p>
                 )}
                 {filteredServedOrders.map((entry) => renderOrderCard(entry, false))}
+                {hasNextPage && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={isFetchingNextPage}
+                    onClick={() => {
+                      void fetchNextPage();
+                    }}
+                  >
+                    {isFetchingNextPage ? "Loading…" : "Load more served orders"}
+                  </Button>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -78,6 +78,7 @@ export const productExtras = sqliteTable("product_extras", {
 export const orders = sqliteTable("orders", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   orderNumber: text("order_number").notNull().unique(),
+  /** new | preparing | ready | served | cancelled | closed */
   status: text("status").notNull().default("new"),
   printStatus: text("print_status").notNull().default("pending"),
   serviceMode: text("service_mode").notNull().default("pickup"),

@@ -211,6 +211,11 @@ export interface StaffOrderDetails {
 export type StaffOrderPaymentFilter = "all" | "cash" | "card" | "unpaid_cash";
 export type StaffOrderServiceFilter = "all" | "table" | "pickup";
 
+export interface ServedOrdersPage {
+  orders: StaffOrderDetails[];
+  total: number;
+}
+
 export interface PendingPrintJob {
   id: number;
   orderId: number;
